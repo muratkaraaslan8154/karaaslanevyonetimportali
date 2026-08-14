@@ -19,12 +19,68 @@
         .card { background: var(--card-bg); border-radius: var(--border-radius); padding: 1.2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .card h2 { margin-top: 0; font-size: 1.2rem; }
         .water-tracker { text-align: center; }
-        .water-circle { width: 130px; height: 130px; border-radius: 50%; border: 7px solid #ebf8ff; border-top-color: var(--water-color); margin: 0.8rem auto; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .water-amount { font-size: 2rem; font-weight: 700; color: var(--water-color); }
+        
+        /* Dinamik Dolabilen Dairesel Su Halkası Tasarımı */
+        .water-circle { 
+            width: 140px; 
+            height: 140px; 
+            border-radius: 50%; 
+            background: conic-gradient(var(--water-color) 0%, #ebf8ff 0%); 
+            margin: 0.8rem auto; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: background 0.3s ease;
+        }
+        .water-circle-inner {
+            width: 122px;
+            height: 122px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .water-amount { font-size: 2rem; font-weight: 700; color: var(--water-color); line-height: 1; }
+        
+        /* Kalan Su Miktarı Metni */
+        .water-remaining-text {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #4a5568;
+            margin-bottom: 0.8rem;
+        }
+        .water-remaining-text.completed {
+            color: var(--med-color);
+        }
+
         .btn-group { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap;}
         .btn { border: none; padding: 0.7rem 1.2rem; border-radius: 0.8rem; font-weight: bold; cursor: pointer; color: white; }
         .btn-water { background: var(--water-color); }
         .btn-remove { background: #e2e8f0; color: var(--text-main); }
+        
+        /* Karton Bardak (Oz) Izgarası Stilleri */
+        .oz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.8rem; }
+        .btn-oz { 
+            background: #d69e2e; 
+            color: white; 
+            border: none; 
+            padding: 0.6rem 0.4rem; 
+            border-radius: 0.8rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 0.85rem; 
+            transition: transform 0.1s, opacity 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+        }
+        .btn-oz:hover { opacity: 0.95; transform: translateY(-1px); }
+        .btn-oz small { font-size: 0.7rem; font-weight: normal; opacity: 0.92; margin-top: 2px; }
+
         .manual-water-input { padding: 0.7rem; border: 1px solid #cbd5e0; border-radius: 0.8rem; outline: none; width: 80px; text-align: center; font-weight: bold; }
         .extra-med-box { display: flex; gap: 0.5rem; margin-bottom: 1rem; background: #f7fafc; padding: 0.8rem; border-radius: 0.8rem; border: 1px dashed #cbd5e0; }
         .extra-med-box input { flex: 1; padding: 0.6rem; border: 1px solid #cbd5e0; border-radius: 0.5rem; outline: none; }
@@ -61,13 +117,48 @@
         <div class="card water-tracker">
             <h2>💧 Su Tüketimi</h2>
             <div class="water-circle" id="water-progress">
-                <span class="water-amount" id="water-count">0</span>
-                <span style="font-size:0.8rem; color:#718096;">/ 2500 ml</span>
+                <div class="water-circle-inner">
+                    <span class="water-amount" id="water-count">0</span>
+                    <span style="font-size:0.8rem; color:#718096; margin-top: 4px;">/ 2500 ml</span>
+                </div>
             </div>
+            
+            <!-- Kalan Su Göstergesi -->
+            <div id="water-remaining" class="water-remaining-text">⏳ Kalan: 2500 ml</div>
+
             <div class="btn-group">
                 <button class="btn btn-remove" id="btn-water-minus">-250</button>
                 <button class="btn btn-water" id="btn-water-plus">+250 ml Ekle</button>
             </div>
+            
+            <!-- Kullanım Alanlı ve İpuçlu Bardak Butonları -->
+            <div class="oz-grid">
+                <button class="btn-oz" id="btn-water-4oz" title="Espresso, Double Espresso veya otomat küçük boy bardak">
+                    ☕ 4 oz (90 ml)
+                    <small>Espresso / Otomat</small>
+                </button>
+                
+                <button class="btn-oz" id="btn-water-7oz" title="Ofis otomatlarında kullanılan standart çay/kahve bardağı">
+                    🍵 7 oz (180 ml)
+                    <small>Standart Çay</small>
+                </button>
+                
+                <button class="btn-oz" id="btn-water-8oz" title="Kafelerde orta boy filtre kahve, flat white ve cappuccino">
+                    ☕ 8 oz (210 ml)
+                    <small>Orta Boy Kahve</small>
+                </button>
+                
+                <button class="btn-oz" id="btn-water-12oz" title="Büyük boy americano, latte veya soğuk içecek">
+                    🥤 12 oz (325 ml)
+                    <small>Büyük Boy Latte</small>
+                </button>
+                
+                <button class="btn-oz" id="btn-water-16oz" style="grid-column: span 2;" title="Büyük boy buzlu kahve, meşrubat veya dev kupa">
+                    🥤 16 oz (450 ml)
+                    <small>Dev Boy / Buzlu Kahve</small>
+                </button>
+            </div>
+
             <div class="btn-group" style="margin-top: 0.8rem;">
                 <input type="number" id="manual-water-input" class="manual-water-input" placeholder="ml">
                 <button class="btn btn-water" id="btn-water-manual">Elle Ekle</button>
@@ -185,7 +276,29 @@
         function deleteExtraMed(id) { appState.extraMeds = appState.extraMeds.filter(m => m.id !== id); saveData(); }
 
         function updateUI() {
-            document.getElementById('water-count').innerText = appState.waterIntake || 0;
+            const currentWater = appState.waterIntake || 0;
+            const targetWater = 2500;
+            const percentage = Math.min(100, (currentWater / targetWater) * 100);
+            const remainingWater = Math.max(0, targetWater - currentWater);
+
+            // İçilen Su Sayacı
+            document.getElementById('water-count').innerText = currentWater;
+
+            // Dinamik Dairesel İlerleme Çubuğu Güncellemesi
+            const waterCircle = document.getElementById('water-progress');
+            waterCircle.style.background = `conic-gradient(var(--water-color) ${percentage}%, #ebf8ff ${percentage}%)`;
+
+            // Kalan Su Miktarı Alanı Güncellemesi
+            const remainingEl = document.getElementById('water-remaining');
+            if (remainingWater > 0) {
+                remainingEl.innerText = `⏳ Kalan: ${remainingWater} ml`;
+                remainingEl.className = 'water-remaining-text';
+            } else {
+                remainingEl.innerText = `🎉 Tebrikler! Günlük hedef tamamlandı.`;
+                remainingEl.className = 'water-remaining-text completed';
+            }
+
+            // İlaç Listesini Oluşturma
             const listEl = document.getElementById('med-list'); listEl.innerHTML = "";
             PRESET_MEDS.forEach(med => {
                 let history = appState.medsData[med.id] || [];
@@ -216,8 +329,17 @@
                 document.getElementById(`d-${extra.id}`).onclick = () => deleteExtraMed(extra.id);
             });
         }
+
+        /* Su Ekleme Butonlarının Olayları */
         document.getElementById('btn-water-plus').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+250; saveData(); };
         document.getElementById('btn-water-minus').onclick = () => { appState.waterIntake = Math.max(0,(appState.waterIntake||0)-250); saveData(); };
+        
+        document.getElementById('btn-water-4oz').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+90; saveData(); };
+        document.getElementById('btn-water-7oz').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+180; saveData(); };
+        document.getElementById('btn-water-8oz').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+210; saveData(); };
+        document.getElementById('btn-water-12oz').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+325; saveData(); };
+        document.getElementById('btn-water-16oz').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+450; saveData(); };
+
         document.getElementById('btn-water-manual').onclick = () => { const v = parseInt(document.getElementById('manual-water-input').value); if(v>0) { appState.waterIntake = (appState.waterIntake||0)+v; document.getElementById('manual-water-input').value=""; saveData(); }};
         
         loadDateData(todayStr);

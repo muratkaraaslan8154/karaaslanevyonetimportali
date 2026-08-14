@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harcama & Fatura Takip Asistanı</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+        :root {
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --income-color: #38a169;
+            --expense-color: #e53e3e;
+            --pay-color: #805ad5;
+            --primary: #3182ce;
+            --whatsapp-color: #25d366;
+            --border-radius: 1rem;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+            color: var(--text-main);
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 520px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Ana Menüye Dön Butonu Stili */
+        .btn-back {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 0.8rem;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: opacity 0.2s;
+        }
+        .btn-back:hover { opacity: 0.9; }
+
+        .header { text-align: center; }
+        .header h1 { margin: 0 0 0.5rem 0; font-size: 1.6rem; }
+
+        .month-picker-box {
+            background: var(--card-bg);
+            padding: 0.8rem;
+            border-radius: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .month-picker-box input {
+            border: 1px solid #e2e8f0;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+        }
+
+        .btn-all-time {
+            background: #e2e8f0;
+            color: var(--text-main);
+            border: none;
+            padding: 0.55rem 0.8rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 1.2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .card h3 { margin-top: 0; font-size: 1.05rem; display: flex; align-items: center; justify-content: space-between; }
+
+        .people-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.6rem;
+            margin-top: 0.5rem;
+        }
+
+        .person-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            border-radius: 0.7rem;
+            font-size: 0.85rem;
+        }
+
+        .person-card strong { display: block; font-size: 0.95rem; margin-bottom: 0.4rem; color: var(--text-main); }
+        .person-stat { font-size: 0.78rem; color: #4a5568; margin-bottom: 0.25rem; display: flex; justify-content: space-between; }
+        .bal-tag { font-weight: bold; margin-top: 0.4rem; display: block; text-align: center; padding: 0.2rem 0.4rem; border-radius: 0.4rem; font-size: 0.8rem; }
+        .tag-plus { background: #c6f6d5; color: #22543d; }
+        .tag-minus { background: #fed7d7; color: #742a2a; }
+        .tag-zero { background: #e2e8f0; color: #4a5568; }
+
+        .form-grid { display: flex; flex-direction: column; gap: 0.7rem; }
+        .form-row { display: flex; gap: 0.5rem; }
+
+        input, select {
+            padding: 0.65rem;
+            border: 1px solid #cbd5e0;
+            border-radius: 0.5rem;
+            outline: none;
+            font-family: inherit;
+        }
+
+        input[type="text"] { flex: 2; }
+        input[type="number"] { flex: 1; }
+        select { flex: 1; }
+
+        .file-input-box {
+            background: #f7fafc;
+            border: 1px dashed #cbd5e0;
+            padding: 0.6rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-add {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        .btn-add:disabled {
+            background: #cbd5e0;
+            color: #718096;
+            cursor: not-allowed;
+        }
+
+        .month-lock-alert {
+            background: #fff5f5;
+            color: #c53030;
+            border: 1px solid #feb2b2;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+        }
+
+        .item-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.7rem; }
+        
+        .list-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 0.85rem;
+            border-radius: 0.7rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .list-item.unpaid-item { background: #fffaf0; border-color: #fbd38d; }
+        .list-item.expense { border-left: 5px solid var(--expense-color); }
+        .list-item.settlement { border-left: 5px solid var(--pay-color); }
+        .list-item.other { border-left: 5px solid var(--text-muted); }
+
+        .item-header { display: flex; justify-content: space-between; align-items: center; }
+        .item-title { font-weight: bold; font-size: 0.95rem; }
+        .item-amount { font-weight: bold; font-size: 1rem; }
+
+        .item-sub { font-size: 0.75rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.2rem; }
+        .item-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 0.3rem; border-top: 1px dashed #e2e8f0; padding-top: 0.3rem; flex-wrap: wrap; gap: 0.4rem; }
+
+        .badge-status { padding: 0.15rem 0.4rem; border-radius: 0.3rem; font-weight: bold; font-size: 0.7rem; }
+        .status-paid { background: #c6f6d5; color: #22543d; }
+        .status-unpaid { background: #feebc8; color: #744210; }
+
+        .btn-pay-now, .btn-view-photo, .btn-add-photo, .btn-del, .btn-whatsapp {
+            border: none; padding: 0.35rem 0.65rem; border-radius: 0.4rem; cursor: pointer; font-size: 0.75rem; font-weight: bold;
+        }
+        .btn-pay-now { background: #38a169; color: white; }
+        .btn-whatsapp { background: #25d366; color: white; }
+        .btn-view-photo { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
+        .btn-add-photo { background: #feebc8; color: #744210; border: 1px solid #fbd38d; }
+        .btn-del { background: #fed7d7; color: #9b2c2c; }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal img { max-width: 90%; max-height: 80%; border-radius: 0.5rem; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Ana Menüye Dön Butonu -->
+        <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
+        
+        <div class="header">
+            <h1>Bireysel Harcama & Fatura Takibi</h1>
+            <div class="month-picker-box">
+                <div>
+                    <span style="font-weight:bold; font-size:0.85rem;">Seçili Ay:</span>
+                    <input type="month" id="selected-month">
+                </div>
+                <button id="btn-toggle-all" class="btn-all-time">🌐 Tüm Zamanlar</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>👥 Kişi Başı Alacak / Ödeme Durumu</h3>
+            <div class="people-grid" id="people-summary"></div>
+        </div>
+
+        <div class="card">
+            <h3>➕ İşlem Kaydı</h3>
+            <div class="form-grid">
+                
+                <div class="month-lock-alert" id="month-lock-warning">
+                    ⚠️ Sadece içinde bulunulan aya kayıt yapılabilir!
+                </div>
+
+                <div class="form-row">
+                    <select id="tx-person" style="font-weight: bold; background: #f7fafc;">
+                        <option value="Murat">👤 Murat</option>
+                        <option value="Muradiye">👤 Muradiye</option>
+                        <option value="Melek">👤 Melek</option>
+                        <option value="Emre">👤 Emre</option>
+                    </select>
+
+                    <select id="tx-type" style="font-weight: bold;">
+                        <option value="expense" selected>🛒 Ev Harcaması</option>
+                    </select>
+                </div>
+
+                <input type="text" id="tx-title" placeholder="Açıklama (En az 3 harf)" minlength="3" required>
+                
+                <div class="form-row">
+                    <input type="number" id="tx-amount" placeholder="Tutar (₺)" step="any" required>
+                    <select id="tx-category">
+                        <option value="Mutfak/Gıda">Mutfak/Gıda</option>
+                        <option value="Fatura/Kira">Fatura/Kira</option>
+                        <option value="Borç Ödeme">Borç Ödeme</option>
+                        <option value="Ulaşım/Yakıt">Ulaşım/Yakıt</option>
+                        <option value="Sağlık">Sağlık</option>
+                        <option value="Diğer">Diğer</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <select id="tx-pay-method" style="background:#eef2ff;">
+                        <option value="Nakit" selected>💵 Nakit</option>
+                        <option value="Kredi Kartı">💳 Kredi Kartı</option>
+                    </select>
+
+                    <select id="tx-status" style="background:#fffaf0; font-weight:bold;">
+                        <option value="unpaid" selected>⏳ Ödenmedi (Bekliyor)</option>
+                        <option value="paid">✅ Ödendi</option>
+                    </select>
+                </div>
+
+                <div class="file-input-box">
+                    <label style="font-weight:bold; display:block; margin-bottom:0.3rem;">📷 Fiş / Fatura Fotoğrafı (İsteğe Bağlı):</label>
+                    <input type="file" id="tx-photo" accept="image/*">
+                </div>
+
+                <button class="btn-add" id="btn-add-tx">Kaydet</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 id="history-title">📋 Harcama ve Ödeme Geçmişi</h3>
+            <ul class="item-list" id="tx-list"></ul>
+        </div>
+
+    </div>
+
+    <!-- Gizli Fotoğraf Yükleme Elemanı -->
+    <input type="file" id="late-photo-upload" accept="image/*" style="display: none;">
+
+    <div class="modal" id="photo-modal" onclick="this.style.display='none'">
+        <img id="modal-img" src="" alt="Fiş Fatura">
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+        import { 
+            getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot 
+        } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB6GxxqjYwezj-yLDEoe544Xdy0K-sBGlA",
+            authDomain: "karaaslanhomeharcamatakip.firebaseapp.com",
+            projectId: "karaaslanhomeharcamatakip",
+            storageBucket: "karaaslanhomeharcamatakip.firebasestorage.app",
+            messagingSenderId: "822028092832",
+            appId: "1:822028092832:web:88a6d9f6bad90dbbc110c5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const txCollection = collection(db, "transactions");
+
+        const USERS = ["Murat", "Muradiye", "Melek", "Emre"];
+        const ADMIN_PIN = "1234";
+
+        // Kişilerin Telefon Numaraları (Ülke kodu ile, + işareti olmadan. Örn: "905321234567")
+        // Burayı gerçek numaralarla güncelleyebilirsiniz:
+        const PHONE_NUMBERS = {
+            "Murat": "",    // Kendi numaranız (Örn: "905001234567")
+            "Muradiye": "", // Muradiye'nin numarası
+            "Melek": "",    // Melek'in numarası
+            "Emre": ""      // Emre'nin numarası
+        };
+
+        function checkAdminAuth() {
+            const pin = prompt("Bu işlem sadece Murat tarafından yapılabilir. Lütfen şifrenizi girin:");
+            if (pin === null) return false; 
+            if (pin === ADMIN_PIN) return true;
+            alert("❌ Hatalı Şifre!"); return false;
+        }
+
+        function getCurrentMonthStr() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function formatDateTimeStr(dateObj) {
+            const d = dateObj || new Date();
+            return `${d.toLocaleDateString('tr-TR')} - ${d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
+        }
+
+        const realCurrentMonth = getCurrentMonthStr(); 
+        let currentMonth = realCurrentMonth;
+        let showAllTime = false; 
+        let allTransactions = [];
+        let selectedTxForPhoto = null;
+
+        const monthInput = document.getElementById('selected-month');
+        monthInput.value = currentMonth;
+
+        monthInput.addEventListener('change', (e) => {
+            currentMonth = e.target.value;
+            checkMonthLock();
+            updateUI();
+        });
+
+        // Tüm Zamanlar Butonu
+        const btnToggleAll = document.getElementById('btn-toggle-all');
+        btnToggleAll.onclick = () => {
+            showAllTime = !showAllTime;
+            if (showAllTime) {
+                btnToggleAll.style.background = "var(--primary)";
+                btnToggleAll.style.color = "white";
+                btnToggleAll.innerText = "📅 Seçili Aya Dön";
+                monthInput.disabled = true;
+            } else {
+                btnToggleAll.style.background = "#e2e8f0";
+                btnToggleAll.style.color = "var(--text-main)";
+                btnToggleAll.innerText = "🌐 Tüm Zamanlar";
+                monthInput.disabled = false;
+            }
+            checkMonthLock();
+            updateUI();
+        };
+
+        function checkMonthLock() {
+            const btnAdd = document.getElementById('btn-add-tx');
+            const warningMsg = document.getElementById('month-lock-warning');
+
+            if (showAllTime) {
+                btnAdd.disabled = true;
+                btnAdd.innerText = "🌐 Tüm Zamanlar Modunda Yeni Kayıt Yapılamaz";
+                warningMsg.innerText = "⚠️ Tüm Zamanlar modunda yeni veri eklenemez!";
+                warningMsg.style.display = "block";
+            } else if (currentMonth < realCurrentMonth) {
+                btnAdd.disabled = true;
+                btnAdd.innerText = "🔒 Geçmiş Aya Kayıt Yapılamaz";
+                warningMsg.innerText = "⚠️ Geçmiş aylara yeni veri eklenemez! (Ödemeler yapılabilir)";
+                warningMsg.style.display = "block";
+            } else if (currentMonth > realCurrentMonth) {
+                btnAdd.disabled = true;
+                btnAdd.innerText = "🔒 Gelecek Aya Kayıt Yapılamaz";
+                warningMsg.innerText = "⚠️ Gelecek aylara yeni veri eklenemez!";
+                warningMsg.style.display = "block";
+            } else {
+                btnAdd.disabled = false;
+                btnAdd.innerText = "Kaydet";
+                warningMsg.style.display = "none";
+            }
+        }
+
+        const personSelect = document.getElementById('tx-person');
+        const payMethodSelect = document.getElementById('tx-pay-method');
+        
+        function enforceCashPolicy() {
+            if (personSelect.value !== "Murat") {
+                payMethodSelect.value = "Nakit";
+                Array.from(payMethodSelect.options).forEach(opt => {
+                    if (opt.value === "Kredi Kartı") opt.disabled = true;
+                });
+            } else {
+                Array.from(payMethodSelect.options).forEach(opt => opt.disabled = false);
+            }
+        }
+        personSelect.addEventListener('change', enforceCashPolicy);
+        enforceCashPolicy();
+
+        onSnapshot(txCollection, (snapshot) => {
+            allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            allTransactions.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            checkMonthLock();
+            updateUI();
+        });
+
+        function getTxMonth(tx) {
+            if (tx.month) return tx.month;
+            if (tx.timestamp) {
+                const d = new Date(tx.timestamp);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            }
+            return "";
+        }
+
+        function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader(); reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image(); img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height, max = 800;
+                        if (w > max || h > max) {
+                            if (w > h) { h = Math.round(h * max / w); w = max; }
+                            else { w = Math.round(w * max / h); h = max; }
+                        }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', 0.6));
+                    };
+                };
+            });
+        }
+
+        window.triggerPhotoUpload = (id) => {
+            selectedTxForPhoto = id;
+            const input = document.getElementById('late-photo-upload');
+            input.value = "";
+            input.click();
+        };
+
+        document.getElementById('late-photo-upload').addEventListener('change', async (e) => {
+            if (!e.target.files || !e.target.files[0] || !selectedTxForPhoto) return;
+            try {
+                const photoData = await compressImage(e.target.files[0]);
+                await updateDoc(doc(db, "transactions", selectedTxForPhoto), { photo: photoData });
+                alert("📷 Fiş fotoğrafı başarıyla eklendi!");
+            } catch (err) {
+                alert("Fotoğraf eklenirken hata oluştu!");
+            } finally {
+                selectedTxForPhoto = null;
+            }
+        });
+
+        // WhatsApp Gönderme Fonksiyonu
+        window.sendNotification = (id) => {
+            const tx = allTransactions.find(t => t.id === id);
+            if (!tx) return;
+
+            const phone = PHONE_NUMBERS[tx.person] ? PHONE_NUMBERS[tx.person].replace(/\D/g, '') : "";
+            const textMsg = `Merhaba ${tx.person}, ${tx.amount.toLocaleString('tr-TR')} ₺ tutarındaki "${tx.title}" harcama ödemeniz (${tx.paidMethod || 'Nakit'}) yapılmıştır. ✅`;
+            
+            const waUrl = phone 
+                ? `https://wa.me/${phone}?text=${encodeURIComponent(textMsg)}`
+                : `https://wa.me/?text=${encodeURIComponent(textMsg)}`;
+
+            window.open(waUrl, '_blank');
+        };
+
+        document.getElementById('btn-add-tx').onclick = async () => {
+            if (showAllTime || currentMonth !== realCurrentMonth) {
+                alert("Sadece içinde bulunduğunuz aya yeni işlem ekleyebilirsiniz!");
+                return;
+            }
+
+            const title = document.getElementById('tx-title').value.trim();
+            const amount = parseFloat(document.getElementById('tx-amount').value);
+
+            if (!title || title.length < 3) {
+                alert("⚠️ Lütfen en az 3 harften oluşan bir açıklama giriniz!");
+                document.getElementById('tx-title').focus();
+                return;
+            }
+
+            if (isNaN(amount) || amount <= 0) {
+                alert("⚠️ Lütfen geçerli bir tutar giriniz!");
+                document.getElementById('tx-amount').focus();
+                return;
+            }
+
+            const txData = {
+                person: personSelect.value,
+                type: document.getElementById('tx-type').value,
+                title: title,
+                amount: amount,
+                category: document.getElementById('tx-category').value,
+                payMethod: payMethodSelect.value,
+                status: document.getElementById('tx-status').value,
+                month: currentMonth,
+                timestamp: Date.now()
+            };
+
+            const photoInput = document.getElementById('tx-photo');
+            let photoData = null;
+            if (photoInput.files && photoInput.files[0]) photoData = await compressImage(photoInput.files[0]);
+
+            const nowStr = formatDateTimeStr(new Date());
+            await addDoc(txCollection, {
+                ...txData,
+                targetPerson: null,
+                createdAt: nowStr,
+                paidAt: txData.status === 'paid' ? nowStr : null,
+                paidMethod: txData.status === 'paid' ? (payMethodSelect.value || "Nakit") : null,
+                photo: photoData
+            });
+
+            document.getElementById('tx-title').value = "";
+            document.getElementById('tx-amount').value = "";
+            photoInput.value = "";
+        };
+
+        // Şimdi Öde Fonksiyonu
+        window.markAsPaid = async (id) => {
+            if (!checkAdminAuth()) return;
+
+            const tx = allTransactions.find(t => t.id === id);
+
+            const choice = prompt("Ödeme hangi yöntemle yapıldı?\n\n1 - Nakit\n2 - EFT / Havale", "1");
+            if (choice === null) return;
+
+            let chosenMethod = "Nakit";
+            if (choice.trim() === "2" || choice.toLowerCase().includes("eft") || choice.toLowerCase().includes("havale")) {
+                chosenMethod = "EFT / Havale";
+            }
+
+            const nowStr = formatDateTimeStr(new Date());
+            await updateDoc(doc(db, "transactions", id), { 
+                status: 'paid', 
+                paidAt: nowStr,
+                paidMethod: chosenMethod
+            });
+
+            if (tx && confirm(`✅ Ödeme kaydedildi!\n\n${tx.person} kişisine WhatsApp üzerinden bilgilendirme mesajı göndermek ister misiniz?`)) {
+                sendNotification(id);
+            }
+        };
+
+        window.deleteTx = async (id) => {
+            if (!checkAdminAuth()) return;
+            if (confirm("Bu kaydı silmek istediğinizden emin misiniz?")) await deleteDoc(doc(db, "transactions", id));
+        };
+
+        function updateUI() {
+            let userSpent = { Murat: 0, Muradiye: 0, Melek: 0, Emre: 0 }; 
+            let userPaid = { Murat: 0, Muradiye: 0, Melek: 0, Emre: 0 }; 
+
+            document.getElementById('history-title').innerText = showAllTime 
+                ? "📋 Genel Harcama ve Ödeme Geçmişi (Tüm Zamanlar)" 
+                : `📋 Harcama Geçmişi (${currentMonth})`;
+
+            allTransactions.forEach(tx => {
+                const txMonth = getTxMonth(tx);
+
+                if (!showAllTime && txMonth !== currentMonth) return;
+
+                const amt = parseFloat(tx.amount) || 0;
+
+                if (tx.type === 'expense' || tx.type === 'personal_self' || tx.type === 'personal_expense') {
+                    userSpent[tx.person] = (userSpent[tx.person] || 0) + amt;
+                    
+                    if (tx.status === 'paid') {
+                        userPaid[tx.person] = (userPaid[tx.person] || 0) + amt;
+                    }
+                } else if (tx.type === 'settlement') {
+                    const receiver = tx.targetPerson;
+                    if (receiver) {
+                        userPaid[receiver] = (userPaid[receiver] || 0) + amt;
+                    }
+                }
+            });
+
+            const peopleGrid = document.getElementById('people-summary');
+            peopleGrid.innerHTML = "";
+
+            USERS.forEach(u => {
+                const spent = userSpent[u] || 0;
+                const paid = userPaid[u] || 0;
+                const remainingAlacak = spent - paid;
+
+                let tagClass = "tag-zero";
+                let tagText = "Dengelendi (0 ₺)";
+
+                if (remainingAlacak > 0.01) {
+                    tagClass = "tag-plus";
+                    tagText = `Alacaklı: +${remainingAlacak.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺`;
+                } else if (remainingAlacak < -0.01) {
+                    tagClass = "tag-minus";
+                    tagText = `Borçlu: ${remainingAlacak.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺`;
+                }
+
+                const div = document.createElement('div');
+                div.className = "person-card";
+                div.innerHTML = `
+                    <strong>👤 ${u}</strong>
+                    <div class="person-stat"><span>🏠 Harcanan:</span> <b>${spent.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</b></div>
+                    <div class="person-stat"><span>💵 Ödenen:</span> <b>${paid.toLocaleString('tr-TR', {maximumFractionDigits:2})} ₺</b></div>
+                    <span class="bal-tag ${tagClass}">${tagText}</span>
+                `;
+                peopleGrid.appendChild(div);
+            });
+
+            const txList = document.getElementById('tx-list');
+            txList.innerHTML = "";
+
+            allTransactions.forEach(tx => {
+                const txMonth = getTxMonth(tx);
+
+                if (!showAllTime && txMonth !== currentMonth) return;
+
+                const isExpenseLike = (tx.type === 'expense' || tx.type === 'personal_self' || tx.type === 'personal_expense');
+                
+                let subText = "";
+                if (tx.type === 'expense' || !tx.type) {
+                    subText = `👤 ${tx.person} | 🛒 Ev Harcaması | 🏷️ ${tx.category} | ${tx.payMethod === 'Kredi Kartı' ? '💳 KK' : '💵 Nakit'}`;
+                } else if (tx.type === 'personal_expense') {
+                    subText = `👤 ${tx.person} | 🛍️ Şahsi Harcama | 🏷️ ${tx.category} | ${tx.payMethod === 'Kredi Kartı' ? '💳 KK' : '💵 Nakit'}`;
+                } else if (tx.type === 'settlement') {
+                    subText = `👤 ${tx.person} ➡️ ${tx.targetPerson} | 🔄 Doğrudan Ödeme`;
+                } else {
+                    subText = `👤 ${tx.person} | ${tx.type}`;
+                }
+
+                const isPaid = tx.status === 'paid';
+                const statusBadge = isPaid ? `<span class="badge-status status-paid">✅ Ödendi</span>` : `<span class="badge-status status-unpaid">⏳ Ödenmedi</span>`;
+                
+                const createdAtText = tx.createdAt ? `📅 Eklenme: ${tx.createdAt}` : '';
+                const paidAtText = (isPaid && tx.paidAt) 
+                    ? `<span style="color: #2b6cb0; font-weight: bold;">💳 Ödenme: ${tx.paidAt} (${tx.paidMethod || 'Nakit'})</span>` 
+                    : '';
+
+                const whoToPayNotice = (!isPaid && isExpenseLike) 
+                    ? `<div style="margin-top: 5px; font-weight: bold; color: var(--expense-color);">💰 ${tx.person}'a Ödenecek</div>` 
+                    : ``;
+
+                const photoButtonHTML = tx.photo 
+                    ? `<button class="btn-view-photo" onclick="document.getElementById('photo-modal').style.display='flex'; document.getElementById('modal-img').src='${tx.photo}';">📷 Fiş</button>`
+                    : `<button class="btn-add-photo" onclick="triggerPhotoUpload('${tx.id}')">📷 Fiş Ekle</button>`;
+
+                const whatsappBtnHTML = isPaid 
+                    ? `<button class="btn-whatsapp" onclick="sendNotification('${tx.id}')">💬 WhatsApp</button>` 
+                    : ``;
+
+                const li = document.createElement('li');
+                li.className = `list-item ${!isPaid ? 'unpaid-item' : ''} ${isExpenseLike ? 'expense' : (tx.type === 'settlement' ? 'settlement' : 'other')}`;
+                li.innerHTML = `
+                    <div class="item-header">
+                        <span class="item-title">${tx.title}</span>
+                        <span class="item-amount" style="color: ${isExpenseLike ? 'var(--expense-color)' : 'var(--pay-color)'};">
+                            - ${tx.amount.toLocaleString('tr-TR')} ₺
+                        </span>
+                    </div>
+                    <div class="item-sub">
+                        <span>${subText}</span>
+                        <span>${statusBadge} | ${createdAtText}</span>
+                        ${paidAtText ? `<span>${paidAtText}</span>` : ''}
+                        ${whoToPayNotice}
+                    </div>
+                    <div class="item-actions">
+                        ${!isPaid ? `<button class="btn-pay-now" onclick="markAsPaid('${tx.id}')">✅ Şimdi Öde</button>` : '<span></span>'}
+                        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+                            ${whatsappBtnHTML}
+                            ${photoButtonHTML}
+                            <button class="btn-del" onclick="deleteTx('${tx.id}')">Sil</button>
+                        </div>
+                    </div>
+                `;
+                txList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>

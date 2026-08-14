@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaaslan Home - Harcama Girişi</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <style>
+        :root { --primary: #2c3e50; --secondary: #27ae60; --bg: #f4f6f9; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background-color: var(--bg); margin: 0; padding: 15px; color: #333; }
+        
+        /* Ana Menüye Dön Butonu Stili */
+        .btn-back {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .btn-back:hover { opacity: 0.9; }
+
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; }
+        .btn-submit { background-color: var(--secondary); color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+        .btn-submit:active { opacity: 0.8; }
+        #karma-alan { background: #e8f8f5; border: 2px solid #27ae60; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .ozet-kutusu { font-size: 0.85rem; background: #fff; padding: 10px; border-radius: 6px; border: 1px dashed #27ae60; margin-top: 10px; }
+        .ozet-satir { margin-bottom: 4px; font-weight: 600; }
+        .alert { display: none; padding: 12px; background: #d4efdf; color: #155724; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+    <!-- Ana Menüye Dön Butonu -->
+    <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
+
+    <div class="card">
+        <h2>🛍️ Pazar & Market Harcama / Fiş Ekle</h2>
+        <div id="basari-mesaji" class="alert">Harcama Başarıyla Kaydedildi! ✅</div>
+        
+        <form id="harcama-form">
+            <div class="form-group">
+                <label>Tarih</label>
+                <input type="date" id="harcama-tarihi" required>
+            </div>
+
+            <div class="form-group">
+                <label>Kategori</label>
+                <select id="kategori" onchange="kategoriDegisti()">
+                    <option value="Market">Market</option>
+                    <option value="Pazar">Pazar</option>
+                    <option value="Karma">🧠 Karma (Market + Sebze/Pazar)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Fiş / Fatura Fotoğrafı</label>
+                <input type="file" id="fis-resmi" accept="image/*" onchange="resimiHazirla(event)">
+            </div>
+
+            <div class="form-group">
+                <label>Açıklama / Not</label>
+                <input type="text" id="harcama-aciklama" placeholder="Örn: Bakkal, Fırın vs.">
+            </div>
+
+            <!-- Tekli Harcama Alanı -->
+            <div id="tekli-alan">
+                <div class="form-group">
+                    <label>Toplam Tutar (TL)</label>
+                    <input type="number" id="toplam-tutar" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Kasadan Ödenen Nakit (TL)</label>
+                    <input type="number" id="nakit-odenen" step="0.01" min="0">
+                </div>
+            </div>
+
+            <!-- Karma Harcama Alanı (Kolaylaştırılmış 3 Kutulu) -->
+            <div id="karma-alan" style="display: none;">
+                <div class="form-group">
+                    <label>Fişin GENEL Toplamı (TL)</label>
+                    <input type="number" id="k-genel-toplam" step="0.01" min="0" oninput="karmaHesapla()">
+                </div>
+                <div class="form-group">
+                    <label>Sebze / Meyve (PAZAR) Tutarı (TL)</label>
+                    <input type="number" id="k-pazar-tutar" step="0.01" min="0" oninput="karmaHesapla()">
+                </div>
+                <div class="form-group">
+                    <label>Ödenen Toplam NAKİT (TL)</label>
+                    <input type="number" id="k-genel-nakit" step="0.01" min="0" oninput="karmaHesapla()">
+                </div>
+
+                <!-- Otomatik Önizleme Bilgisi -->
+                <div class="ozet-kutusu">
+                    <div class="ozet-satir" id="pazar-ozet" style="color: #27ae60;">🥬 Pazar: 0 TL (0 TL Nakit, 0 TL KK)</div>
+                    <div class="ozet-satir" id="market-ozet" style="color: #2c3e50;">🛒 Market: 0 TL (0 TL Nakit, 0 TL KK)</div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit" style="margin-top: 15px;">Kaydet</button>
+        </form>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
+            authDomain: "karaaslanhomebutcetakip.firebaseapp.com",
+            databaseURL: "https://karaaslanhomebutcetakip-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "karaaslanhomebutcetakip",
+            storageBucket: "karaaslanhomebutcetakip.firebasestorage.app",
+            messagingSenderId: "566343253682",
+            appId: "1:566343253682:web:c32d2821f65dcf2b9813ab",
+            measurementId: "G-YVYX0WYBP3"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let mevcutResimBase64 = "";
+
+        window.onload = () => {
+            tarihiGuncelle();
+        };
+
+        function tarihiGuncelle() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('harcama-tarihi').value = today;
+        }
+
+        function kategoriDegisti() {
+            const kat = document.getElementById('kategori').value;
+            document.getElementById('tekli-alan').style.display = kat === 'Karma' ? 'none' : 'block';
+            document.getElementById('karma-alan').style.display = kat === 'Karma' ? 'block' : 'none';
+        }
+
+        function resimiHazirla(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let scale = 600 / img.width;
+                        if(scale > 1) scale = 1;
+                        canvas.width = img.width * scale;
+                        canvas.height = img.height * scale;
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                        mevcutResimBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                    }
+                    img.src = evt.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function karmaHesapla() {
+            const gTop = parseFloat(document.getElementById('k-genel-toplam').value) || 0;
+            const pTop = parseFloat(document.getElementById('k-pazar-tutar').value) || 0;
+            const gNak = parseFloat(document.getElementById('k-genel-nakit').value) || 0;
+
+            const mTop = Math.max(0, gTop - pTop);
+
+            // Önce Nakit Pazar'a sayılır
+            const pNak = Math.min(pTop, gNak);
+            const pKK = Math.max(0, pTop - pNak);
+
+            // Kalan Nakit Market'e sayılır
+            const mNak = Math.max(0, gNak - pNak);
+            const mKK = Math.max(0, mTop - mNak);
+
+            // Ekrandaki Canlı Özeti Güncelle
+            document.getElementById('pazar-ozet').innerText = `🥬 Pazar: ${pTop.toFixed(2)} TL (${pNak.toFixed(2)} TL Nakit, ${pKK.toFixed(2)} TL KK)`;
+            document.getElementById('market-ozet').innerText = `🛒 Market: ${mTop.toFixed(2)} TL (${mNak.toFixed(2)} TL Nakit, ${mKK.toFixed(2)} TL KK)`;
+
+            return { pTop, pNak, pKK, mTop, mNak, mKK };
+        }
+
+        document.getElementById('harcama-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const tarih = document.getElementById('harcama-tarihi').value;
+            const kat = document.getElementById('kategori').value;
+            const aciklama = document.getElementById('harcama-aciklama').value.trim();
+
+            if (kat === 'Karma') {
+                const guncel = karmaHesapla();
+                const gTop = parseFloat(document.getElementById('k-genel-toplam').value) || 0;
+                const pTop = parseFloat(document.getElementById('k-pazar-tutar').value) || 0;
+
+                if (pTop > gTop) {
+                    alert("⚠️ Uyarı: Pazar/Sebze tutarı genel toplamdan büyük olamaz!");
+                    return;
+                }
+
+                if (guncel.pTop > 0) {
+                    db.ref('harcamalar').push({ tarih, kategori: 'Pazar', aciklama, resim: mevcutResimBase64, toplam: guncel.pTop, nakit: guncel.pNak, kk: guncel.pKK });
+                }
+                if (guncel.mTop > 0) {
+                    db.ref('harcamalar').push({ tarih, kategori: 'Market', aciklama, resim: mevcutResimBase64, toplam: guncel.mTop, nakit: guncel.mNak, kk: guncel.mKK });
+                }
+            } else {
+                const toplam = parseFloat(document.getElementById('toplam-tutar').value) || 0;
+                const nakit = parseFloat(document.getElementById('nakit-odenen').value) || 0;
+                db.ref('harcamalar').push({ tarih, kategori: kat, aciklama, resim: mevcutResimBase64, toplam, nakit, kk: Math.max(0, toplam - nakit) });
+            }
+
+            // Başarı Mesajı
+            const alertBox = document.getElementById('basari-mesaji');
+            alertBox.style.display = 'block';
+            setTimeout(() => alertBox.style.display = 'none', 3000);
+
+            formuSifirla();
+        });
+
+        function formuSifirla() {
+            document.getElementById('harcama-form').reset();
+            mevcutResimBase64 = "";
+            document.getElementById('pazar-ozet').innerText = "🥬 Pazar: 0 TL (0 TL Nakit, 0 TL KK)";
+            document.getElementById('market-ozet').innerText = "🛒 Market: 0 TL (0 TL Nakit, 0 TL KK)";
+            tarihiGuncelle();
+            kategoriDegisti();
+        }
+    </script>
+</body>
+</html>

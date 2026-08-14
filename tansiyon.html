@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tansiyon Takibi</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        :root { --bg: #f0f4f8; --card: #fff; --primary: #e53e3e; --text: #2d3748; }
+        body { background: var(--bg); font-family: 'Roboto', sans-serif; margin: 0; padding: 1rem; color: var(--text); }
+        .container { max-width: 600px; margin: 0 auto; }
+        .nav-back, .btn-print { display: inline-block; background: #e2e8f0; color: #2d3748; padding: 0.6rem 1rem; border-radius: 0.5rem; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
+        .btn-print { background: var(--primary); color: white; float: right; }
+        .card { background: var(--card); padding: 1.5rem; border-radius: 1rem; margin-top: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.4rem; font-weight: bold; font-size: 0.9rem; }
+        .form-group input { width: 100%; padding: 0.8rem; border: 1px solid #cbd5e0; border-radius: 0.5rem; box-sizing: border-box; }
+        .flex-row { display: flex; gap: 10px; }
+        .flex-row > div { flex: 1; }
+        .btn-save { background: #48bb78; color: white; border: none; width: 100%; padding: 1rem; border-radius: 0.5rem; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 0.5rem;}
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.9rem; text-align: center; }
+        th, td { border: 1px solid #e2e8f0; padding: 0.8rem; }
+        th { background: #edf2f7; }
+        .del-btn { color: red; cursor: pointer; font-weight: bold; border: none; background: none; }
+        
+        /* DOKTOR ÇIKTISI */
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .card { box-shadow: none; padding: 0; margin: 0; }
+            table { font-size: 10pt; }
+            th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
+            h1 { font-size: 14pt; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="no-print" style="margin-bottom: 1rem;">
+            <a href="saglik.html" class="nav-back">⬅️ Ana Menü</a>
+            <button class="btn-print" onclick="window.print()">🖨️ Doktor İçin Yazdır</button>
+        </div>
+
+        <div class="card no-print">
+            <h2 style="margin-top:0;">❤️ Yeni Tansiyon Ölçümü Ekle</h2>
+            <form id="tansiyon-form">
+                <div class="form-group">
+                    <label>Tarih & Saat</label>
+                    <input type="datetime-local" id="t-tarih" required>
+                </div>
+                <div class="flex-row form-group">
+                    <div>
+                        <label>Büyük Tansiyon</label>
+                        <input type="number" id="t-buyuk" required placeholder="Örn: 12" step="0.1">
+                    </div>
+                    <div>
+                        <label>Küçük Tansiyon</label>
+                        <input type="number" id="t-kucuk" required placeholder="Örn: 8" step="0.1">
+                    </div>
+                    <div>
+                        <label>Nabız (Kalp)</label>
+                        <input type="number" id="t-nabiz" placeholder="Örn: 75">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Açıklama / Not (Opsiyonel)</label>
+                    <input type="text" id="t-not" placeholder="Örn: Başım ağrıyordu, ilaçtan sonra vb.">
+                </div>
+                <button type="submit" class="btn-save">Kaydet</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-top:0; text-align:center;">Tansiyon Geçmişi</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tarih/Saat</th>
+                        <th>Tansiyon (B/K)</th>
+                        <th>Nabız</th>
+                        <th>Notlar</th>
+                        <th class="no-print">Sil</th>
+                    </tr>
+                </thead>
+                <tbody id="tansiyon-liste">
+                    <!-- Javascript ile dolacak -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAhjq7KL_e80LiW8fC-wttmn8gba5UvhVE",
+            authDomain: "muratilactakip.firebaseapp.com",
+            projectId: "muratilactakip",
+            storageBucket: "muratilactakip.firebasestorage.app"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('t-tarih').value = now.toISOString().slice(0,16);
+
+        document.getElementById('tansiyon-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('.btn-save');
+            btn.innerText = "Kaydediliyor...";
+            try {
+                await addDoc(collection(db, "tansiyon_takip"), {
+                    tarih: document.getElementById('t-tarih').value,
+                    buyuk: document.getElementById('t-buyuk').value,
+                    kucuk: document.getElementById('t-kucuk').value,
+                    nabiz: document.getElementById('t-nabiz').value || "-",
+                    not: document.getElementById('t-not').value || "-",
+                    timestamp: Date.now()
+                });
+                e.target.reset();
+                document.getElementById('t-tarih').value = now.toISOString().slice(0,16);
+            } catch(err) { alert("Hata: " + err.message); }
+            btn.innerText = "Kaydet";
+        });
+
+        const q = query(collection(db, "tansiyon_takip"), orderBy("tarih", "desc"));
+        onSnapshot(q, (snapshot) => {
+            const liste = document.getElementById('tansiyon-liste');
+            liste.innerHTML = "";
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const d = new Date(data.tarih);
+                const formatTarih = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                
+                // Tehlikeli tansiyonları kırmızı işaretle
+                const b = parseFloat(data.buyuk);
+                const k = parseFloat(data.kucuk);
+                const color = (b > 14 || k > 9) ? 'red' : 'green';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${formatTarih}</td>
+                    <td style="color:${color}; font-weight:bold; font-size:1.1rem;">${data.buyuk} / ${data.kucuk}</td>
+                    <td>❤️ ${data.nabiz}</td>
+                    <td>${data.not}</td>
+                    <td class="no-print"><button class="del-btn" data-id="${docSnap.id}">X</button></td>
+                `;
+                liste.appendChild(tr);
+            });
+
+            document.querySelectorAll('.del-btn').forEach(btn => {
+                btn.onclick = async (e) => {
+                    if(confirm("Tansiyon kaydı silinecek!")) await deleteDoc(doc(db, "tansiyon_takip", e.target.dataset.id));
+                };
+            });
+        });
+    </script>
+</body>
+</html>

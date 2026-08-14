@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Şeker Takibi</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        :root { --bg: #f0f4f8; --card: #fff; --primary: #ed8936; --text: #2d3748; }
+        body { background: var(--bg); font-family: 'Roboto', sans-serif; margin: 0; padding: 1rem; color: var(--text); }
+        .container { max-width: 600px; margin: 0 auto; }
+        .nav-back, .btn-print { display: inline-block; background: #e2e8f0; color: #2d3748; padding: 0.6rem 1rem; border-radius: 0.5rem; text-decoration: none; font-weight: bold; border: none; cursor: pointer; }
+        .btn-print { background: var(--primary); color: white; float: right; }
+        .card { background: var(--card); padding: 1.5rem; border-radius: 1rem; margin-top: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.4rem; font-weight: bold; font-size: 0.9rem; }
+        .form-group input, .form-group select { width: 100%; padding: 0.8rem; border: 1px solid #cbd5e0; border-radius: 0.5rem; box-sizing: border-box; }
+        .btn-save { background: #48bb78; color: white; border: none; width: 100%; padding: 1rem; border-radius: 0.5rem; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.9rem; }
+        th, td { border: 1px solid #e2e8f0; padding: 0.8rem; text-align: left; }
+        th { background: #edf2f7; }
+        .del-btn { color: red; cursor: pointer; font-weight: bold; border: none; background: none; }
+        
+        /* DOKTOR ÇIKTISI (YAZICI) İÇİN TASARIM */
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .card { box-shadow: none; padding: 0; margin: 0; }
+            table { font-size: 10pt; }
+            th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
+            h1 { font-size: 14pt; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="no-print" style="margin-bottom: 1rem;">
+            <a href="saglik.html" class="nav-back">⬅️ Ana Menü</a>
+            <button class="btn-print" onclick="window.print()">🖨️ Doktor İçin Yazdır</button>
+        </div>
+
+        <div class="card no-print">
+            <h2 style="margin-top:0;">🩸 Yeni Şeker Ölçümü Ekle</h2>
+            <form id="seker-form">
+                <div class="form-group">
+                    <label>Tarih & Saat</label>
+                    <input type="datetime-local" id="s-tarih" required>
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label>Ölçüm Türü</label>
+                        <select id="s-tur">
+                            <option value="Açlık">Açlık (Fasting)</option>
+                            <option value="Tokluk">Tokluk (Postprandial)</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label>Şeker (mg/dL)</label>
+                        <input type="number" id="s-deger" required placeholder="Örn: 105">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Yenilen Gıda & Gramaj (Doktor İçin Önemli)</label>
+                    <input type="text" id="s-gida" placeholder="Örn: 2 Dilim Ekmek, 50gr Peynir, 150gr Makarna...">
+                </div>
+                <button type="submit" class="btn-save">Kaydet</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-top:0; text-align:center;">Şeker Ölçüm Geçmişi</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tarih/Saat</th>
+                        <th>Tür</th>
+                        <th>Şeker (mg/dL)</th>
+                        <th>Tüketilen Gıda (Gramaj)</th>
+                        <th class="no-print">Sil</th>
+                    </tr>
+                </thead>
+                <tbody id="seker-liste">
+                    <!-- Javascript ile dolacak -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAhjq7KL_e80LiW8fC-wttmn8gba5UvhVE",
+            authDomain: "muratilactakip.firebaseapp.com",
+            projectId: "muratilactakip",
+            storageBucket: "muratilactakip.firebasestorage.app"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Tarihi şu anki zamana ayarla
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('s-tarih').value = now.toISOString().slice(0,16);
+
+        // Form Gönderme
+        document.getElementById('seker-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('.btn-save');
+            btn.innerText = "Kaydediliyor...";
+            try {
+                await addDoc(collection(db, "seker_takip"), {
+                    tarih: document.getElementById('s-tarih').value,
+                    tur: document.getElementById('s-tur').value,
+                    deger: document.getElementById('s-deger').value,
+                    gida: document.getElementById('s-gida').value || "-",
+                    timestamp: Date.now()
+                });
+                e.target.reset();
+                document.getElementById('s-tarih').value = now.toISOString().slice(0,16);
+            } catch(err) { alert("Hata: " + err.message); }
+            btn.innerText = "Kaydet";
+        });
+
+        // Canlı Listeleme
+        const q = query(collection(db, "seker_takip"), orderBy("tarih", "desc"));
+        onSnapshot(q, (snapshot) => {
+            const liste = document.getElementById('seker-liste');
+            liste.innerHTML = "";
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                // Tarihi GZ formatına çevir (Gün-Ay-Yıl Saat:Dk)
+                const d = new Date(data.tarih);
+                const formatTarih = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${formatTarih}</td>
+                    <td><strong>${data.tur}</strong></td>
+                    <td style="color:${data.deger > 140 ? 'red' : 'green'}; font-weight:bold;">${data.deger}</td>
+                    <td>${data.gida}</td>
+                    <td class="no-print"><button class="del-btn" data-id="${docSnap.id}">X</button></td>
+                `;
+                liste.appendChild(tr);
+            });
+
+            document.querySelectorAll('.del-btn').forEach(btn => {
+                btn.onclick = async (e) => {
+                    if(confirm("Kayıt silinecek!")) await deleteDoc(doc(db, "seker_takip", e.target.dataset.id));
+                };
+            });
+        });
+    </script>
+</body>
+</html>

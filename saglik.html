@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sağlık Takip Merkezi</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        :root { --bg: #f0f4f8; --card: #fff; --text: #2d3748; --primary: #3182ce; --med: #48bb78; --sugar: #ed8936; --bp: #e53e3e; }
+        body { background-color: var(--bg); font-family: 'Roboto', sans-serif; margin: 0; padding: 2rem 1rem; display: flex; flex-direction: column; align-items: center; color: var(--text); }
+        
+        /* Ana Menüye Dön Butonu Stili */
+        .btn-back {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 0.75rem 1rem;
+            border-radius: 0.8rem;
+            margin-bottom: 1.5rem;
+            font-weight: bold;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: opacity 0.2s;
+            width: 100%;
+            max-width: 400px;
+        }
+        .btn-back:hover { opacity: 0.9; }
+
+        .header { text-align: center; margin-bottom: 2rem; }
+        .header h1 { margin: 0; font-size: 2rem; color: #2c5282; }
+        .header p { color: #718096; margin-top: 0.5rem; }
+        .menu-container { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; max-width: 400px; }
+        .menu-card { background: var(--card); padding: 1.5rem; border-radius: 1rem; text-decoration: none; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; border-left: 6px solid #ccc; color: var(--text); }
+        .menu-card:hover { transform: translateY(-3px); }
+        .menu-card.med { border-color: var(--med); }
+        .menu-card.sugar { border-color: var(--sugar); }
+        .menu-card.bp { border-color: var(--bp); }
+        .icon { font-size: 2.5rem; }
+        .details h2 { margin: 0 0 0.2rem 0; font-size: 1.2rem; }
+        .details p { margin: 0; font-size: 0.85rem; color: #718096; }
+    </style>
+</head>
+<body>
+
+    <!-- Ana Menüye Dön Butonu -->
+    <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
+
+    <div class="header">
+        <h1>🩺 Sağlık Takip Merkezi</h1>
+        <p>Tüm sağlık verileriniz tek bir yerde.</p>
+    </div>
+
+    <div class="menu-container">
+        <a href="ilac.html" class="menu-card med">
+            <div class="icon">💊</div>
+            <div class="details">
+                <h2>İlaç & Su Takibi</h2>
+                <p>Günlük ilaç dozları ve su tüketimi</p>
+            </div>
+        </a>
+
+        <a href="seker.html" class="menu-card sugar">
+            <div class="icon">🩸</div>
+            <div class="details">
+                <h2>Şeker (Glukoz) Takibi</h2>
+                <p>Ölçümler, gıda ve gramaj kayıtları (Doktor Çıktılı)</p>
+            </div>
+        </a>
+
+        <a href="tansiyon.html" class="menu-card bp">
+            <div class="icon">❤️</div>
+            <div class="details">
+                <h2>Tansiyon Takibi</h2>
+                <p>Büyük, küçük tansiyon ve nabız (Doktor Çıktılı)</p>
+            </div>
+        </a>
+    </div>
+
+</body>
+</html>

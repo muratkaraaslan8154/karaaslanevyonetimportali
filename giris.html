@@ -4,42 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Giriş - KARAASLAN Portalı</title>
-    
-    <!-- Firebase SDK Kütüphaneleri -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-        
-        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-box { background: white; padding: 2.5rem 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
-        h2 { margin-top: 0; color: #2d3748; margin-bottom: 1.5rem; }
-        
-        input { width: 100%; padding: 12px; margin: 8px 0 15px 0; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
-        
-        .password-wrapper { position: relative; margin: 8px 0 15px 0; }
-        .password-wrapper input { margin: 0; padding-right: 40px; }
-        .password-wrapper .toggle-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.2rem; user-select: none; }
-        
-        button { width: 100%; padding: 12px; background: #3182ce; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 5px; transition: background 0.2s; }
-        button:hover { background: #2b6cb0; }
-        #status { font-size: 0.9rem; margin-top: 15px; font-weight: 500; min-height: 20px; }
+        body { font-family: -apple-system, sans-serif; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-box { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 340px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 8px 0 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        #status { font-size: 0.9rem; margin-top: 15px; font-weight: bold; color: #e74c3c; }
     </style>
 </head>
 <body>
     <div class="login-box">
-        <div style="font-size: 3rem; margin-bottom: 10px;">📍🔒</div>
-        <h2>Güvenli Giriş</h2>
-        
+        <h2>🔒 Giriş Yap</h2>
         <input type="text" id="username" placeholder="Kullanıcı Adı" autocomplete="off">
-        
-        <div class="password-wrapper">
-            <input type="password" id="pin" placeholder="PIN Kodu (Örn: 1234)" autocomplete="off">
-            <span class="toggle-icon" id="togglePin" onclick="sifreGosterGizle()">👁️</span>
-        </div>
-        
-        <button onclick="login()">Giriş Yap</button>
+        <input type="password" id="pin" placeholder="PIN Kodu" autocomplete="off">
+        <button onclick="login()">Giriş</button>
         <div id="status"></div>
     </div>
 
@@ -51,121 +32,56 @@
             projectId: "karaaslanhomebutcetakip",
             storageBucket: "karaaslanhomebutcetakip.firebasestorage.app",
             messagingSenderId: "566343253682",
-            appId: "1:566343253682:web:3ab14198fca800d69813ab",
-            measurementId: "G-1ZF5J8XVS5"
+            appId: "1:566343253682:web:3ab14198fca800d69813ab"
         };
-        
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
-        const evEnlem = 41.01005430101983; 
-        const evBoylam = 29.16667666206191; 
-        const izinVerilenMesafeMetre = 100; 
-
-        const defaultUsers = {
-            "murat": { pin: "39916800Mk*", device: "all", requireLocation: false },
-            "anne": { pin: "5678", device: "mobile", requireLocation: true },
-            "cocuk": { pin: "0000", device: "pc", requireLocation: false }
-        };
-
-        db.ref('usersDB').once('value', (snapshot) => {
-            if (!snapshot.exists()) {
-                db.ref('usersDB').set(defaultUsers);
-            }
-        });
-
-        function sifreGosterGizle() {
-            const pinInput = document.getElementById('pin');
-            const toggleIcon = document.getElementById('togglePin');
-            if (pinInput.type === "password") {
-                pinInput.type = "text";
-                toggleIcon.innerText = "🙈";
-            } else {
-                pinInput.type = "password";
-                toggleIcon.innerText = "👁️";
-            }
-        }
-
-        function mesafeHesapla(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; 
-            const p1 = lat1 * Math.PI/180;
-            const p2 = lat2 * Math.PI/180;
-            const dp = (lat2-lat1) * Math.PI/180;
-            const dl = (lon2-lon1) * Math.PI/180;
-            const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c; 
-        }
 
         async function login() {
             const user = document.getElementById('username').value.toLowerCase().trim();
             const pin = document.getElementById('pin').value.trim();
             const status = document.getElementById('status');
 
-            status.style.color = "#e53e3e"; 
-            status.innerText = "Sorgulanıyor...";
+            if (!user || !pin) {
+                status.innerText = "Lütfen tüm alanları doldurun!";
+                return;
+            }
+
+            status.style.color = "#3498db";
+            status.innerText = "Kontrol ediliyor...";
 
             try {
                 const snapshot = await db.ref('usersDB').once('value');
                 const users = snapshot.val() || {};
 
                 if (!users[user] || users[user].pin !== pin) {
-                    status.innerText = "Hatalı kullanıcı adı veya PIN!";
+                    status.style.color = "#e74c3c";
+                    status.innerText = "Kullanıcı adı veya PIN hatalı!";
                     return;
-                }
-
-                const userData = users[user];
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                
-                if (userData.device === "mobile" && !isMobile) {
-                    status.innerText = "Bu hesaba sadece cep telefonundan girilebilir.";
-                    return;
-                }
-                if (userData.device === "pc" && isMobile) {
-                    status.innerText = "Bu hesaba sadece bilgisayardan girilebilir.";
-                    return;
-                }
-
-                if (userData.requireLocation) {
-                    status.innerText = "Konumunuz doğrulanıyor...";
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition((position) => {
-                            const mesafe = mesafeHesapla(position.coords.latitude, position.coords.longitude, evEnlem, evBoylam);
-                            if (mesafe <= izinVerilenMesafeMetre) {
-                                grantAccess(user); 
-                            } else {
-                                status.innerText = "Evden uzaktasınız! Giriş reddedildi.";
-                            }
-                        }, () => {
-                            status.innerText = "GPS okunamadı. İzin vermelisiniz!";
-                        });
-                        return;
-                    } else {
-                        status.innerText = "Cihazınız konumu desteklemiyor.";
-                        return;
-                    }
                 }
 
                 grantAccess(user);
-            } catch (error) {
-                status.innerText = "Bağlantı hatası oluştu!";
-                console.error(error);
+            } catch (err) {
+                status.innerText = "Bağlantı hatası!";
             }
         }
 
         function grantAccess(username) {
             const status = document.getElementById('status');
-            status.style.color = "#27ae60"; 
-            status.innerText = "Giriş Başarılı! Yönlendiriliyor...";
-            
-            // Hem LocalStorage hem Cookie Desteği (iOS Safari Yedeklemesi)
+            status.style.color = "#27ae60";
+            status.innerText = "Giriş Başarılı!";
+
+            // 4 Katmanlı Bütün Hafıza Kayıtları (Mobil İçin)
             localStorage.setItem('currentUser', username);
             localStorage.setItem('isLoggedIn', 'true');
-            
+            sessionStorage.setItem('currentUser', username);
+            sessionStorage.setItem('isLoggedIn', 'true');
             document.cookie = "currentUser=" + username + "; path=/; max-age=31536000";
-            document.cookie = "isLoggedIn=true; path=/; max-age=31536000";
-            
-            setTimeout(() => { window.location.href = 'index.html?auth=ok'; }, 1000);
+
+            // Yönlendirme esnasında parametre olarak taşıma (Mobil Safari Engeli İçin)
+            setTimeout(() => {
+                window.location.href = `index.html?user=${encodeURIComponent(username)}`;
+            }, 500);
         }
     </script>
 </body>

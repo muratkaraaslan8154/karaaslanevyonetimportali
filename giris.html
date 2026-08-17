@@ -6,10 +6,18 @@
     <title>Giriş - KARAASLAN Portalı</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        
         body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .login-box { background: white; padding: 2.5rem 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
         h2 { margin-top: 0; color: #2d3748; margin-bottom: 1.5rem; }
+        
         input { width: 100%; padding: 12px; margin: 8px 0 15px 0; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        
+        /* Şifre Göz İkonu İçin Özel Tasarım */
+        .password-wrapper { position: relative; margin: 8px 0 15px 0; }
+        .password-wrapper input { margin: 0; padding-right: 40px; }
+        .password-wrapper .toggle-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.2rem; user-select: none; }
+        
         button { width: 100%; padding: 12px; background: #3182ce; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 5px; transition: background 0.2s; }
         button:hover { background: #2b6cb0; }
         #status { font-size: 0.9rem; margin-top: 15px; font-weight: 500; min-height: 20px; }
@@ -21,13 +29,18 @@
         <h2>Güvenli Giriş</h2>
         
         <input type="text" id="username" placeholder="Kullanıcı Adı" autocomplete="off">
-        <input type="password" id="pin" placeholder="PIN Kodu (Örn: 1234)" autocomplete="off">
+        
+        <!-- Şifre Göster/Gizle Alanı -->
+        <div class="password-wrapper">
+            <input type="password" id="pin" placeholder="PIN Kodu (Örn: 1234)" autocomplete="off">
+            <span class="toggle-icon" id="togglePin" onclick="sifreGosterGizle()">👁️</span>
+        </div>
         
         <button onclick="login()">Giriş Yap</button>
         <div id="status"></div>
     </div>
 
-       <script>
+        <script>
         // --- AYARLAR BÖLÜMÜ ---
         // Lütfen buraya kendi evinizin Google Haritalar koordinatlarını girin:
         const evEnlem = 41.01005430101983;  // BURAYI DEĞİŞTİRİN (Örn: 41.xxxxxx)
@@ -48,6 +61,20 @@
             localStorage.setItem('usersDB', JSON.stringify(defaultUsers));
         }
 
+        // ŞİFRE GÖSTER/GİZLE FONKSİYONU
+        function sifreGosterGizle() {
+            const pinInput = document.getElementById('pin');
+            const toggleIcon = document.getElementById('togglePin');
+            
+            if (pinInput.type === "password") {
+                pinInput.type = "text";
+                toggleIcon.innerText = "🙈"; // Gizleme simgesi
+            } else {
+                pinInput.type = "password";
+                toggleIcon.innerText = "👁️";  // Gösterme simgesi
+            }
+        }
+
         function mesafeHesapla(lat1, lon1, lat2, lon2) {
             const R = 6371e3; 
             const p1 = lat1 * Math.PI/180;
@@ -64,9 +91,7 @@
             const pin = document.getElementById('pin').value.trim();
             const status = document.getElementById('status');
 
-            // HAFIZADAKİ KULLANICILARI ÇEK
             const users = JSON.parse(localStorage.getItem('usersDB'));
-
             status.style.color = "#e53e3e"; 
 
             if (!users[user] || users[user].pin !== pin) {
@@ -114,7 +139,6 @@
             status.style.color = "#27ae60"; 
             status.innerText = "Giriş Başarılı! Yönlendiriliyor...";
             
-            // GİRİŞ YAPANIN KİM OLDUĞUNU KAYDET (Yetki kontrolü için)
             localStorage.setItem('currentUser', username);
             localStorage.setItem('isLoggedIn', 'true');
             

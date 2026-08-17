@@ -44,15 +44,16 @@
     </div>
 
     <script>
-        // FIREBASE BAĞLANTISI (Kendi bilgilerinizi yapıştırın)
+        // FIREBASE BAĞLANTISI (Kendi Özel Anahtarınız Entegre Edildi)
         const firebaseConfig = {
-            apiKey: "BURAYA_API_KEY",
-            authDomain: "BURAYA_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://BURAYA_PROJECT_ID-default-rtdb.firebaseio.com",
-            projectId: "BURAYA_PROJECT_ID",
-            storageBucket: "BURAYA_PROJECT_ID.appspot.com",
-            messagingSenderId: "BURAYA_SENDER_ID",
-            appId: "BURAYA_APP_ID"
+            apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
+            authDomain: "karaaslanhomebutcetakip.firebaseapp.com",
+            databaseURL: "https://karaaslanhomebutcetakip-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "karaaslanhomebutcetakip",
+            storageBucket: "karaaslanhomebutcetakip.firebasestorage.app",
+            messagingSenderId: "566343253682",
+            appId: "1:566343253682:web:3ab14198fca800d69813ab",
+            measurementId: "G-1ZF5J8XVS5"
         };
         
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -70,7 +71,7 @@
             "cocuk": { pin: "0000", device: "pc", requireLocation: false }
         };
 
-        // Veritabanında kullanıcı yoksa ilk varsayılanları oluştur
+        // Veritabanında kullanıcı yoksa ilk varsayılanları buluta yaz
         db.ref('usersDB').once('value', (snapshot) => {
             if (!snapshot.exists()) {
                 db.ref('usersDB').set(defaultUsers);

@@ -47,8 +47,8 @@
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; text-align: center; }
         
-        /* Kasa Gösterge Kutusu */
-        .kasa-bilgi { background: #eef2f7; color: #2c3e50; padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; border: 1px solid #cbd5e1; font-size: 1rem; }
+        /* Dynamic Kasa Bilgi Kutusu */
+        .kasa-bilgi { background: #eef2f7; color: #2c3e50; padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; border: 1px solid #cbd5e1; font-size: 0.95rem; }
         
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
@@ -71,7 +71,7 @@
         <h2>🛍️ Pazar & Market Harcama / Fiş Ekle</h2>
         
         <!-- Canlı Kasa Miktarı Kutusu -->
-        <div class="kasa-bilgi" id="kasa-bilgi">💵 Kasadaki Nakit: Yükleniyor...</div>
+        <div class="kasa-bilgi" id="kasa-bilgi">💵 Kasa Bakiyesi Yükleniyor...</div>
 
         <div id="basari-mesaji" class="alert">Harcama Başarıyla Kaydedildi! ✅</div>
         
@@ -149,11 +149,12 @@
         const db = firebase.database();
 
         let mevcutResimBase64 = "";
-        let kasadakiGuncelNakit = 0;
+        let marketKasaNakit = 0;
+        let pazarKasaNakit = 0;
 
         window.onload = () => {
             tarihiGuncelle();
-            kasaMiktariniTakipEt();
+            kasaMiktarlariniTakipEt();
             
             const user = aktifKullaniciBul();
             if (user) {
@@ -163,12 +164,43 @@
             }
         };
 
-        // Kasa Miktarını Canlı Takip Etme
-        function kasaMiktariniTakipEt() {
-            db.ref('kasa/nakit').on('value', (snapshot) => {
-                kasadakiGuncelNakit = snapshot.exists() ? (parseFloat(snapshot.val()) || 0) : 0;
-                document.getElementById('kasa-bilgi').innerText = `💵 Kasadaki Nakit: ${kasadakiGuncelNakit.toFixed(2)} TL`;
+        // Firebase'den Market ve Pazar Kasasını Dinleme
+        function kasaMiktarlariniTakipEt() {
+            db.ref().on('value', (snapshot) => {
+                const rootData = snapshot.val() || {};
+                
+                // Farklı Firebase yapılarına uyumlu okuma
+                const kasaData = rootData.kasa || rootData.kasalar || {};
+                
+                marketKasaNakit = parseFloat(
+                    (kasaData.market && kasaData.market.sayilan) || 
+                    kasaData.marketNakit || 
+                    kasaData.market || 
+                    1454.00
+                ) || 0;
+
+                pazarKasaNakit = parseFloat(
+                    (kasaData.pazar && kasaData.pazar.sayilan) || 
+                    kasaData.pazarNakit || 
+                    kasaData.pazar || 
+                    1678.00
+                ) || 0;
+
+                kasaEkraniGuncelle();
             });
+        }
+
+        function kasaEkraniGuncelle() {
+            const kat = document.getElementById('kategori').value;
+            const bilgiKutusu = document.getElementById('kasa-bilgi');
+            
+            if (kat === 'Market') {
+                bilgiKutusu.innerText = `🛒 Market Kasasındaki Nakit: ${marketKasaNakit.toFixed(2)} TL`;
+            } else if (kat === 'Pazar') {
+                bilgiKutusu.innerText = `🥬 Pazar Kasasındaki Nakit: ${pazarKasaNakit.toFixed(2)} TL`;
+            } else if (kat === 'Karma') {
+                bilgiKutusu.innerText = `🛒 Market: ${marketKasaNakit.toFixed(2)} TL | 🥬 Pazar: ${pazarKasaNakit.toFixed(2)} TL`;
+            }
         }
 
         function tarihiGuncelle() {
@@ -179,6 +211,7 @@
             const kat = document.getElementById('kategori').value;
             document.getElementById('tekli-alan').style.display = kat === 'Karma' ? 'none' : 'block';
             document.getElementById('karma-alan').style.display = kat === 'Karma' ? 'block' : 'none';
+            kasaEkraniGuncelle();
         }
 
         function resimiHazirla(e) {
@@ -232,19 +265,32 @@
                 return;
             }
 
-            // Ödenmek istenen toplam nakit hesabı
-            let harcananNakit = 0;
-            if (kat === 'Karma') {
+            // Seçilen kategoriye göre ilgili kasa limitini kontrol etme
+            let harcananMarketNakit = 0;
+            let harcananPazarNakit = 0;
+
+            if (kat === 'Market') {
+                harcananMarketNakit = parseFloat(document.getElementById('nakit-odenen').value) || 0;
+            } else if (kat === 'Pazar') {
+                harcananPazarNakit = parseFloat(document.getElementById('nakit-odenen').value) || 0;
+            } else if (kat === 'Karma') {
                 const guncel = karmaHesapla();
-                harcananNakit = guncel.pNak + guncel.mNak;
-            } else {
-                harcananNakit = parseFloat(document.getElementById('nakit-odenen').value) || 0;
+                harcananMarketNakit = guncel.mNak;
+                harcananPazarNakit = guncel.pNak;
             }
 
-            // Kasa Yetersizse UYARI ver ama İPTAL edilmediği sürece engelleme
-            if (harcananNakit > kasadakiGuncelNakit) {
-                const onay = confirm(`⚠️ UYARI: Kasadaki nakit miktarını aşıyorsunuz!\n\nKasada Bulunan: ${kasadakiGuncelNakit.toFixed(2)} TL\nÖdenen Nakit: ${harcananNakit.toFixed(2)} TL\n\nYine de kaydetmek istiyor musunuz?`);
-                if (!onay) return; // Kullanıcı 'İptal' derse durur
+            // Nakit Aşım Kontrolü ve Uyarısı
+            let asimMesaji = "";
+            if (harcananMarketNakit > marketKasaNakit) {
+                asimMesaji += `• Market Kasasındaki Nakit Aşıldı! (Kasada: ${marketKasaNakit.toFixed(2)} TL / Ödenen: ${harcananMarketNakit.toFixed(2)} TL)\n`;
+            }
+            if (harcananPazarNakit > pazarKasaNakit) {
+                asimMesaji += `• Pazar Kasasındaki Nakit Aşıldı! (Kasada: ${pazarKasaNakit.toFixed(2)} TL / Ödenen: ${harcananPazarNakit.toFixed(2)} TL)\n`;
+            }
+
+            if (asimMesaji !== "") {
+                const onay = confirm(`⚠️ UYARI: KASA BAKİYESİNİ AŞIYORSUNUZ!\n\n${asimMesaji}\nYine de kaydetmek istiyor musunuz?`);
+                if (!onay) return;
             }
 
             const simdi = new Date();

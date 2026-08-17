@@ -5,17 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yönetici Paneli - KARAASLAN Portalı</title>
     
+    <!-- Firebase SDK Kütüphaneleri -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <script>
-        // --- SİSTEM YÖNETİCİSİ AYARI ---
-        // Sistemi yönetecek ve silinemeyecek ana hesabın adını buraya yazın (Küçük harfle)
         const ADMIN_KULLANICI = "murat"; 
 
-        // OTURUM KONTROLÜ
         if (localStorage.getItem('isLoggedIn') !== 'true') {
             window.location.replace('giris.html');
         }
         
-        // YETKİ KONTROLÜ (Giren kişi Admin değilse kov)
         if (localStorage.getItem('currentUser') !== ADMIN_KULLANICI) {
             alert("Yetkisiz Erişim! Ayarlar sayfasına sadece sistem yöneticisi girebilir.");
             window.location.replace('index.html');
@@ -29,14 +29,12 @@
         .container { width: 100%; max-width: 600px; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { border-bottom: 2px solid #805ad5; padding-bottom: 10px; color: #2d3748; margin-top: 0; display: flex; justify-content: space-between; align-items: center;}
         
-        /* Form Alanları */
         .form-group { margin-bottom: 15px; }
         label { display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
         input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box;}
         .btn-save { background: #805ad5; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.2s;}
         .btn-save:hover { background: #6b46c1; }
         
-        /* Kullanıcı Tablosu */
         table { width: 100%; border-collapse: collapse; margin-top: 2rem; }
         th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
         th { background-color: #f7fafc; color: #4a5568; }
@@ -95,7 +93,6 @@
                 </tr>
             </thead>
             <tbody id="userTableBody">
-                <!-- Kullanıcılar buraya JS ile yüklenecek -->
             </tbody>
         </table>
 
@@ -103,11 +100,29 @@
     </div>
 
     <script>
-        // Sayfa başlığına adminin adını yazdır
+        // FIREBASE BAĞLANTISI (Kendi bilgilerinizi yapıştırın)
+        const firebaseConfig = {
+            apiKey: "BURAYA_API_KEY",
+            authDomain: "BURAYA_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://BURAYA_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "BURAYA_PROJECT_ID",
+            storageBucket: "BURAYA_PROJECT_ID.appspot.com",
+            messagingSenderId: "BURAYA_SENDER_ID",
+            appId: "BURAYA_APP_ID"
+        };
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         document.getElementById('adminLabel').innerText = "Admin: " + ADMIN_KULLANICI.toUpperCase();
 
-        // Veritabanını çağır
-        let usersDB = JSON.parse(localStorage.getItem('usersDB')) || {};
+        let usersDB = {};
+
+        // Firebase Canlı Dinleyici (Bulut Veritabanındaki Değişiklikleri Anında Yansıtır)
+        db.ref('usersDB').on('value', (snapshot) => {
+            usersDB = snapshot.val() || {};
+            listeyiGuncelle();
+        });
 
         function listeyiGuncelle() {
             const tbody = document.getElementById('userTableBody');
@@ -117,7 +132,6 @@
                 let deviceText = details.device === "all" ? "Tümü" : (details.device === "mobile" ? "Mobil" : "PC");
                 let locText = details.requireLocation ? "Evet" : "Hayır";
                 
-                // Yönetici hesabının silinmesini engelle (Değişken üzerinden kontrol edilir)
                 let actionButtons = username === ADMIN_KULLANICI 
                     ? `<button class="btn-edit" onclick="kullaniciDuzenle('${username}')">Düzenle</button>` 
                     : `<button class="btn-edit" onclick="kullaniciDuzenle('${username}')">Düzenle</button>
@@ -144,30 +158,30 @@
                 return;
             }
 
-            usersDB[user] = {
+            // Firebase Bulut Veritabanına Yaz
+            db.ref('usersDB/' + user).set({
                 pin: pin,
                 device: document.getElementById('deviceSelect').value,
                 requireLocation: document.getElementById('locationSelect').value === "true"
-            };
-
-            // Değişiklikleri kaydet ve tabloyu yenile
-            localStorage.setItem('usersDB', JSON.stringify(usersDB));
-            formuTemizle();
-            listeyiGuncelle();
+            }).then(() => {
+                alert("Kullanıcı başarıyla buluta kaydedildi!");
+                formuTemizle();
+            }).catch(error => {
+                alert("Hata oluştu: " + error.message);
+            });
         }
 
         function kullaniciSil(username) {
             if(confirm(username + " adlı kullanıcıyı silmek istediğinize emin misiniz?")) {
-                delete usersDB[username];
-                localStorage.setItem('usersDB', JSON.stringify(usersDB));
-                listeyiGuncelle();
+                // Firebase Bulut Veritabanından Sil
+                db.ref('usersDB/' + username).remove();
             }
         }
 
         function kullaniciDuzenle(username) {
             const data = usersDB[username];
             document.getElementById('newUsername').value = username;
-            document.getElementById('newUsername').disabled = true; // Adı değiştirmesin
+            document.getElementById('newUsername').disabled = true;
             document.getElementById('newPin').value = data.pin;
             document.getElementById('deviceSelect').value = data.device;
             document.getElementById('locationSelect').value = data.requireLocation.toString();
@@ -188,9 +202,6 @@
             document.getElementById('saveBtn').innerText = "Kullanıcıyı Kaydet";
             document.getElementById('cancelBtn').style.display = "none";
         }
-
-        // Sayfa açıldığında tabloyu doldur
-        listeyiGuncelle();
     </script>
 </body>
 </html>

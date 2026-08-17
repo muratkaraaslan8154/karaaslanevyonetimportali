@@ -5,9 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Karaaslan Home - Harcama Girişi</title>
     
-    <!-- OTURUM VE GÜVENLİK KONTROLÜ -->
+    <!-- iOS VE GENEL OTURUM KONTROLÜ -->
     <script>
-        if (localStorage.getItem('isLoggedIn') !== 'true') {
+        function aktifKullaniciOku() {
+            let user = localStorage.getItem('currentUser');
+            if (!user) {
+                const match = document.cookie.match(new RegExp('(^| )currentUser=([^;]+)'));
+                if (match) user = match[2];
+            }
+            return user;
+        }
+
+        function oturumAçıkMı() {
+            let loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            if (!loggedIn) {
+                const match = document.cookie.match(new RegExp('(^| )isLoggedIn=([^;]+)'));
+                if (match && match[2] === 'true') loggedIn = true;
+            }
+            return loggedIn;
+        }
+
+        // Eğer kullanıcı bilgisi veya oturum yoksa doğrudan Giriş Sayfasına Yönlendir
+        const mevcutKullanici = aktifKullaniciOku();
+        if (!oturumAçıkMı() || !mevcutKullanici) {
             window.location.replace('giris.html');
         }
     </script>
@@ -159,9 +179,11 @@
         window.onload = () => {
             tarihiGuncelle();
             
-            // Giriş yapan aktif kullanıcı bilgisini ekrana yaz
-            const aktifKullanici = localStorage.getItem('currentUser') || 'Bilinmiyor';
-            document.getElementById('kullanici-etiket').innerText = '👤 ' + aktifKullanici;
+            const rawUser = aktifKullaniciOku();
+            if (rawUser) {
+                const formatliIsim = rawUser.charAt(0).toUpperCase() + rawUser.slice(1);
+                document.getElementById('kullanici-etiket').innerText = '👤 ' + formatliIsim;
+            }
         };
 
         function tarihiGuncelle() {
@@ -221,8 +243,12 @@
             const kat = document.getElementById('kategori').value;
             const aciklama = document.getElementById('harcama-aciklama').value.trim();
             
-            // Oturum açan kullanıcının bilgisini alır
-            const ekleyen = localStorage.getItem('currentUser') || 'Bilinmiyor';
+            const ekleyenKullanici = aktifKullaniciOku();
+            if (!ekleyenKullanici) {
+                alert("⚠️ Oturum süreniz doldu. Lütfen tekrar giriş yapın.");
+                window.location.replace('giris.html');
+                return;
+            }
 
             const simdi = new Date();
             const eklemeSaati = String(simdi.getHours()).padStart(2, '0') + ':' + String(simdi.getMinutes()).padStart(2, '0');
@@ -251,7 +277,7 @@
                         toplam: guncel.pTop, 
                         nakit: guncel.pNak, 
                         kk: guncel.pKK,
-                        ekleyen: ekleyen,
+                        ekleyen: ekleyenKullanici,
                         saat: eklemeSaati
                     });
                 }
@@ -264,7 +290,7 @@
                         toplam: guncel.mTop, 
                         nakit: guncel.mNak, 
                         kk: guncel.mKK,
-                        ekleyen: ekleyen,
+                        ekleyen: ekleyenKullanici,
                         saat: eklemeSaati
                     });
                 }
@@ -285,7 +311,7 @@
                     toplam, 
                     nakit, 
                     kk: Math.max(0, toplam - nakit),
-                    ekleyen: ekleyen,
+                    ekleyen: ekleyenKullanici,
                     saat: eklemeSaati
                 });
             }

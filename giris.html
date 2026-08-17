@@ -50,12 +50,18 @@
         const izinVerilenMesafeMetre = 100; 
         // ----------------------
 
-        // SİSTEMDE HİÇ KULLANICI YOKSA VARSAYILANLARI HAFIZAYA YÜKLE
+        // YENİ FABRİKA AYARLARI (Kalıcı Yönetici)
         const defaultUsers = {
-            "baba": { pin: "1234", device: "all", requireLocation: false },
+            "murat": { pin: "39916800Mk*", device: "all", requireLocation: false },
             "anne": { pin: "5678", device: "mobile", requireLocation: true },
             "cocuk": { pin: "0000", device: "pc", requireLocation: false }
         };
+        
+        // Eğer sistemde eski varsayılan olan 'baba' varsa, hafızayı sıfırla ve yeni ayarları yükle
+        let mevcutHafiza = JSON.parse(localStorage.getItem('usersDB'));
+        if (!mevcutHafiza || mevcutHafiza["baba"]) {
+            localStorage.setItem('usersDB', JSON.stringify(defaultUsers));
+        }
         
         if (!localStorage.getItem('usersDB')) {
             localStorage.setItem('usersDB', JSON.stringify(defaultUsers));

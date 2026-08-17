@@ -105,7 +105,7 @@
                 </div>
                 <div class="form-group">
                     <label>Kasadan Ödenen Nakit (TL)</label>
-                    <input type="number" id="nakit-odenen" step="0.01" min="0">
+                    <input type="number" id="nakit-odenen" step="0.01" min="0" placeholder="Boş bırakılırsa tümü Nakit sayılır">
                 </div>
             </div>
 
@@ -162,18 +162,16 @@
             }
         };
 
-        // Mobil Bağlantı Odaklı Kasa Takibi
+        // Firebase Kasa Dinleme
         function kasaMiktarlariniTakipEt() {
-            // Doğrudan tüm veritabanını dinlemek yerine harcamalar ve kasa verisine erişim
-            db.ref('kasa').on('value', (snapshot) => {
-                const kasaData = snapshot.val() || {};
+            db.ref().on('value', (snapshot) => {
+                const root = snapshot.val() || {};
+                const kasaData = root.kasa || root.kasalar || {};
                 
                 marketKasaNakit = parseFloat((kasaData.market && kasaData.market.sayilan) || kasaData.marketNakit || kasaData.market) || 0;
                 pazarKasaNakit = parseFloat((kasaData.pazar && kasaData.pazar.sayilan) || kasaData.pazarNakit || kasaData.pazar) || 0;
 
                 kasaEkraniGuncelle();
-            }, (err) => {
-                console.error("Firebase Kasa Okuma Hatası:", err);
             });
         }
 
@@ -254,22 +252,32 @@
 
             let harcananMarketNakit = 0;
             let harcananPazarNakit = 0;
+            let toplamTutar = 0;
 
-            if (kat === 'Market') {
-                harcananMarketNakit = parseFloat(document.getElementById('nakit-odenen').value) || 0;
-            } else if (kat === 'Pazar') {
-                harcananPazarNakit = parseFloat(document.getElementById('nakit-odenen').value) || 0;
+            if (kat === 'Market' || kat === 'Pazar') {
+                toplamTutar = parseFloat(document.getElementById('toplam-tutar').value) || 0;
+                let girilenNakit = document.getElementById('nakit-odenen').value;
+                
+                // Eğer nakit kutusu boşsa tüm tutarı Nakit kabul et
+                let hesaplananNakit = (girilenNakit === "" || girilenNakit === null) ? toplamTutar : (parseFloat(girilenNakit) || 0);
+
+                if (kat === 'Market') harcananMarketNakit = hesaplananNakit;
+                if (kat === 'Pazar') harcananPazarNakit = hesaplananNakit;
             } else if (kat === 'Karma') {
+                toplamTutar = parseFloat(document.getElementById('k-genel-toplam').value) || 0;
                 const guncel = karmaHesapla();
                 harcananMarketNakit = guncel.mNak;
                 harcananPazarNakit = guncel.pNak;
             }
 
+            if (toplamTutar <= 0) return alert("Lütfen geçerli bir Toplam Tutar girin!");
+
+            // Nakit Bakiyesi Aşım Kontrolü
             let asimMesaji = "";
-            if (harcananMarketNakit > marketKasaNakit && marketKasaNakit > 0) {
+            if (harcananMarketNakit > marketKasaNakit) {
                 asimMesaji += `• Market Kasasındaki Nakit Aşıldı! (Kasada: ${marketKasaNakit.toFixed(2)} TL / Ödenen: ${harcananMarketNakit.toFixed(2)} TL)\n`;
             }
-            if (harcananPazarNakit > pazarKasaNakit && pazarKasaNakit > 0) {
+            if (harcananPazarNakit > pazarKasaNakit) {
                 asimMesaji += `• Pazar Kasasındaki Nakit Aşıldı! (Kasada: ${pazarKasaNakit.toFixed(2)} TL / Ödenen: ${harcananPazarNakit.toFixed(2)} TL)\n`;
             }
 
@@ -281,12 +289,9 @@
             const simdi = new Date();
             const eklemeSaati = String(simdi.getHours()).padStart(2, '0') + ':' + String(simdi.getMinutes()).padStart(2, '0');
 
+            // 1. Harcamayı Kaydet
             if (kat === 'Karma') {
                 const guncel = karmaHesapla();
-                const gTop = parseFloat(document.getElementById('k-genel-toplam').value) || 0;
-
-                if (gTop <= 0) return alert("Lütfen geçerli bir Genel Toplam girin!");
-
                 if (guncel.pTop > 0) {
                     db.ref('harcamalar').push({ tarih, kategori: 'Pazar', aciklama, resim: mevcutResimBase64, toplam: guncel.pTop, nakit: guncel.pNak, kk: guncel.pKK, ekleyen: ekleyenUser, saat: eklemeSaati });
                 }
@@ -294,12 +299,20 @@
                     db.ref('harcamalar').push({ tarih, kategori: 'Market', aciklama, resim: mevcutResimBase64, toplam: guncel.mTop, nakit: guncel.mNak, kk: guncel.mKK, ekleyen: ekleyenUser, saat: eklemeSaati });
                 }
             } else {
-                const toplam = parseFloat(document.getElementById('toplam-tutar').value) || 0;
-                const nakit = parseFloat(document.getElementById('nakit-odenen').value) || 0;
+                let nakitVal = (document.getElementById('nakit-odenen').value === "") ? toplamTutar : (parseFloat(document.getElementById('nakit-odenen').value) || 0);
+                db.ref('harcamalar').push({ tarih, kategori: kat, aciklama, resim: mevcutResimBase64, toplam: toplamTutar, nakit: nakitVal, kk: Math.max(0, toplamTutar - nakitVal), ekleyen: ekleyenUser, saat: eklemeSaati });
+            }
 
-                if (toplam <= 0) return alert("Lütfen geçerli bir Toplam Tutar girin!");
-
-                db.ref('harcamalar').push({ tarih, kategori: kat, aciklama, resim: mevcutResimBase64, toplam, nakit, kk: Math.max(0, toplam - nakit), ekleyen: ekleyenUser, saat: eklemeSaati });
+            // 2. Kasa Bakiyesini Düş / Güncelle
+            if (harcananMarketNakit > 0) {
+                let yeniMarketVal = Math.max(0, marketKasaNakit - harcananMarketNakit);
+                db.ref('kasa/market/sayilan').set(yeniMarketVal);
+                db.ref('kasa/marketNakit').set(yeniMarketVal);
+            }
+            if (harcananPazarNakit > 0) {
+                let yeniPazarVal = Math.max(0, pazarKasaNakit - harcananPazarNakit);
+                db.ref('kasa/pazar/sayilan').set(yeniPazarVal);
+                db.ref('kasa/pazarNakit').set(yeniPazarVal);
             }
 
             const alertBox = document.getElementById('basari-mesaji');

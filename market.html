@@ -47,7 +47,6 @@
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; text-align: center; }
         
-        /* Dynamic Kasa Bilgi Kutusu */
         .kasa-bilgi { background: #eef2f7; color: #2c3e50; padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; border: 1px solid #cbd5e1; font-size: 0.95rem; }
         
         .form-group { margin-bottom: 15px; }
@@ -70,7 +69,6 @@
     <div class="card">
         <h2>🛍️ Pazar & Market Harcama / Fiş Ekle</h2>
         
-        <!-- Canlı Kasa Miktarı Kutusu -->
         <div class="kasa-bilgi" id="kasa-bilgi">💵 Kasa Bakiyesi Yükleniyor...</div>
 
         <div id="basari-mesaji" class="alert">Harcama Başarıyla Kaydedildi! ✅</div>
@@ -164,29 +162,18 @@
             }
         };
 
-        // Firebase'den Market ve Pazar Kasasını Dinleme
+        // Mobil Bağlantı Odaklı Kasa Takibi
         function kasaMiktarlariniTakipEt() {
-            db.ref().on('value', (snapshot) => {
-                const rootData = snapshot.val() || {};
+            // Doğrudan tüm veritabanını dinlemek yerine harcamalar ve kasa verisine erişim
+            db.ref('kasa').on('value', (snapshot) => {
+                const kasaData = snapshot.val() || {};
                 
-                // Farklı Firebase yapılarına uyumlu okuma
-                const kasaData = rootData.kasa || rootData.kasalar || {};
-                
-                marketKasaNakit = parseFloat(
-                    (kasaData.market && kasaData.market.sayilan) || 
-                    kasaData.marketNakit || 
-                    kasaData.market || 
-                    1454.00
-                ) || 0;
-
-                pazarKasaNakit = parseFloat(
-                    (kasaData.pazar && kasaData.pazar.sayilan) || 
-                    kasaData.pazarNakit || 
-                    kasaData.pazar || 
-                    1678.00
-                ) || 0;
+                marketKasaNakit = parseFloat((kasaData.market && kasaData.market.sayilan) || kasaData.marketNakit || kasaData.market) || 0;
+                pazarKasaNakit = parseFloat((kasaData.pazar && kasaData.pazar.sayilan) || kasaData.pazarNakit || kasaData.pazar) || 0;
 
                 kasaEkraniGuncelle();
+            }, (err) => {
+                console.error("Firebase Kasa Okuma Hatası:", err);
             });
         }
 
@@ -265,7 +252,6 @@
                 return;
             }
 
-            // Seçilen kategoriye göre ilgili kasa limitini kontrol etme
             let harcananMarketNakit = 0;
             let harcananPazarNakit = 0;
 
@@ -279,12 +265,11 @@
                 harcananPazarNakit = guncel.pNak;
             }
 
-            // Nakit Aşım Kontrolü ve Uyarısı
             let asimMesaji = "";
-            if (harcananMarketNakit > marketKasaNakit) {
+            if (harcananMarketNakit > marketKasaNakit && marketKasaNakit > 0) {
                 asimMesaji += `• Market Kasasındaki Nakit Aşıldı! (Kasada: ${marketKasaNakit.toFixed(2)} TL / Ödenen: ${harcananMarketNakit.toFixed(2)} TL)\n`;
             }
-            if (harcananPazarNakit > pazarKasaNakit) {
+            if (harcananPazarNakit > pazarKasaNakit && pazarKasaNakit > 0) {
                 asimMesaji += `• Pazar Kasasındaki Nakit Aşıldı! (Kasada: ${pazarKasaNakit.toFixed(2)} TL / Ödenen: ${harcananPazarNakit.toFixed(2)} TL)\n`;
             }
 

@@ -105,7 +105,7 @@
                 </div>
                 <div class="form-group">
                     <label>Kasadan Ödenen Nakit (TL)</label>
-                    <input type="number" id="nakit-odenen" step="0.01" min="0" placeholder="Boş bırakılırsa tümü Nakit sayılır">
+                    <input type="number" id="nakit-odenen" step="0.01" min="0" placeholder="Boş bırakılırsa tümü Kredi Kartı sayılır">
                 </div>
             </div>
 
@@ -162,7 +162,6 @@
             }
         };
 
-        // Firebase Kasa Dinleme
         function kasaMiktarlariniTakipEt() {
             db.ref().on('value', (snapshot) => {
                 const root = snapshot.val() || {};
@@ -180,9 +179,9 @@
             const bilgiKutusu = document.getElementById('kasa-bilgi');
             
             if (kat === 'Market') {
-                bilgiKutusu.innerText = `🛒 Market Kasasındaki Nakit: ${marketKasaNakit.toFixed(2)} TL`;
+                bilgiKutusu.innerText = `🛒 Market Kasasındaki Bakiye: ${marketKasaNakit.toFixed(2)} TL`;
             } else if (kat === 'Pazar') {
-                bilgiKutusu.innerText = `🥬 Pazar Kasasındaki Nakit: ${pazarKasaNakit.toFixed(2)} TL`;
+                bilgiKutusu.innerText = `🥬 Pazar Kasasındaki Bakiye: ${pazarKasaNakit.toFixed(2)} TL`;
             } else if (kat === 'Karma') {
                 bilgiKutusu.innerText = `🛒 Market: ${marketKasaNakit.toFixed(2)} TL | 🥬 Pazar: ${pazarKasaNakit.toFixed(2)} TL`;
             }
@@ -250,35 +249,48 @@
                 return;
             }
 
-            let harcananMarketNakit = 0;
-            let harcananPazarNakit = 0;
-            let toplamTutar = 0;
+            let harcananMarketToplam = 0;
+            let harcananPazarToplam = 0;
+            let marketNakit = 0, marketKK = 0;
+            let pazarNakit = 0, pazarKK = 0;
 
             if (kat === 'Market' || kat === 'Pazar') {
-                toplamTutar = parseFloat(document.getElementById('toplam-tutar').value) || 0;
-                let girilenNakit = document.getElementById('nakit-odenen').value;
+                const toplamTutar = parseFloat(document.getElementById('toplam-tutar').value) || 0;
+                if (toplamTutar <= 0) return alert("Lütfen geçerli bir Toplam Tutar girin!");
+
+                const girilenNakitRaw = document.getElementById('nakit-odenen').value.trim();
                 
-                // Eğer nakit kutusu boşsa tüm tutarı Nakit kabul et
-                let hesaplananNakit = (girilenNakit === "" || girilenNakit === null) ? toplamTutar : (parseFloat(girilenNakit) || 0);
+                // Boş bırakılırsa Nakit = 0 TL, Kredi Kartı = Toplam Tutar
+                let nakitVal = (girilenNakitRaw === "" || girilenNakitRaw === null) ? 0 : (parseFloat(girilenNakitRaw) || 0);
+                let kkVal = Math.max(0, toplamTutar - nakitVal);
 
-                if (kat === 'Market') harcananMarketNakit = hesaplananNakit;
-                if (kat === 'Pazar') harcananPazarNakit = hesaplananNakit;
+                if (kat === 'Market') {
+                    harcananMarketToplam = toplamTutar;
+                    marketNakit = nakitVal;
+                    marketKK = kkVal;
+                } else if (kat === 'Pazar') {
+                    harcananPazarToplam = toplamTutar;
+                    pazarNakit = nakitVal;
+                    pazarKK = kkVal;
+                }
             } else if (kat === 'Karma') {
-                toplamTutar = parseFloat(document.getElementById('k-genel-toplam').value) || 0;
+                const gTop = parseFloat(document.getElementById('k-genel-toplam').value) || 0;
+                if (gTop <= 0) return alert("Lütfen geçerli bir Genel Toplam girin!");
+
                 const guncel = karmaHesapla();
-                harcananMarketNakit = guncel.mNak;
-                harcananPazarNakit = guncel.pNak;
+                harcananMarketToplam = guncel.mTop;
+                harcananPazarToplam = guncel.pTop;
+                marketNakit = guncel.mNak; marketKK = guncel.mKK;
+                pazarNakit = guncel.pNak; pazarKK = guncel.pKK;
             }
 
-            if (toplamTutar <= 0) return alert("Lütfen geçerli bir Toplam Tutar girin!");
-
-            // Nakit Bakiyesi Aşım Kontrolü
+            // Kasa Bakiyesi Aşım Kontrolü (Nakit veya KK fark etmeksizin toplam harcamayı kontrol eder)
             let asimMesaji = "";
-            if (harcananMarketNakit > marketKasaNakit) {
-                asimMesaji += `• Market Kasasındaki Nakit Aşıldı! (Kasada: ${marketKasaNakit.toFixed(2)} TL / Ödenen: ${harcananMarketNakit.toFixed(2)} TL)\n`;
+            if (harcananMarketToplam > marketKasaNakit) {
+                asimMesaji += `• Market Kasası Bakiye Aşımı! (Kasada: ${marketKasaNakit.toFixed(2)} TL / Harcanan: ${harcananMarketToplam.toFixed(2)} TL)\n`;
             }
-            if (harcananPazarNakit > pazarKasaNakit) {
-                asimMesaji += `• Pazar Kasasındaki Nakit Aşıldı! (Kasada: ${pazarKasaNakit.toFixed(2)} TL / Ödenen: ${harcananPazarNakit.toFixed(2)} TL)\n`;
+            if (harcananPazarToplam > pazarKasaNakit) {
+                asimMesaji += `• Pazar Kasası Bakiye Aşımı! (Kasada: ${pazarKasaNakit.toFixed(2)} TL / Harcanan: ${harcananPazarToplam.toFixed(2)} TL)\n`;
             }
 
             if (asimMesaji !== "") {
@@ -291,26 +303,28 @@
 
             // 1. Harcamayı Kaydet
             if (kat === 'Karma') {
-                const guncel = karmaHesapla();
-                if (guncel.pTop > 0) {
-                    db.ref('harcamalar').push({ tarih, kategori: 'Pazar', aciklama, resim: mevcutResimBase64, toplam: guncel.pTop, nakit: guncel.pNak, kk: guncel.pKK, ekleyen: ekleyenUser, saat: eklemeSaati });
+                if (harcananPazarToplam > 0) {
+                    db.ref('harcamalar').push({ tarih, kategori: 'Pazar', aciklama, resim: mevcutResimBase64, toplam: harcananPazarToplam, nakit: pazarNakit, kk: pazarKK, ekleyen: ekleyenUser, saat: eklemeSaati });
                 }
-                if (guncel.mTop > 0) {
-                    db.ref('harcamalar').push({ tarih, kategori: 'Market', aciklama, resim: mevcutResimBase64, toplam: guncel.mTop, nakit: guncel.mNak, kk: guncel.mKK, ekleyen: ekleyenUser, saat: eklemeSaati });
+                if (harcananMarketToplam > 0) {
+                    db.ref('harcamalar').push({ tarih, kategori: 'Market', aciklama, resim: mevcutResimBase64, toplam: harcananMarketToplam, nakit: marketNakit, kk: marketKK, ekleyen: ekleyenUser, saat: eklemeSaati });
                 }
             } else {
-                let nakitVal = (document.getElementById('nakit-odenen').value === "") ? toplamTutar : (parseFloat(document.getElementById('nakit-odenen').value) || 0);
-                db.ref('harcamalar').push({ tarih, kategori: kat, aciklama, resim: mevcutResimBase64, toplam: toplamTutar, nakit: nakitVal, kk: Math.max(0, toplamTutar - nakitVal), ekleyen: ekleyenUser, saat: eklemeSaati });
+                let nVal = (kat === 'Market') ? marketNakit : pazarNakit;
+                let kVal = (kat === 'Market') ? marketKK : pazarKK;
+                let tVal = (kat === 'Market') ? harcananMarketToplam : harcananPazarToplam;
+
+                db.ref('harcamalar').push({ tarih, kategori: kat, aciklama, resim: mevcutResimBase64, toplam: tVal, nakit: nVal, kk: kVal, ekleyen: ekleyenUser, saat: eklemeSaati });
             }
 
-            // 2. Kasa Bakiyesini Düş / Güncelle
-            if (harcananMarketNakit > 0) {
-                let yeniMarketVal = Math.max(0, marketKasaNakit - harcananMarketNakit);
+            // 2. Kasa Bakiyesinden Toplam Tutarı Düş
+            if (harcananMarketToplam > 0) {
+                let yeniMarketVal = Math.max(0, marketKasaNakit - harcananMarketToplam);
                 db.ref('kasa/market/sayilan').set(yeniMarketVal);
                 db.ref('kasa/marketNakit').set(yeniMarketVal);
             }
-            if (harcananPazarNakit > 0) {
-                let yeniPazarVal = Math.max(0, pazarKasaNakit - harcananPazarNakit);
+            if (harcananPazarToplam > 0) {
+                let yeniPazarVal = Math.max(0, pazarKasaNakit - harcananPazarToplam);
                 db.ref('kasa/pazar/sayilan').set(yeniPazarVal);
                 db.ref('kasa/pazarNakit').set(yeniPazarVal);
             }

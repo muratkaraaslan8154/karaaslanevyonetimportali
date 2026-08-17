@@ -4,9 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Karaaslan Home - Harcama Girişi</title>
+    
+    <!-- OTURUM VE GÜVENLİK KONTROLÜ -->
+    <script>
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.replace('giris.html');
+        }
+    </script>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
     <style>
         :root { --primary: #2c3e50; --secondary: #27ae60; --bg: #f4f6f9; }
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -35,6 +44,16 @@
         }
         .btn-back:hover { opacity: 0.9; }
 
+        .user-badge {
+            background-color: #e2e8f0;
+            color: #2d3748;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: capitalize;
+        }
+
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; text-align: center; }
         .form-group { margin-bottom: 15px; }
@@ -52,6 +71,7 @@
 
     <div class="top-bar">
         <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
+        <div class="user-badge" id="kullanici-etiket">👤 ...</div>
     </div>
 
     <div class="card">
@@ -59,15 +79,6 @@
         <div id="basari-mesaji" class="alert">Harcama Başarıyla Kaydedildi! ✅</div>
         
         <form id="harcama-form">
-            <!-- İşlemi Yapan Kişi Seçimi -->
-            <div class="form-group">
-                <label>👤 İşlemi Yapan Kişi</label>
-                <select id="ekleyen-kullanici" onchange="kullaniciKaydet(this.value)">
-                    <option value="Hatunum">Hatunum</option>
-                    <option value="Admin">Admin</option>
-                </select>
-            </div>
-
             <div class="form-group">
                 <label>Tarih</label>
                 <input type="date" id="harcama-tarihi" required>
@@ -148,15 +159,10 @@
         window.onload = () => {
             tarihiGuncelle();
             
-            // Kayıtlı kullanıcı varsa seç, yoksa Varsayılan olarak Hatunum ayarla
-            const kayitliKullanici = localStorage.getItem('currentUser') || 'Hatunum';
-            document.getElementById('ekleyen-kullanici').value = kayitliKullanici;
-            localStorage.setItem('currentUser', kayitliKullanici);
+            // Giriş yapan aktif kullanıcı bilgisini ekrana yaz
+            const aktifKullanici = localStorage.getItem('currentUser') || 'Bilinmiyor';
+            document.getElementById('kullanici-etiket').innerText = '👤 ' + aktifKullanici;
         };
-
-        function kullaniciKaydet(isim) {
-            localStorage.setItem('currentUser', isim);
-        }
 
         function tarihiGuncelle() {
             const today = new Date().toISOString().split('T')[0];
@@ -214,7 +220,9 @@
             const tarih = document.getElementById('harcama-tarihi').value;
             const kat = document.getElementById('kategori').value;
             const aciklama = document.getElementById('harcama-aciklama').value.trim();
-            const ekleyen = document.getElementById('ekleyen-kullanici').value || 'Hatunum';
+            
+            // Oturum açan kullanıcının bilgisini alır
+            const ekleyen = localStorage.getItem('currentUser') || 'Bilinmiyor';
 
             const simdi = new Date();
             const eklemeSaati = String(simdi.getHours()).padStart(2, '0') + ':' + String(simdi.getMinutes()).padStart(2, '0');
@@ -296,10 +304,6 @@
             document.getElementById('market-ozet').innerText = "🛒 Market: 0 TL (0 TL Nakit, 0 TL KK)";
             tarihiGuncelle();
             kategoriDegisti();
-            
-            // Kullanıcı seçimini sıfırlama, koru
-            const kayitli = localStorage.getItem('currentUser') || 'Hatunum';
-            document.getElementById('ekleyen-kullanici').value = kayitli;
         }
     </script>
 </body>

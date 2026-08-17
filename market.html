@@ -5,19 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Karaaslan Home - Harcama Girişi</title>
     
-    <!-- MOBİL UYUMLU OTURUM OKUYUCU -->
     <script>
         function aktifKullaniciBul() {
             const urlParams = new URLSearchParams(window.location.search);
-            let user = urlParams.get('user');
-
-            if (!user) user = localStorage.getItem('currentUser');
-            if (!user) user = sessionStorage.getItem('currentUser');
+            let user = urlParams.get('user') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
             if (!user) {
                 const match = document.cookie.match(new RegExp('(^| )currentUser=([^;]+)'));
                 if (match) user = match[2];
             }
-
             if (user) {
                 localStorage.setItem('currentUser', user);
                 localStorage.setItem('isLoggedIn', 'true');
@@ -26,13 +21,11 @@
             return user;
         }
 
-        const aktifUser = aktifKullaniciBul();
-        if (!aktifUser) {
+        if (!aktifKullaniciBul()) {
             window.location.replace('giris.html');
         }
     </script>
 
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     
@@ -147,8 +140,8 @@
         const db = firebase.database();
 
         let mevcutResimBase64 = "";
-        let marketKasaNakit = 0;
-        let pazarKasaNakit = 0;
+        let netMarketBakiye = 0;
+        let netPazarBakiye = 0;
 
         window.onload = () => {
             tarihiGuncelle();
@@ -162,13 +155,27 @@
             }
         };
 
+        // Veritabanındaki Canlı Net Bakiyeyi Hesaplama
         function kasaMiktarlariniTakipEt() {
             db.ref().on('value', (snapshot) => {
                 const root = snapshot.val() || {};
                 const kasaData = root.kasa || root.kasalar || {};
-                
-                marketKasaNakit = parseFloat((kasaData.market && kasaData.market.sayilan) || kasaData.marketNakit || kasaData.market) || 0;
-                pazarKasaNakit = parseFloat((kasaData.pazar && kasaData.pazar.sayilan) || kasaData.pazarNakit || kasaData.pazar) || 0;
+                const harcamalar = root.harcamalar || {};
+
+                let hamMarket = parseFloat((kasaData.market && kasaData.market.sayilan) || kasaData.marketNakit || 1454) || 0;
+                let hamPazar = parseFloat((kasaData.pazar && kasaData.pazar.sayilan) || kasaData.pazarNakit || 1678) || 0;
+
+                // Toplam Yapılan Harcamaları Düş
+                let toplamMarketHarcama = 0;
+                let toplamPazarHarcama = 0;
+
+                Object.values(harcamalar).forEach(item => {
+                    if (item.kategori === 'Market') toplamMarketHarcama += (parseFloat(item.toplam) || 0);
+                    if (item.kategori === 'Pazar') toplamPazarHarcama += (parseFloat(item.toplam) || 0);
+                });
+
+                netMarketBakiye = hamMarket - toplamMarketHarcama;
+                netPazarBakiye = hamPazar - toplamPazarHarcama;
 
                 kasaEkraniGuncelle();
             });
@@ -179,11 +186,11 @@
             const bilgiKutusu = document.getElementById('kasa-bilgi');
             
             if (kat === 'Market') {
-                bilgiKutusu.innerText = `🛒 Market Kasasındaki Bakiye: ${marketKasaNakit.toFixed(2)} TL`;
+                bilgiKutusu.innerText = `🛒 Market Kasası Kalan Net Bakiye: ${netMarketBakiye.toFixed(2)} TL`;
             } else if (kat === 'Pazar') {
-                bilgiKutusu.innerText = `🥬 Pazar Kasasındaki Bakiye: ${pazarKasaNakit.toFixed(2)} TL`;
+                bilgiKutusu.innerText = `🥬 Pazar Kasası Kalan Net Bakiye: ${netPazarBakiye.toFixed(2)} TL`;
             } else if (kat === 'Karma') {
-                bilgiKutusu.innerText = `🛒 Market: ${marketKasaNakit.toFixed(2)} TL | 🥬 Pazar: ${pazarKasaNakit.toFixed(2)} TL`;
+                bilgiKutusu.innerText = `🛒 Market: ${netMarketBakiye.toFixed(2)} TL | 🥬 Pazar: ${netPazarBakiye.toFixed(2)} TL`;
             }
         }
 
@@ -259,8 +266,6 @@
                 if (toplamTutar <= 0) return alert("Lütfen geçerli bir Toplam Tutar girin!");
 
                 const girilenNakitRaw = document.getElementById('nakit-odenen').value.trim();
-                
-                // Boş bırakılırsa Nakit = 0 TL, Kredi Kartı = Toplam Tutar
                 let nakitVal = (girilenNakitRaw === "" || girilenNakitRaw === null) ? 0 : (parseFloat(girilenNakitRaw) || 0);
                 let kkVal = Math.max(0, toplamTutar - nakitVal);
 
@@ -284,13 +289,13 @@
                 pazarNakit = guncel.pNak; pazarKK = guncel.pKK;
             }
 
-            // Kasa Bakiyesi Aşım Kontrolü (Nakit veya KK fark etmeksizin toplam harcamayı kontrol eder)
+            // Kasa Bakiyesi Aşım Kontrolü
             let asimMesaji = "";
-            if (harcananMarketToplam > marketKasaNakit) {
-                asimMesaji += `• Market Kasası Bakiye Aşımı! (Kasada: ${marketKasaNakit.toFixed(2)} TL / Harcanan: ${harcananMarketToplam.toFixed(2)} TL)\n`;
+            if (harcananMarketToplam > netMarketBakiye) {
+                asimMesaji += `• Market Kasası Bakiye Aşımı! (Mevcut Net Bakiye: ${netMarketBakiye.toFixed(2)} TL / Harcanan: ${harcananMarketToplam.toFixed(2)} TL)\n`;
             }
-            if (harcananPazarToplam > pazarKasaNakit) {
-                asimMesaji += `• Pazar Kasası Bakiye Aşımı! (Kasada: ${pazarKasaNakit.toFixed(2)} TL / Harcanan: ${harcananPazarToplam.toFixed(2)} TL)\n`;
+            if (harcananPazarToplam > netPazarBakiye) {
+                asimMesaji += `• Pazar Kasası Bakiye Aşımı! (Mevcut Net Bakiye: ${netPazarBakiye.toFixed(2)} TL / Harcanan: ${harcananPazarToplam.toFixed(2)} TL)\n`;
             }
 
             if (asimMesaji !== "") {
@@ -301,7 +306,7 @@
             const simdi = new Date();
             const eklemeSaati = String(simdi.getHours()).padStart(2, '0') + ':' + String(simdi.getMinutes()).padStart(2, '0');
 
-            // 1. Harcamayı Kaydet
+            // Harcamayı Firebase'e Ekle
             if (kat === 'Karma') {
                 if (harcananPazarToplam > 0) {
                     db.ref('harcamalar').push({ tarih, kategori: 'Pazar', aciklama, resim: mevcutResimBase64, toplam: harcananPazarToplam, nakit: pazarNakit, kk: pazarKK, ekleyen: ekleyenUser, saat: eklemeSaati });
@@ -315,18 +320,6 @@
                 let tVal = (kat === 'Market') ? harcananMarketToplam : harcananPazarToplam;
 
                 db.ref('harcamalar').push({ tarih, kategori: kat, aciklama, resim: mevcutResimBase64, toplam: tVal, nakit: nVal, kk: kVal, ekleyen: ekleyenUser, saat: eklemeSaati });
-            }
-
-            // 2. Kasa Bakiyesinden Toplam Tutarı Düş
-            if (harcananMarketToplam > 0) {
-                let yeniMarketVal = Math.max(0, marketKasaNakit - harcananMarketToplam);
-                db.ref('kasa/market/sayilan').set(yeniMarketVal);
-                db.ref('kasa/marketNakit').set(yeniMarketVal);
-            }
-            if (harcananPazarToplam > 0) {
-                let yeniPazarVal = Math.max(0, pazarKasaNakit - harcananPazarToplam);
-                db.ref('kasa/pazar/sayilan').set(yeniPazarVal);
-                db.ref('kasa/pazarNakit').set(yeniPazarVal);
             }
 
             const alertBox = document.getElementById('basari-mesaji');

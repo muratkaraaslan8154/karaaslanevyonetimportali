@@ -35,16 +35,6 @@
         }
         .btn-back:hover { opacity: 0.9; }
 
-        .user-badge {
-            background-color: #e2e8f0;
-            color: #2d3748;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            border: 1px solid #cbd5e0;
-        }
-
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; text-align: center; }
         .form-group { margin-bottom: 15px; }
@@ -62,7 +52,6 @@
 
     <div class="top-bar">
         <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
-        <div class="user-badge">👤 <span id="aktiveUserLabel">Bilinmiyor</span></div>
     </div>
 
     <div class="card">
@@ -70,6 +59,15 @@
         <div id="basari-mesaji" class="alert">Harcama Başarıyla Kaydedildi! ✅</div>
         
         <form id="harcama-form">
+            <!-- İşlemi Yapan Kişi Seçimi -->
+            <div class="form-group">
+                <label>👤 İşlemi Yapan Kişi</label>
+                <select id="ekleyen-kullanici" onchange="kullaniciKaydet(this.value)">
+                    <option value="Hatunum">Hatunum</option>
+                    <option value="Admin">Admin</option>
+                </select>
+            </div>
+
             <div class="form-group">
                 <label>Tarih</label>
                 <input type="date" id="harcama-tarihi" required>
@@ -145,14 +143,20 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const aktifKullanici = localStorage.getItem('currentUser') || 'Sistem';
-
         let mevcutResimBase64 = "";
 
         window.onload = () => {
-            document.getElementById('aktiveUserLabel').innerText = aktifKullanici.toUpperCase();
             tarihiGuncelle();
+            
+            // Kayıtlı kullanıcı varsa seç, yoksa Varsayılan olarak Hatunum ayarla
+            const kayitliKullanici = localStorage.getItem('currentUser') || 'Hatunum';
+            document.getElementById('ekleyen-kullanici').value = kayitliKullanici;
+            localStorage.setItem('currentUser', kayitliKullanici);
         };
+
+        function kullaniciKaydet(isim) {
+            localStorage.setItem('currentUser', isim);
+        }
 
         function tarihiGuncelle() {
             const today = new Date().toISOString().split('T')[0];
@@ -210,6 +214,7 @@
             const tarih = document.getElementById('harcama-tarihi').value;
             const kat = document.getElementById('kategori').value;
             const aciklama = document.getElementById('harcama-aciklama').value.trim();
+            const ekleyen = document.getElementById('ekleyen-kullanici').value || 'Hatunum';
 
             const simdi = new Date();
             const eklemeSaati = String(simdi.getHours()).padStart(2, '0') + ':' + String(simdi.getMinutes()).padStart(2, '0');
@@ -238,7 +243,7 @@
                         toplam: guncel.pTop, 
                         nakit: guncel.pNak, 
                         kk: guncel.pKK,
-                        ekleyen: aktifKullanici,
+                        ekleyen: ekleyen,
                         saat: eklemeSaati
                     });
                 }
@@ -251,7 +256,7 @@
                         toplam: guncel.mTop, 
                         nakit: guncel.mNak, 
                         kk: guncel.mKK,
-                        ekleyen: aktifKullanici,
+                        ekleyen: ekleyen,
                         saat: eklemeSaati
                     });
                 }
@@ -272,7 +277,7 @@
                     toplam, 
                     nakit, 
                     kk: Math.max(0, toplam - nakit),
-                    ekleyen: aktifKullanici,
+                    ekleyen: ekleyen,
                     saat: eklemeSaati
                 });
             }
@@ -291,6 +296,10 @@
             document.getElementById('market-ozet').innerText = "🛒 Market: 0 TL (0 TL Nakit, 0 TL KK)";
             tarihiGuncelle();
             kategoriDegisti();
+            
+            // Kullanıcı seçimini sıfırlama, koru
+            const kayitli = localStorage.getItem('currentUser') || 'Hatunum';
+            document.getElementById('ekleyen-kullanici').value = kayitli;
         }
     </script>
 </body>

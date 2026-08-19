@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harcama & Fatura Takip Asistanı</title>
+    
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        (function(){
+            // EmailJS Account > API Keys kısmındaki Public Key'inizi buraya yazın
+            emailjs.init("TPsLV_29zHV5JaQBm");
+        })();
+    </script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
@@ -38,7 +48,6 @@
             gap: 1rem;
         }
 
-        /* Ana Menüye Dön Butonu Stili */
         .btn-back {
             display: flex;
             align-items: center;
@@ -221,7 +230,6 @@
 
     <div class="app-container">
         
-        <!-- Ana Menüye Dön Butonu -->
         <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
         
         <div class="header">
@@ -303,7 +311,6 @@
 
     </div>
 
-    <!-- Gizli Fotoğraf Yükleme Elemanı -->
     <input type="file" id="late-photo-upload" accept="image/*" style="display: none;">
 
     <div class="modal" id="photo-modal" onclick="this.style.display='none'">
@@ -332,13 +339,11 @@
         const USERS = ["Murat", "Muradiye", "Melek", "Emre"];
         const ADMIN_PIN = "1234";
 
-        // Kişilerin Telefon Numaraları (Ülke kodu ile, + işareti olmadan. Örn: "905321234567")
-        // Burayı gerçek numaralarla güncelleyebilirsiniz:
         const PHONE_NUMBERS = {
-            "Murat": "",    // Kendi numaranız (Örn: "905001234567")
-            "Muradiye": "", // Muradiye'nin numarası
-            "Melek": "",    // Melek'in numarası
-            "Emre": ""      // Emre'nin numarası
+            "Murat": "",    
+            "Muradiye": "", 
+            "Melek": "",    
+            "Emre": ""      
         };
 
         function checkAdminAuth() {
@@ -373,7 +378,6 @@
             updateUI();
         });
 
-        // Tüm Zamanlar Butonu
         const btnToggleAll = document.getElementById('btn-toggle-all');
         btnToggleAll.onclick = () => {
             showAllTime = !showAllTime;
@@ -490,7 +494,6 @@
             }
         });
 
-        // WhatsApp Gönderme Fonksiyonu
         window.sendNotification = (id) => {
             const tx = allTransactions.find(t => t.id === id);
             if (!tx) return;
@@ -552,12 +555,29 @@
                 photo: photoData
             });
 
+            // GMAIL BİLDİRİMİ (EmailJS)
+            try {
+                if (typeof emailjs !== 'undefined') {
+                    // YOUR_SERVICE_ID alanına EmailJS servis kimliğinizi giriniz
+                    emailjs.send("TPsLV_29zHV5JaQBm", "template_siu1r0k", {
+                        person: txData.person,
+                        title: txData.title,
+                        amount: txData.amount.toLocaleString('tr-TR') + " ₺",
+                        category: txData.category,
+                        pay_method: txData.payMethod,
+                        status: txData.status === 'paid' ? 'Ödendi' : 'Bekliyor',
+                        date: nowStr
+                    });
+                }
+            } catch (err) {
+                console.error("E-posta gönderilirken hata oluştu:", err);
+            }
+
             document.getElementById('tx-title').value = "";
             document.getElementById('tx-amount').value = "";
             photoInput.value = "";
         };
 
-        // Şimdi Öde Fonksiyonu
         window.markAsPaid = async (id) => {
             if (!checkAdminAuth()) return;
 

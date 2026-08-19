@@ -9,8 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
         (function(){
-            // EmailJS Account > API Keys kısmındaki Public Key'inizi buraya yazın
-            emailjs.init("TPsLV_29zHV5JaQBm");
+            // EmailJS Public Key
+            emailjs.init("IMpWrBSqGcfDhABD6");
         })();
     </script>
 
@@ -558,8 +558,7 @@
             // GMAIL BİLDİRİMİ (EmailJS)
             try {
                 if (typeof emailjs !== 'undefined') {
-                    // YOUR_SERVICE_ID alanına EmailJS servis kimliğinizi giriniz
-                    emailjs.send("TPsLV_29zHV5JaQBm", "template_siu1r0k", {
+                    await emailjs.send("service_7setbk7", "template_siu1r0k", {
                         person: txData.person,
                         title: txData.title,
                         amount: txData.amount.toLocaleString('tr-TR') + " ₺",

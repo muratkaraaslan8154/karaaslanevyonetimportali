@@ -12,11 +12,17 @@
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         body { background-color: var(--bg); margin: 0; padding: 15px; color: #333; }
         
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .btn-back {
-            display: flex; align-items: center; justify-content: center;
+            display: inline-flex; align-items: center; justify-content: center;
             background-color: var(--primary); color: white; text-decoration: none;
-            padding: 10px 15px; border-radius: 8px; margin-bottom: 15px;
-            font-weight: bold; font-size: 0.95rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 10px 15px; border-radius: 8px; font-weight: bold; font-size: 0.95rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center;
+        }
+        .user-info {
+            font-size: 0.9rem; font-weight: bold; color: var(--primary);
+            background: #fff; padding: 8px 12px; border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
         .btn-back:hover { opacity: 0.9; }
 
@@ -47,7 +53,10 @@
 </head>
 <body>
 
-    <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
+    <div class="header-bar">
+        <a href="index.html" class="btn-back">⬅️ Ana Menüye Dön</a>
+        <div class="user-info" id="kullanici-etiket">👤 Kullanıcı</div>
+    </div>
 
     <div class="card">
         <h2 id="form-baslik">🛍️ Pazar & Market Harcama / Fiş Ekle</h2>
@@ -130,11 +139,11 @@
                         <th>Nakit</th>
                         <th>KK</th>
                         <th>Fiş</th>
-                        <th>İşlemler</th>
+                        <th id="th-islemler" style="display: none;">İşlemler</th>
                     </tr>
                 </thead>
                 <tbody id="harcama-listesi">
-                    <!-- Dinamik veriler buraya yüklenecek -->
+                    <!-- Dinamik veriler yüklenir -->
                 </tbody>
             </table>
         </div>
@@ -157,30 +166,27 @@
         let mevcutResimBase64 = "";
         let duzenlenenKayitId = null;
 
+        // Giriş sayfasından saklanan oturum kullanıcısını alır
+        function getAktifKullanici() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let user = urlParams.get('user') || 
+                       localStorage.getItem('currentUser') || 
+                       sessionStorage.getItem('currentUser') || '';
+            return user.trim().toLowerCase();
+        }
+
+        // Yetki Kontrolü (Sadece 'admin' ve 'murat' yetkilidir)
+        function yetkiliMi() {
+            const user = getAktifKullanici();
+            return user === 'admin' || user === 'murat';
+        }
+
         window.onload = () => {
+            const aktifUser = getAktifKullanici();
+            document.getElementById('kullanici-etiket').innerText = `👤 ${aktifUser ? aktifUser.toUpperCase() : 'Kullanıcı'}`;
             tarihiGuncelle();
             kayitlariGetir();
         };
-
-        // Yetki Kontrolü (Sadece 'admin' ve 'murat' yetkilidir)
-        function yetkiKontrol() {
-            let aktifKullanici = localStorage.getItem('kullanici') || localStorage.getItem('username') || localStorage.getItem('user');
-            
-            if (!aktifKullanici) {
-                aktifKullanici = prompt("Düzenleme / Silme işlemi için kullanıcı adınızı giriniz:");
-                if (aktifKullanici) {
-                    localStorage.setItem('kullanici', aktifKullanici);
-                }
-            }
-
-            const isim = (aktifKullanici || '').trim().toLowerCase();
-            if (isim === 'admin' || isim === 'murat') {
-                return true;
-            }
-
-            alert("⚠️ Düzenleme ve silme yetkisi sadece 'admin' ve 'murat' kullanıcılarına aittir!");
-            return false;
-        }
 
         function tarihiGuncelle() {
             const today = new Date().toISOString().split('T')[0];
@@ -231,14 +237,17 @@
             return { pTop, pNak, pKK, mTop, mNak, mKK };
         }
 
-        // Tüm kayıtları listeleyen fonksiyon
+        // Tüm Kayıtları Getir (Düzenle ve Sil Butonları Sadece Admin ve Murat Kullanıcılarında Görünür)
         function kayitlariGetir() {
+            const isAuth = yetkiliMi();
+            document.getElementById('th-islemler').style.display = isAuth ? 'table-cell' : 'none';
+
             db.ref('harcamalar').on('value', (snapshot) => {
                 const liste = document.getElementById('harcama-listesi');
                 liste.innerHTML = '';
 
                 if (!snapshot.exists()) {
-                    liste.innerHTML = '<tr><td colspan="8" style="text-align:center;">Henüz kayıt bulunmuyor.</td></tr>';
+                    liste.innerHTML = `<tr><td colspan="${isAuth ? 8 : 7}" style="text-align:center;">Henüz kayıt bulunmuyor.</td></tr>`;
                     return;
                 }
 
@@ -255,17 +264,19 @@
                         <td>${(item.nakit || 0).toFixed(2)} TL</td>
                         <td>${(item.kk || 0).toFixed(2)} TL</td>
                         <td>${item.resim ? `<a href="${item.resim}" target="_blank">🖼️ Görsel</a>` : '-'}</td>
-                        <td>
-                            <button class="btn-action btn-edit" onclick="kayitDuzenleFormaAl('${id}', '${item.tarih}', '${item.kategori}', '${item.aciklama}', ${item.toplam}, ${item.nakit}, '${item.resim || ''}')">Düzenle</button>
-                            <button class="btn-action btn-delete" onclick="kayitSil('${id}')">Sil</button>
-                        </td>
+                        ${isAuth ? `
+                            <td>
+                                <button class="btn-action btn-edit" onclick="kayitDuzenleFormaAl('${id}', '${item.tarih}', '${item.kategori}', '${item.aciklama}', ${item.toplam}, ${item.nakit}, '${item.resim || ''}')">Düzenle</button>
+                                <button class="btn-action btn-delete" onclick="kayitSil('${id}')">Sil</button>
+                            </td>
+                        ` : ''}
                     `;
                     liste.appendChild(tr);
                 });
             });
         }
 
-        // Form Gönderme (Yeni Kayıt / Güncelleme)
+        // Form Kaydet / Güncelle
         document.getElementById('harcama-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const tarih = document.getElementById('harcama-tarihi').value;
@@ -273,7 +284,8 @@
             const aciklama = document.getElementById('harcama-aciklama').value.trim();
 
             if (duzenlenenKayitId) {
-                // Güncelleme Modu
+                if (!yetkiliMi()) return alert("⚠️ Düzenleme yetkiniz bulunmamaktadır!");
+                
                 const toplam = parseFloat(document.getElementById('toplam-tutar').value) || 0;
                 const nakit = parseFloat(document.getElementById('nakit-odenen').value) || 0;
                 
@@ -290,7 +302,6 @@
                 db.ref('harcamalar/' + duzenlenenKayitId).update(guncelVeri);
                 duzenlemeIptal();
             } else {
-                // Yeni Kayıt Ekleme (Herkes ekleyebilir)
                 if (kat === 'Karma') {
                     const guncel = karmaHesapla();
                     const gTop = parseFloat(document.getElementById('k-genel-toplam').value) || 0;
@@ -321,18 +332,17 @@
             formuSifirla();
         });
 
-        // Kayıt Silme (Yetki Kontrollü)
+        // Kayıt Silme
         function kayitSil(id) {
-            if (!yetkiKontrol()) return;
-            
+            if (!yetkiliMi()) return alert("⚠️ Silme yetkiniz bulunmamaktadır!");
             if (confirm("Bu harcama kaydını silmek istediğinize emin misiniz?")) {
                 db.ref('harcamalar/' + id).remove();
             }
         }
 
-        // Kaydı Düzenlemek için Forma Alma (Yetki Kontrollü)
+        // Kaydı Düzenlemek İçin Forma Alma
         function kayitDuzenleFormaAl(id, tarih, kategori, aciklama, toplam, nakit, resim) {
-            if (!yetkiKontrol()) return;
+            if (!yetkiliMi()) return alert("⚠️ Düzenleme yetkiniz bulunmamaktadır!");
 
             duzenlenenKayitId = id;
             document.getElementById('harcama-tarihi').value = tarih;

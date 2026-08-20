@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Karaaslan Home - Harcama Girişi ve Kayıtlar</title>
+
+    <!-- OTURUM KONTROLÜ -->
+    <script>
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.replace('giris.html');
+        }
+    </script>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -40,7 +48,6 @@
         .ozet-satir { margin-bottom: 4px; font-weight: 600; }
         .alert { display: none; padding: 12px; background: #d4efdf; color: #155724; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px; }
 
-        /* Tablo Stilleri */
         .table-responsive { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -87,7 +94,6 @@
                 <input type="text" id="harcama-aciklama" placeholder="Örn: Bakkal, Fırın vs.">
             </div>
 
-            <!-- Tekli Harcama Alanı -->
             <div id="tekli-alan">
                 <div class="form-group">
                     <label>Toplam Tutar (TL)</label>
@@ -99,7 +105,6 @@
                 </div>
             </div>
 
-            <!-- Karma Harcama Alanı -->
             <div id="karma-alan" style="display: none;">
                 <div class="form-group">
                     <label>Fişin GENEL Toplamı (TL)</label>
@@ -125,7 +130,6 @@
         </form>
     </div>
 
-    <!-- Tüm Kullanıcıların Görebileceği Kayıt Listesi -->
     <div class="card">
         <h2>📋 Girilen Harcama Kayıtları</h2>
         <div class="table-responsive">
@@ -142,9 +146,7 @@
                         <th id="th-islemler" style="display: none;">İşlemler</th>
                     </tr>
                 </thead>
-                <tbody id="harcama-listesi">
-                    <!-- Dinamik veriler yüklenir -->
-                </tbody>
+                <tbody id="harcama-listesi"></tbody>
             </table>
         </div>
     </div>
@@ -166,7 +168,6 @@
         let mevcutResimBase64 = "";
         let duzenlenenKayitId = null;
 
-        // Giriş sayfasından saklanan oturum kullanıcısını alır
         function getAktifKullanici() {
             const urlParams = new URLSearchParams(window.location.search);
             let user = urlParams.get('user') || 
@@ -175,7 +176,6 @@
             return user.trim().toLowerCase();
         }
 
-        // Yetki Kontrolü (Sadece 'admin' ve 'murat' yetkilidir)
         function yetkiliMi() {
             const user = getAktifKullanici();
             return user === 'admin' || user === 'murat';
@@ -237,7 +237,6 @@
             return { pTop, pNak, pKK, mTop, mNak, mKK };
         }
 
-        // Tüm Kayıtları Getir (Düzenle ve Sil Butonları Sadece Admin ve Murat Kullanıcılarında Görünür)
         function kayitlariGetir() {
             const isAuth = yetkiliMi();
             document.getElementById('th-islemler').style.display = isAuth ? 'table-cell' : 'none';
@@ -276,7 +275,6 @@
             });
         }
 
-        // Form Kaydet / Güncelle
         document.getElementById('harcama-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const tarih = document.getElementById('harcama-tarihi').value;
@@ -332,7 +330,6 @@
             formuSifirla();
         });
 
-        // Kayıt Silme
         function kayitSil(id) {
             if (!yetkiliMi()) return alert("⚠️ Silme yetkiniz bulunmamaktadır!");
             if (confirm("Bu harcama kaydını silmek istediğinize emin misiniz?")) {
@@ -340,7 +337,6 @@
             }
         }
 
-        // Kaydı Düzenlemek İçin Forma Alma
         function kayitDuzenleFormaAl(id, tarih, kategori, aciklama, toplam, nakit, resim) {
             if (!yetkiliMi()) return alert("⚠️ Düzenleme yetkiniz bulunmamaktadır!");
 

@@ -5,19 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yönetici Paneli - KARAASLAN Portalı</title>
     
-    <script>
-        // --- SİSTEM YÖNETİCİSİ AYARI ---
-        // Sistemi yönetecek ve silinemeyecek ana hesabın adını buraya yazın (Küçük harfle)
-        const ADMIN_KULLANICI = "murat"; 
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-        // OTURUM KONTROLÜ
-        if (localStorage.getItem('isLoggedIn') !== 'true') {
+    <!-- SAYFA GÜVENLİĞİ: Sadece Murat ve Admin Giriş Yapabilir -->
+    <script>
+        const activeUser = (localStorage.getItem('currentUser') || '').toLowerCase();
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+
+        if (!isLoggedIn) {
             window.location.replace('giris.html');
         }
         
-        // YETKİ KONTROLÜ (Giren kişi Admin değilse kov)
-        if (localStorage.getItem('currentUser') !== ADMIN_KULLANICI) {
-            alert("Yetkisiz Erişim! Ayarlar sayfasına sadece sistem yöneticisi girebilir.");
+        if (activeUser !== 'murat' && activeUser !== 'admin') {
+            alert("Yetkisiz Erişim! Ayarlar sayfasına sadece 'murat' ve 'admin' erişebilir.");
             window.location.replace('index.html');
         }
     </script>
@@ -25,35 +26,41 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
         
-        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 2rem 1rem; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 600px; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 750px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { border-bottom: 2px solid #805ad5; padding-bottom: 10px; color: #2d3748; margin-top: 0; display: flex; justify-content: space-between; align-items: center;}
         
-        /* Form Alanları */
         .form-group { margin-bottom: 15px; }
         label { display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
         input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box;}
-        .btn-save { background: #805ad5; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.2s;}
-        .btn-save:hover { background: #6b46c1; }
+        .btn-save { background: #805ad5; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         
-        /* Kullanıcı Tablosu */
-        table { width: 100%; border-collapse: collapse; margin-top: 2rem; }
-        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
         th { background-color: #f7fafc; color: #4a5568; }
         
-        .btn-delete { background: #e53e3e; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
-        .btn-edit { background: #3182ce; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-right: 5px; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
+        .badge-blocked { background: #fed7d7; color: #9b2c2c; }
+        .badge-active { background: #c6f6d5; color: #22543d; }
+
+        .btn-unblock { background: #38a169; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-block { background: #e53e3e; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .btn-delete { background: #718096; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .btn-edit { background: #3182ce; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-right: 3px; }
         
         .btn-back { display: block; text-align: center; margin-top: 25px; color: #718096; text-decoration: none; font-weight: 500;}
+        
+        .log-box { max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>
             ⚙️ Sistem Yönetimi
-            <span style="font-size: 0.9rem; font-weight: normal; color: #a0aec0;" id="adminLabel"></span>
+            <span style="font-size: 0.9rem; font-weight: normal; color: #805ad5;" id="adminLabel"></span>
         </h2>
         
+        <!-- Kullanıcı Ekle/Düzenle Formu -->
         <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
             <h3 style="margin-top: 0; font-size: 1.1rem; color: #2d3748;" id="formTitle">Yeni Kullanıcı Ekle</h3>
             <div class="form-group">
@@ -64,75 +71,129 @@
                 <label>Giriş PIN Kodu:</label>
                 <input type="text" id="newPin" placeholder="Örn: 1234" autocomplete="off">
             </div>
-            <div class="form-group">
-                <label>Cihaz Kısıtlaması:</label>
-                <select id="deviceSelect">
-                    <option value="all">Tüm Cihazlar</option>
-                    <option value="mobile">Sadece Cep Telefonu</option>
-                    <option value="pc">Sadece Bilgisayar</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Konum Kısıtlaması:</label>
-                <select id="locationSelect">
-                    <option value="false">Konum Fark Etmez</option>
-                    <option value="true">Sadece Evdeyken Girebilir</option>
-                </select>
-            </div>
             <button class="btn-save" id="saveBtn" onclick="kullaniciKaydet()">Kullanıcıyı Kaydet</button>
             <button class="btn-save" id="cancelBtn" onclick="formuTemizle()" style="display:none; background: #a0aec0;">İptal Et</button>
         </div>
 
-        <h3 style="font-size: 1.1rem; color: #2d3748; margin-bottom: 10px;">Mevcut Kullanıcılar</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Kullanıcı</th>
-                    <th>PIN</th>
-                    <th>Cihaz</th>
-                    <th>Ev Şartı</th>
-                    <th>İşlem</th>
-                </tr>
-            </thead>
-            <tbody id="userTableBody">
-                <!-- Kullanıcılar buraya JS ile yüklenecek -->
-            </tbody>
-        </table>
+        <!-- Kullanıcı Listesi ve Bloke Durumları -->
+        <h3 style="font-size: 1.1rem; color: #2d3748; margin-bottom: 10px;">👥 Kullanıcılar & Cihaz Güvenliği</h3>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kullanıcı</th>
+                        <th>PIN</th>
+                        <th>Cihaz Kimliği</th>
+                        <th>Durum</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Sistem ve Oturum Logları -->
+        <h3 style="font-size: 1.1rem; color: #2d3748; margin-top: 30px; margin-bottom: 10px;">📋 Giriş / Çıkış ve Güvenlik Logları</h3>
+        <div class="log-box">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tarih / Saat</th>
+                        <th>Kullanıcı</th>
+                        <th>İşlem</th>
+                        <th>Cihaz / Detay</th>
+                    </tr>
+                </thead>
+                <tbody id="logTableBody"></tbody>
+            </table>
+        </div>
 
         <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
     </div>
 
     <script>
-        // Sayfa başlığına adminin adını yazdır
-        document.getElementById('adminLabel').innerText = "Admin: " + ADMIN_KULLANICI.toUpperCase();
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
+            authDomain: "karaaslanhomebutcetakip.firebaseapp.com",
+            databaseURL: "https://karaaslanhomebutcetakip-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "karaaslanhomebutcetakip",
+            storageBucket: "karaaslanhomebutcetakip.firebasestorage.app",
+            messagingSenderId: "566343253682",
+            appId: "1:566343253682:web:3ab14198fca800d69813ab"
+        };
 
-        // Veritabanını çağır
-        let usersDB = JSON.parse(localStorage.getItem('usersDB')) || {};
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        function listeyiGuncelle() {
+        document.getElementById('adminLabel').innerText = "Yetkili: " + activeUser.toUpperCase();
+
+        let usersDB = {};
+
+        // Kullanıcıları Dinle
+        db.ref('usersDB').on('value', (snapshot) => {
+            usersDB = snapshot.val() || {};
+            kullaniciListesiniGuncelle();
+        });
+
+        // Logları Dinle (Son 50 Kayıt)
+        db.ref('systemLogs').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
+            const logsObj = snapshot.val() || {};
+            const logArray = Object.values(logsObj).reverse();
+            logListesiniGuncelle(logArray);
+        });
+
+        function kullaniciListesiniGuncelle() {
             const tbody = document.getElementById('userTableBody');
             tbody.innerHTML = "";
 
             for (const [username, details] of Object.entries(usersDB)) {
-                let deviceText = details.device === "all" ? "Tümü" : (details.device === "mobile" ? "Mobil" : "PC");
-                let locText = details.requireLocation ? "Evet" : "Hayır";
+                const isBlocked = details.isBlocked || false;
+                const regDevice = details.registeredDevice ? details.registeredDevice.substring(0, 12) + "..." : "Henüz Yok";
+                const isExempt = (username === 'murat' || username === 'admin');
+
+                let statusBadge = isBlocked 
+                    ? `<span class="badge badge-blocked">BLOKELİ</span>` 
+                    : `<span class="badge badge-active">AKTİF</span>`;
+
+                let actionBtns = '';
                 
-                // Yönetici hesabının silinmesini engelle (Değişken üzerinden kontrol edilir)
-                let actionButtons = username === ADMIN_KULLANICI 
-                    ? `<button class="btn-edit" onclick="kullaniciDuzenle('${username}')">Düzenle</button>` 
-                    : `<button class="btn-edit" onclick="kullaniciDuzenle('${username}')">Düzenle</button>
-                       <button class="btn-delete" onclick="kullaniciSil('${username}')">Sil</button>`;
+                if (isBlocked) {
+                    actionBtns += `<button class="btn-unblock" onclick="blokeKaldir('${username}')">Bloke Kaldır</button> `;
+                } else if (!isExempt) {
+                    actionBtns += `<button class="btn-block" onclick="blokeEt('${username}')">Bloke Et</button> `;
+                }
+
+                if (!isExempt) {
+                    actionBtns += `<button class="btn-delete" onclick="kullaniciSil('${username}')">Sil</button>`;
+                }
 
                 tbody.innerHTML += `
                     <tr>
-                        <td style="font-weight:bold;">${username}</td>
+                        <td style="font-weight:bold;">${username} ${isExempt ? '🛡️' : ''}</td>
                         <td>${details.pin}</td>
-                        <td>${deviceText}</td>
-                        <td>${locText}</td>
-                        <td>${actionButtons}</td>
+                        <td title="${details.registeredDevice || ''}">${regDevice}</td>
+                        <td>${statusBadge}</td>
+                        <td>${actionBtns}</td>
                     </tr>
                 `;
             }
+        }
+
+        function logListesiniGuncelle(logs) {
+            const tbody = document.getElementById('logTableBody');
+            tbody.innerHTML = "";
+
+            logs.forEach(log => {
+                let rowColor = log.action.includes('🚫') || log.action.includes('Blokeli') ? 'background:#fff5f5;' : '';
+                tbody.innerHTML += `
+                    <tr style="${rowColor}">
+                        <td>${log.time || '-'}</td>
+                        <td style="font-weight:bold;">${log.user || '-'}</td>
+                        <td>${log.action || '-'}</td>
+                        <td style="font-size:0.75rem; color:#718096;">${log.device || '-'}</td>
+                    </tr>
+                `;
+            });
         }
 
         function kullaniciKaydet() {
@@ -144,53 +205,40 @@
                 return;
             }
 
-            usersDB[user] = {
+            db.ref('usersDB/' + user).update({
                 pin: pin,
-                device: document.getElementById('deviceSelect').value,
-                requireLocation: document.getElementById('locationSelect').value === "true"
-            };
+                isBlocked: false
+            }).then(() => {
+                alert("Kullanıcı başarıyla kaydedildi!");
+                formuTemizle();
+            });
+        }
 
-            // Değişiklikleri kaydet ve tabloyu yenile
-            localStorage.setItem('usersDB', JSON.stringify(usersDB));
-            formuTemizle();
-            listeyiGuncelle();
+        function blokeKaldir(username) {
+            if(confirm(username + " kullanıcısının blokesini kaldırmak ve sıfırlamak istiyor musunuz?")) {
+                db.ref('usersDB/' + username).update({
+                    isBlocked: false,
+                    registeredDevice: null // Yeni cihazla girmesine izin vermek için kayıtlı cihazı da sıfırlıyoruz
+                });
+            }
+        }
+
+        function blokeEt(username) {
+            if(confirm(username + " kullanıcısını bloke etmek istediğinizden emin misiniz?")) {
+                db.ref('usersDB/' + username).update({ isBlocked: true });
+            }
         }
 
         function kullaniciSil(username) {
             if(confirm(username + " adlı kullanıcıyı silmek istediğinize emin misiniz?")) {
-                delete usersDB[username];
-                localStorage.setItem('usersDB', JSON.stringify(usersDB));
-                listeyiGuncelle();
+                db.ref('usersDB/' + username).remove();
             }
-        }
-
-        function kullaniciDuzenle(username) {
-            const data = usersDB[username];
-            document.getElementById('newUsername').value = username;
-            document.getElementById('newUsername').disabled = true; // Adı değiştirmesin
-            document.getElementById('newPin').value = data.pin;
-            document.getElementById('deviceSelect').value = data.device;
-            document.getElementById('locationSelect').value = data.requireLocation.toString();
-            
-            document.getElementById('formTitle').innerText = "Kullanıcıyı Düzenle: " + username;
-            document.getElementById('saveBtn').innerText = "Güncelle";
-            document.getElementById('cancelBtn').style.display = "block";
         }
 
         function formuTemizle() {
             document.getElementById('newUsername').value = "";
-            document.getElementById('newUsername').disabled = false;
             document.getElementById('newPin').value = "";
-            document.getElementById('deviceSelect').value = "all";
-            document.getElementById('locationSelect').value = "false";
-            
-            document.getElementById('formTitle').innerText = "Yeni Kullanıcı Ekle";
-            document.getElementById('saveBtn').innerText = "Kullanıcıyı Kaydet";
-            document.getElementById('cancelBtn').style.display = "none";
         }
-
-        // Sayfa açıldığında tabloyu doldur
-        listeyiGuncelle();
     </script>
 </body>
 </html>

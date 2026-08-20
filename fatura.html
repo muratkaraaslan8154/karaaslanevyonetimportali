@@ -4,12 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harcama & Fatura Takip Asistanı</title>
+
+    <!-- OTURUM KONTROLÜ -->
+    <script>
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.replace('giris.html');
+        }
+    </script>
     
     <!-- EmailJS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script>
         (function(){
-            // EmailJS Public Key
             emailjs.init("IMpWrBSqGcfDhABD6");
         })();
     </script>
@@ -337,7 +343,6 @@
         const txCollection = collection(db, "transactions");
 
         const USERS = ["Murat", "Muradiye", "Melek", "Emre"];
-        const ADMIN_PIN = "1234";
 
         const PHONE_NUMBERS = {
             "Murat": "",    
@@ -346,11 +351,14 @@
             "Emre": ""      
         };
 
+        // Yeni Oturum Yetki Kontrolü (Murat veya Admin Otomatik Yetkilidir)
         function checkAdminAuth() {
-            const pin = prompt("Bu işlem sadece Murat tarafından yapılabilir. Lütfen şifrenizi girin:");
-            if (pin === null) return false; 
-            if (pin === ADMIN_PIN) return true;
-            alert("❌ Hatalı Şifre!"); return false;
+            const activeUser = (localStorage.getItem('currentUser') || '').toLowerCase();
+            if (activeUser === 'murat' || activeUser === 'admin') {
+                return true;
+            }
+            alert("❌ Bu işlemi sadece yöneticiler (Murat veya Admin) gerçekleştirebilir!");
+            return false;
         }
 
         function getCurrentMonthStr() {
@@ -555,7 +563,6 @@
                 photo: photoData
             });
 
-            // GMAIL BİLDİRİMİ (EmailJS)
             try {
                 if (typeof emailjs !== 'undefined') {
                     await emailjs.send("service_7setbk7", "template_siu1r0k", {

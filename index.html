@@ -8,12 +8,9 @@
     <!-- OTURUM VE GÜVENLİK KONTROLÜ -->
     <script>
         try {
-            // Giriş sayfasından başarıyla geldiyse güvenliği onayla
             const params = new URLSearchParams(window.location.search);
             if (params.get('auth') === 'ok') {
                 localStorage.setItem('isLoggedIn', 'true');
-                
-                // Tarayıcı yerel dosyalarda (file://) URL değiştirmeye izin vermezse çökmemesi için güvenlik önlemi
                 if (window.history && window.history.replaceState) {
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
@@ -22,12 +19,13 @@
             console.log("Yerel dosya güvenlik kısıtlaması atlandı.");
         }
 
-        // Eğer sistemde giriş kaydı yoksa veya kişi direkt index.html'e tıkladıysa onu girişe yönlendir
         if (localStorage.getItem('isLoggedIn') !== 'true') {
-            // href yerine replace kullanıyoruz ki kullanıcı geri tuşuna basıp tekrar boş sayfaya düşmesin
             window.location.replace('giris.html');
         }
     </script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
@@ -37,15 +35,12 @@
             --primary-blue: #3182ce;
             --primary-green: #27ae60;
             --primary-red: #e53e3e;
-            --primary-purple: #805ad5; /* Ayarlar menüsü için yeni renk */
+            --primary-purple: #805ad5;
             --text-main: #2d3748;
             --text-muted: #718096;
         }
 
-        * { 
-            box-sizing: border-box; 
-            font-family: 'Roboto', sans-serif; 
-        }
+        * { box-sizing: border-box; font-family: 'Roboto', sans-serif; }
         
         body { 
             background-color: var(--bg-color); 
@@ -57,31 +52,10 @@
             color: var(--text-main); 
         }
         
-        .container { 
-            width: 100%; 
-            max-width: 450px; 
-            text-align: center; 
-        }
-        
-        .header-icon { 
-            font-size: 3.5rem; 
-            margin-bottom: 0.5rem; 
-        }
-        
-        h1 { 
-            font-size: 1.6rem; 
-            margin-top: 0; 
-            margin-bottom: 0.5rem; 
-            color: #1a202c; 
-            line-height: 1.4; 
-        }
-        
-        .subtitle { 
-            font-size: 0.95rem; 
-            color: var(--text-muted); 
-            margin-bottom: 2rem; 
-            font-weight: 500; 
-        }
+        .container { width: 100%; max-width: 450px; text-align: center; }
+        .header-icon { font-size: 3.5rem; margin-bottom: 0.5rem; }
+        h1 { font-size: 1.6rem; margin-top: 0; margin-bottom: 0.5rem; color: #1a202c; line-height: 1.4; }
+        .subtitle { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 2rem; font-weight: 500; }
         
         .menu-link { 
             display: flex; 
@@ -98,11 +72,7 @@
             text-align: left; 
         }
         
-        .menu-link:hover { 
-            transform: translateY(-3px); 
-            box-shadow: 0 8px 15px rgba(0,0,0,0.1); 
-        }
-        
+        .menu-link:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
         .link-fatura { border-left-color: var(--primary-blue); }
         .link-market { border-left-color: var(--primary-green); }
         .link-saglik { border-left-color: var(--primary-red); }
@@ -118,22 +88,9 @@
             text-align: center; 
         }
         
-        .text-box { 
-            display: flex; 
-            flex-direction: column; 
-        }
-        
-        .title { 
-            font-size: 1.15rem; 
-            font-weight: bold; 
-            margin-bottom: 0.3rem; 
-        }
-        
-        .desc { 
-            font-size: 0.85rem; 
-            color: var(--text-muted); 
-            line-height: 1.3; 
-        }
+        .text-box { display: flex; flex-direction: column; }
+        .title { font-size: 1.15rem; font-weight: bold; margin-bottom: 0.3rem; }
+        .desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.3; }
         
         .section-title { 
             text-align: left; 
@@ -145,11 +102,7 @@
             font-weight: bold; 
         }
         
-        .footer-note { 
-            margin-top: 2rem; 
-            font-size: 0.8rem; 
-            color: #a0aec0; 
-        }
+        .footer-note { margin-top: 2rem; font-size: 0.8rem; color: #a0aec0; }
         
         .logout-btn { 
             background: var(--primary-red); 
@@ -161,18 +114,13 @@
             float: right; 
             margin-bottom: 1rem;
             font-weight: bold;
-            transition: background 0.2s;
         }
-
-        .logout-btn:hover {
-            background: #c53030;
-        }
+        .logout-btn:hover { background: #c53030; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- Güvenli Çıkış Butonu -->
         <button class="logout-btn" onclick="cikisYap()">Güvenli Çıkış</button>
         <div style="clear: both;"></div>
 
@@ -208,24 +156,59 @@
             </div>
         </a>
 
-        <div class="section-title">Sistem</div>
+        <!-- YÖNETİCİ AYARLARI MENÜSÜ (Sadece Murat veya Admin Yetkisine Açılır) -->
+        <div id="admin-menu-section" style="display: none;">
+            <div class="section-title">Sistem Yönetimi</div>
 
-        <a href="ayarlar.html" class="menu-link link-ayarlar">
-            <div class="icon-box">⚙️</div>
-            <div class="text-box">
-                <span class="title">Kullanıcı Ayarları</span>
-                <span class="desc">Yetkilendirme, cihaz ve konum kısıtlamalarını yönetin.</span>
-            </div>
-        </a>
+            <a href="ayarlar.html" class="menu-link link-ayarlar">
+                <div class="icon-box">⚙️</div>
+                <div class="text-box">
+                    <span class="title">Kullanıcı Ayarları & Loglar</span>
+                    <span class="desc">Yetkilendirme, cihaz blokeleri ve giriş/çıkış loglarını yönetin.</span>
+                </div>
+            </a>
+        </div>
         
         <div class="footer-note">
-            Karaaslan Home Yönetim Sistemi &copy; 2024
+            Karaaslan Home Yönetim Sistemi &copy; 2026
         </div>
     </div>
 
-    <!-- GÜVENLİ ÇIKIŞ FONKSİYONU -->
     <script>
-        function cikisYap() {
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
+            authDomain: "karaaslanhomebutcetakip.firebaseapp.com",
+            databaseURL: "https://karaaslanhomebutcetakip-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "karaaslanhomebutcetakip",
+            storageBucket: "karaaslanhomebutcetakip.firebasestorage.app",
+            messagingSenderId: "566343253682",
+            appId: "1:566343253682:web:3ab14198fca800d69813ab"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const activeUser = (localStorage.getItem('currentUser') || '').toLowerCase();
+
+        // Sadece Murat ve Admin için Ayarlar Butonunu Göster
+        if (activeUser === 'murat' || activeUser === 'admin') {
+            document.getElementById('admin-menu-section').style.display = 'block';
+        }
+
+        async function cikisYap() {
+            const devId = localStorage.getItem('app_device_id') || 'Bilinmeyen Cihaz';
+            const now = new Date();
+            const timeStr = now.toLocaleDateString('tr-TR') + ' ' + now.toLocaleTimeString('tr-TR');
+            
+            try {
+                await db.ref('systemLogs').push({
+                    user: activeUser || 'Bilinmeyen',
+                    action: "Çıkış Yapıldı",
+                    time: timeStr,
+                    device: devId,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+            } catch(e) {}
+
             localStorage.removeItem('isLoggedIn');
             window.location.href = 'giris.html';
         }

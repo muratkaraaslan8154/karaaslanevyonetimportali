@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Giriş - KARAASLAN Portalı</title>
 
-    <!-- OTURUM KONTROLÜ: Daha önce giriş yapılmışsa doğrudan ana sayfaya yönlendir -->
+    <!-- OTURUM KONTROLÜ -->
     <script>
         if (localStorage.getItem('isLoggedIn') === 'true') {
             const savedUser = localStorage.getItem('currentUser') || '';
@@ -21,7 +21,7 @@
         .login-box { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 340px; text-align: center; }
         input { width: 100%; padding: 12px; margin: 8px 0 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; }
-        #status { font-size: 0.9rem; margin-top: 15px; font-weight: bold; color: #e74c3c; }
+        #status { font-size: 0.9rem; margin-top: 15px; font-weight: bold; color: #e74c3c; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -46,6 +46,29 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // Benzersiz Cihaz Kimliği Oluşturma / Okuma
+        function getDeviceId() {
+            let devId = localStorage.getItem('app_device_id');
+            if (!devId) {
+                devId = 'DEV_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+                localStorage.setItem('app_device_id', devId);
+            }
+            return devId;
+        }
+
+        // Log Kaydetme Fonksiyonu
+        async function createLog(user, action, details) {
+            const now = new Date();
+            const timeStr = now.toLocaleDateString('tr-TR') + ' ' + now.toLocaleTimeString('tr-TR');
+            await db.ref('systemLogs').push({
+                user: user,
+                action: action,
+                time: timeStr,
+                device: details,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
         async function login() {
             const user = document.getElementById('username').value.toLowerCase().trim();
             const pin = document.getElementById('pin').value.trim();
@@ -62,15 +85,48 @@
             try {
                 const snapshot = await db.ref('usersDB').once('value');
                 const users = snapshot.val() || {};
+                const currentDeviceId = getDeviceId();
+                const isExempt = (user === 'murat' || user === 'admin');
 
                 if (!users[user] || users[user].pin !== pin) {
                     status.style.color = "#e74c3c";
                     status.innerText = "Kullanıcı adı veya PIN hatalı!";
+                    await createLog(user || 'Bilinmeyen', "Hatalı Giriş Denemesi", currentDeviceId);
                     return;
                 }
 
+                const userData = users[user];
+
+                // 1. Bloke Kontrolü
+                if (userData.isBlocked) {
+                    status.style.color = "#e74c3c";
+                    status.innerText = "⛔ Hesabınız bloke edilmiştir! Yöneticiniz ile iletişime geçin.";
+                    await createLog(user, "Blokeli Hesap Giriş Denemesi", currentDeviceId);
+                    return;
+                }
+
+                // 2. Cihaz Güvenlik Kontrolü (Murat ve Admin Muaf)
+                if (!isExempt) {
+                    if (userData.registeredDevice && userData.registeredDevice !== currentDeviceId) {
+                        // Farklı Cihaz Tespiti -> Otomatik Bloke Et
+                        await db.ref('usersDB/' + user).update({ isBlocked: true });
+                        await createLog(user, "🚫 İZLENSİZ CİHAZ! Hesap Otomatik Bloke Edildi", currentDeviceId);
+                        
+                        status.style.color = "#e74c3c";
+                        status.innerText = "⛔ Farklı bir cihazdan giriş algılandı! Hesabınız güvenlik sebebiyle bloke edildi.";
+                        return;
+                    } else if (!userData.registeredDevice) {
+                        // İlk Giriş Yapılan Cihazı Kaydet
+                        await db.ref('usersDB/' + user).update({ registeredDevice: currentDeviceId });
+                    }
+                }
+
+                // Başarılı Giriş Logu ve Geçiş
+                await createLog(user, "Giriş Yapıldı", currentDeviceId);
                 grantAccess(user);
+
             } catch (err) {
+                console.error(err);
                 status.innerText = "Bağlantı hatası!";
             }
         }
@@ -80,7 +136,6 @@
             status.style.color = "#27ae60";
             status.innerText = "Giriş Başarılı!";
 
-            // Oturum bilgilerini cihaz hafızasına kaydetme
             localStorage.setItem('currentUser', username);
             localStorage.setItem('isLoggedIn', 'true');
             sessionStorage.setItem('currentUser', username);

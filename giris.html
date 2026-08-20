@@ -4,84 +4,151 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Giriş - KARAASLAN Portalı</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-box { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 340px; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 8px 0 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; }
-        #status { font-size: 0.9rem; margin-top: 15px; font-weight: bold; color: #e74c3c; }
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-box { background: white; padding: 2.5rem 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        h2 { margin-top: 0; color: #2d3748; margin-bottom: 1.5rem; }
+        
+        input { width: 100%; padding: 12px; margin: 8px 0 15px 0; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        
+        /* Şifre Göz İkonu İçin Özel Tasarım */
+        .password-wrapper { position: relative; margin: 8px 0 15px 0; }
+        .password-wrapper input { margin: 0; padding-right: 40px; }
+        .password-wrapper .toggle-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.2rem; user-select: none; }
+        
+        button { width: 100%; padding: 12px; background: #3182ce; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 5px; transition: background 0.2s; }
+        button:hover { background: #2b6cb0; }
+        #status { font-size: 0.9rem; margin-top: 15px; font-weight: 500; min-height: 20px; }
     </style>
 </head>
 <body>
     <div class="login-box">
-        <h2>🔒 Giriş Yap</h2>
+        <div style="font-size: 3rem; margin-bottom: 10px;">📍🔒</div>
+        <h2>Güvenli Giriş</h2>
+        
         <input type="text" id="username" placeholder="Kullanıcı Adı" autocomplete="off">
-        <input type="password" id="pin" placeholder="PIN Kodu" autocomplete="off">
-        <button onclick="login()">Giriş</button>
+        
+        <!-- Şifre Göster/Gizle Alanı -->
+        <div class="password-wrapper">
+            <input type="password" id="pin" placeholder="PIN Kodu (Örn: 1234)" autocomplete="off">
+            <span class="toggle-icon" id="togglePin" onclick="sifreGosterGizle()">👁️</span>
+        </div>
+        
+        <button onclick="login()">Giriş Yap</button>
         <div id="status"></div>
     </div>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
-            authDomain: "karaaslanhomebutcetakip.firebaseapp.com",
-            databaseURL: "https://karaaslanhomebutcetakip-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "karaaslanhomebutcetakip",
-            storageBucket: "karaaslanhomebutcetakip.firebasestorage.app",
-            messagingSenderId: "566343253682",
-            appId: "1:566343253682:web:3ab14198fca800d69813ab"
-        };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        <script>
+        // --- AYARLAR BÖLÜMÜ ---
+        // Lütfen buraya kendi evinizin Google Haritalar koordinatlarını girin:
+        const evEnlem = 41.01005430101983;  // BURAYI DEĞİŞTİRİN (Örn: 41.xxxxxx)
+        const evBoylam = 29.16667666206191; // BURAYI DEĞİŞTİRİN (Örn: 28.xxxxxx)
+        
+        // Evden en fazla kaç metre uzaktayken giriş yapılabilsin?
+        const izinVerilenMesafeMetre = 100; 
+        // ----------------------
 
-        async function login() {
+        // YENİ FABRİKA AYARLARI (Kalıcı Yönetici)
+        const defaultUsers = {
+            "murat": { pin: "39916800Mk*", device: "all", requireLocation: false },
+            "anne": { pin: "5678", device: "mobile", requireLocation: true },
+            "cocuk": { pin: "0000", device: "pc", requireLocation: false }
+        };
+        
+        // Eğer sistemde eski varsayılan olan 'baba' varsa, hafızayı sıfırla ve yeni ayarları yükle
+        let mevcutHafiza = JSON.parse(localStorage.getItem('usersDB'));
+        if (!mevcutHafiza || mevcutHafiza["baba"]) {
+            localStorage.setItem('usersDB', JSON.stringify(defaultUsers));
+        }
+        
+        if (!localStorage.getItem('usersDB')) {
+            localStorage.setItem('usersDB', JSON.stringify(defaultUsers));
+        }
+
+        // ŞİFRE GÖSTER/GİZLE FONKSİYONU
+        function sifreGosterGizle() {
+            const pinInput = document.getElementById('pin');
+            const toggleIcon = document.getElementById('togglePin');
+            
+            if (pinInput.type === "password") {
+                pinInput.type = "text";
+                toggleIcon.innerText = "🙈"; // Gizleme simgesi
+            } else {
+                pinInput.type = "password";
+                toggleIcon.innerText = "👁️";  // Gösterme simgesi
+            }
+        }
+
+        function mesafeHesapla(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; 
+            const p1 = lat1 * Math.PI/180;
+            const p2 = lat2 * Math.PI/180;
+            const dp = (lat2-lat1) * Math.PI/180;
+            const dl = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c; 
+        }
+
+        function login() {
             const user = document.getElementById('username').value.toLowerCase().trim();
             const pin = document.getElementById('pin').value.trim();
             const status = document.getElementById('status');
 
-            if (!user || !pin) {
-                status.innerText = "Lütfen tüm alanları doldurun!";
+            const users = JSON.parse(localStorage.getItem('usersDB'));
+            status.style.color = "#e53e3e"; 
+
+            if (!users[user] || users[user].pin !== pin) {
+                status.innerText = "Hatalı kullanıcı adı veya PIN!";
                 return;
             }
 
-            status.style.color = "#3498db";
-            status.innerText = "Kontrol ediliyor...";
+            const userData = users[user];
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (userData.device === "mobile" && !isMobile) {
+                status.innerText = "Bu hesaba sadece cep telefonundan girilebilir.";
+                return;
+            }
+            if (userData.device === "pc" && isMobile) {
+                status.innerText = "Bu hesaba sadece bilgisayardan girilebilir.";
+                return;
+            }
 
-            try {
-                const snapshot = await db.ref('usersDB').once('value');
-                const users = snapshot.val() || {};
-
-                if (!users[user] || users[user].pin !== pin) {
-                    status.style.color = "#e74c3c";
-                    status.innerText = "Kullanıcı adı veya PIN hatalı!";
+            if (userData.requireLocation) {
+                status.innerText = "Konumunuz doğrulanıyor...";
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        const mesafe = mesafeHesapla(position.coords.latitude, position.coords.longitude, evEnlem, evBoylam);
+                        if (mesafe <= izinVerilenMesafeMetre) {
+                            grantAccess(user); 
+                        } else {
+                            status.innerText = "Evden uzaktasınız! Giriş reddedildi.";
+                        }
+                    }, () => {
+                        status.innerText = "GPS okunamadı. İzin vermelisiniz!";
+                    });
+                    return;
+                } else {
+                    status.innerText = "Cihazınız konumu desteklemiyor.";
                     return;
                 }
-
-                grantAccess(user);
-            } catch (err) {
-                status.innerText = "Bağlantı hatası!";
             }
+
+            grantAccess(user);
         }
 
         function grantAccess(username) {
             const status = document.getElementById('status');
-            status.style.color = "#27ae60";
-            status.innerText = "Giriş Başarılı!";
-
-            // 4 Katmanlı Bütün Hafıza Kayıtları (Mobil İçin)
+            status.style.color = "#27ae60"; 
+            status.innerText = "Giriş Başarılı! Yönlendiriliyor...";
+            
             localStorage.setItem('currentUser', username);
             localStorage.setItem('isLoggedIn', 'true');
-            sessionStorage.setItem('currentUser', username);
-            sessionStorage.setItem('isLoggedIn', 'true');
-            document.cookie = "currentUser=" + username + "; path=/; max-age=31536000";
-
-            // Yönlendirme esnasında parametre olarak taşıma (Mobil Safari Engeli İçin)
-            setTimeout(() => {
-                window.location.href = `index.html?user=${encodeURIComponent(username)}`;
-            }, 500);
+            
+            setTimeout(() => { window.location.href = 'index.html?auth=ok'; }, 1000);
         }
     </script>
 </body>

@@ -328,6 +328,9 @@
         import { 
             getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot 
         } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+        import { 
+            getDatabase, ref, onValue 
+        } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB6GxxqjYwezj-yLDEoe544Xdy0K-sBGlA",
@@ -335,12 +338,28 @@
             projectId: "karaaslanhomeharcamatakip",
             storageBucket: "karaaslanhomeharcamatakip.firebasestorage.app",
             messagingSenderId: "822028092832",
-            appId: "1:822028092832:web:88a6d9f6bad90dbbc110c5"
+            appId: "1:822028092832:web:88a6d9f6bad90dbbc110c5",
+            databaseURL: "https://karaaslanhomebutcetakip-default-rtdb.europe-west1.firebasedatabase.app"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const rtdb = getDatabase(app);
         const txCollection = collection(db, "transactions");
+
+        // CANLI BLOKE KONTROLÜ
+        const activeUser = (localStorage.getItem('currentUser') || '').toLowerCase();
+        if (activeUser) {
+            onValue(ref(rtdb, 'usersDB/' + activeUser), (snapshot) => {
+                const userData = snapshot.val();
+                if (userData && userData.isBlocked === true) {
+                    alert("🚫 Hesabınız engellendi! Oturum kapatılıyor.");
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.replace('giris.html');
+                }
+            });
+        }
 
         const USERS = ["Murat", "Muradiye", "Melek", "Emre"];
 
@@ -351,9 +370,7 @@
             "Emre": ""      
         };
 
-        // Yeni Oturum Yetki Kontrolü (Murat veya Admin Otomatik Yetkilidir)
         function checkAdminAuth() {
-            const activeUser = (localStorage.getItem('currentUser') || '').toLowerCase();
             if (activeUser === 'murat' || activeUser === 'admin') {
                 return true;
             }

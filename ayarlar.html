@@ -77,6 +77,11 @@
         
         .gps-link { color: #3182ce; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
         .gps-link:hover { text-decoration: underline; }
+
+        .insulin-box { background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #805ad5; }
+        .insulin-inputs { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-top: 10px; }
+        .insulin-inputs div { flex: 1; min-width: 200px; }
+        .btn-inline { margin-top: 0; padding: 10px 15px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -86,6 +91,23 @@
             <span style="font-size: 0.9rem; font-weight: normal; color: #805ad5;" id="adminLabel"></span>
         </h2>
         
+        <!-- İnsülin Kalem Süresi ve Tarih Seçim Modülü -->
+        <div class="insulin-box">
+            <h3 style="margin-top: 0; font-size: 1.1rem; color: #2d3748;">💉 İnsülin Kalem Süresi Yönetimi (28 Gün)</h3>
+            <div id="insulinPenInfo" style="font-size: 0.9rem; color: #4a5568; margin-bottom: 8px; line-height: 1.5;">
+                ⏳ Kalem değişim durumu yükleniyor...
+            </div>
+            <div class="insulin-inputs">
+                <div>
+                    <label style="font-size: 0.8rem; margin-bottom: 4px;">Değişim Tarihi Seçin:</label>
+                    <input type="date" id="insulinPenDateInput">
+                </div>
+                <button class="btn-save btn-inline" style="background: #319795; flex: 0 0 auto;" id="btnUpdateInsulinDate">
+                    💾 Tarihi Kaydet / Güncelle
+                </button>
+            </div>
+        </div>
+
         <!-- Kullanıcı Ekle Formu -->
         <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
             <h3 style="margin-top: 0; font-size: 1.1rem; color: #2d3748;" id="formTitle">Yeni Kullanıcı Ekle</h3>
@@ -139,6 +161,7 @@
         <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
     </div>
 
+    <!-- Mevcut Realtime DB Mantığınız (Kullanıcı & Loglar) -->
     <script>
         document.getElementById('adminLabel').innerText = "Yetkili: " + activeUser.toUpperCase();
 
@@ -317,6 +340,77 @@
             document.getElementById('newUsername').value = "";
             document.getElementById('newPin').value = "";
         }
+    </script>
+
+    <!-- İnsülin Değişim Tarihi Yönetimi (Firestore Entegrasyonu ve Özel Tarih Seçici) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+        const healthConfig = {
+            apiKey: "AIzaSyAhjq7KL_e80LiW8fC-wttmn8gba5UvhVE",
+            authDomain: "muratilactakip.firebaseapp.com",
+            projectId: "muratilactakip"
+        };
+        const healthApp = initializeApp(healthConfig, "healthApp_Ayarlar");
+        const healthDb = getFirestore(healthApp);
+
+        function getLocalDateString() {
+            const d = new Date();
+            const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+            return `${y}-${m}-${day}`;
+        }
+
+        const insulinDocRef = doc(healthDb, "sistem_ayarlari", "insulin");
+
+        // Firestore'dan Kayıtlı Tarihi Dinle ve Tarih Seçiciye Yükle
+        onSnapshot(insulinDocRef, (snap) => {
+            const infoEl = document.getElementById('insulinPenInfo');
+            const dateInput = document.getElementById('insulinPenDateInput');
+
+            if (snap.exists() && snap.data().lastChangedDate) {
+                const lastDateStr = snap.data().lastChangedDate;
+                
+                // Eğer input henüz doldurulmadıysa kayıtlı tarihi yaz
+                if (!dateInput.value) {
+                    dateInput.value = lastDateStr;
+                }
+
+                const lastDate = new Date(lastDateStr + "T00:00:00");
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                
+                const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+                const remaining = 28 - diffDays;
+
+                infoEl.innerHTML = `
+                    <b>📅 Kayıtlı Değişim Tarihi:</b> ${lastDateStr} (${diffDays} gün geçti)<br>
+                    <b>⏳ Kalan Kullanım Süresi:</b> ${remaining > 0 ? remaining + ' gün' : '<span style="color:#e53e3e; font-weight:bold;">Süre Doldu!</span>'}
+                `;
+            } else {
+                infoEl.innerHTML = "⚠️ İnsülin kalem değişim kaydı henüz bulunmuyor.";
+                if (!dateInput.value) dateInput.value = getLocalDateString();
+            }
+        });
+
+        // Seçilen Tarihi Firestore'a Kaydet
+        document.getElementById('btnUpdateInsulinDate').onclick = async () => {
+            const selectedDate = document.getElementById('insulinPenDateInput').value;
+            
+            if (!selectedDate) {
+                alert("Lütfen geçerli bir tarih seçiniz!");
+                return;
+            }
+
+            if (confirm(`İnsülin kalem değişim tarihini [ ${selectedDate} ] olarak kaydetmek istiyor musunuz?`)) {
+                await setDoc(insulinDocRef, { lastChangedDate: selectedDate });
+                
+                if (typeof sistemLogYaz === 'function') {
+                    sistemLogYaz(activeUser, `İnsülin Değişim Tarihi Güncellendi: ${selectedDate}`);
+                }
+                alert(`✅ İnsülin kalem değişim tarihi ${selectedDate} olarak güncellendi!`);
+            }
+        };
     </script>
 </body>
 </html>

@@ -176,14 +176,26 @@
             return user.trim().toLowerCase();
         }
 
+        // CANLI BLOKE KONTROLÜ
+        const activeUser = getAktifKullanici();
+        if (activeUser) {
+            db.ref('usersDB/' + activeUser).on('value', (snapshot) => {
+                const userData = snapshot.val();
+                if (userData && userData.isBlocked === true) {
+                    alert("🚫 Hesabınız engellendi! Oturum kapatılıyor.");
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.replace('giris.html');
+                }
+            });
+        }
+
         function yetkiliMi() {
-            const user = getAktifKullanici();
-            return user === 'admin' || user === 'murat';
+            return activeUser === 'admin' || activeUser === 'murat';
         }
 
         window.onload = () => {
-            const aktifUser = getAktifKullanici();
-            document.getElementById('kullanici-etiket').innerText = `👤 ${aktifUser ? aktifUser.toUpperCase() : 'Kullanıcı'}`;
+            document.getElementById('kullanici-etiket').innerText = `👤 ${activeUser ? activeUser.toUpperCase() : 'Kullanıcı'}`;
             tarihiGuncelle();
             kayitlariGetir();
         };

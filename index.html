@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KARAASLAN Ev Yönetim Portalı</title>
     
-    <!-- OTURUM VE GÜVENLİK KONTROLÜ -->
     <script>
         try {
             const params = new URLSearchParams(window.location.search);
@@ -41,86 +40,42 @@
         }
 
         * { box-sizing: border-box; font-family: 'Roboto', sans-serif; }
-        
-        body { 
-            background-color: var(--bg-color); 
-            margin: 0; 
-            padding: 2rem 1rem; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            color: var(--text-main); 
-        }
-        
+        body { background-color: var(--bg-color); margin: 0; padding: 2rem 1rem; display: flex; flex-direction: column; align-items: center; color: var(--text-main); }
         .container { width: 100%; max-width: 450px; text-align: center; }
+
+        .alert-banner { padding: 1rem; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 1.2rem; display: none; }
+        .alert-warning { background: #ed8936; color: white; display: block; }
+        .alert-danger { background: #e53e3e; color: white; display: block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
         .header-icon { font-size: 3.5rem; margin-bottom: 0.5rem; }
         h1 { font-size: 1.6rem; margin-top: 0; margin-bottom: 0.5rem; color: #1a202c; line-height: 1.4; }
         .subtitle { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 2rem; font-weight: 500; }
         
-        .menu-link { 
-            display: flex; 
-            align-items: center; 
-            background: #ffffff; 
-            padding: 1.2rem; 
-            border-radius: 12px; 
-            text-decoration: none; 
-            color: var(--text-main); 
-            margin-bottom: 1rem; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
-            transition: all 0.2s ease-in-out; 
-            border-left: 6px solid; 
-            text-align: left; 
-        }
-        
+        .menu-link { display: flex; align-items: center; background: #ffffff; padding: 1.2rem; border-radius: 12px; text-decoration: none; color: var(--text-main); margin-bottom: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.2s ease-in-out; border-left: 6px solid; text-align: left; }
         .menu-link:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
         .link-fatura { border-left-color: var(--primary-blue); }
         .link-market { border-left-color: var(--primary-green); }
         .link-saglik { border-left-color: var(--primary-red); }
         .link-ayarlar { border-left-color: var(--primary-purple); }
 
-        .icon-box { 
-            font-size: 2rem; 
-            margin-right: 1rem; 
-            background: #f7fafc; 
-            padding: 0.8rem; 
-            border-radius: 50%; 
-            min-width: 65px; 
-            text-align: center; 
-        }
-        
+        .icon-box { font-size: 2rem; margin-right: 1rem; background: #f7fafc; padding: 0.8rem; border-radius: 50%; min-width: 65px; text-align: center; }
         .text-box { display: flex; flex-direction: column; }
         .title { font-size: 1.15rem; font-weight: bold; margin-bottom: 0.3rem; }
         .desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.3; }
-        
-        .section-title { 
-            text-align: left; 
-            font-size: 0.9rem; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-            color: #a0aec0; 
-            margin: 1.5rem 0 0.8rem 5px; 
-            font-weight: bold; 
-        }
-        
+        .section-title { text-align: left; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: #a0aec0; margin: 1.5rem 0 0.8rem 5px; font-weight: bold; }
         .footer-note { margin-top: 2rem; font-size: 0.8rem; color: #a0aec0; }
         
-        .logout-btn { 
-            background: var(--primary-red); 
-            color: white; 
-            border: none; 
-            padding: 8px 16px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            float: right; 
-            margin-bottom: 1rem;
-            font-weight: bold;
-        }
+        .logout-btn { background: var(--primary-red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; float: right; margin-bottom: 1rem; font-weight: bold; }
         .logout-btn:hover { background: #c53030; }
     </style>
 </head>
 <body>
 
     <div class="container">
+        <!-- Tüm Kullanıcılar İçin Canlı Üst Uyarı Banner'ı -->
+        <div id="insulin-alert-banner"></div>
+
         <button class="logout-btn" onclick="cikisYap()">Güvenli Çıkış</button>
         <div style="clear: both;"></div>
 
@@ -146,17 +101,18 @@
             </div>
         </a>
 
-        <div class="section-title">Sağlık & Takip</div>
+        <div id="saglik-menu-section" style="display: none;">
+            <div class="section-title">Sağlık & Takip</div>
 
-        <a href="saglik.html" class="menu-link link-saglik">
-            <div class="icon-box">🏥</div>
-            <div class="text-box">
-                <span class="title">Sağlık Takip Sistemi</span>
-                <span class="desc">Tansiyon, şeker, ilaç takibi ve sağlık verileri kayıt asistanı.</span>
-            </div>
-        </a>
+            <a href="saglik.html" class="menu-link link-saglik">
+                <div class="icon-box">🏥</div>
+                <div class="text-box">
+                    <span class="title">Sağlık Takip Sistemi</span>
+                    <span class="desc">Tansiyon, şeker, ilaç takibi ve sağlık verileri kayıt asistanı.</span>
+                </div>
+            </a>
+        </div>
 
-        <!-- YÖNETİCİ AYARLARI MENÜSÜ (Sadece Murat veya Admin Yetkisine Açılır) -->
         <div id="admin-menu-section" style="display: none;">
             <div class="section-title">Sistem Yönetimi</div>
 
@@ -174,6 +130,7 @@
         </div>
     </div>
 
+    <!-- Mevcut Realtime DB Mantığı -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
@@ -189,9 +146,21 @@
 
         const activeUser = (localStorage.getItem('currentUser') || '').toLowerCase();
 
-        // Sadece Murat ve Admin için Ayarlar Butonunu Göster
         if (activeUser === 'murat' || activeUser === 'admin') {
+            document.getElementById('saglik-menu-section').style.display = 'block';
             document.getElementById('admin-menu-section').style.display = 'block';
+        }
+
+        if (activeUser) {
+            db.ref('usersDB/' + activeUser).on('value', (snapshot) => {
+                const userData = snapshot.val();
+                if (userData && userData.isBlocked === true) {
+                    alert("🚫 Hesabınız yönetici tarafından bloke edilmiştir! Oturum kapatılıyor.");
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.replace('giris.html');
+                }
+            });
         }
 
         async function cikisYap() {
@@ -209,9 +178,46 @@
                 });
             } catch(e) {}
 
-            localStorage.removeItem('isLoggedIn');
+            localStorage.clear();
+            sessionStorage.clear();
             window.location.href = 'giris.html';
         }
+    </script>
+
+    <!-- İnsülin Değişim Süresi Canlı Dinleme (Tüm Kullanıcılara Gösterilir) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+        const healthConfig = {
+            apiKey: "AIzaSyAhjq7KL_e80LiW8fC-wttmn8gba5UvhVE",
+            authDomain: "muratilactakip.firebaseapp.com",
+            projectId: "muratilactakip"
+        };
+        const healthApp = initializeApp(healthConfig, "healthApp");
+        const healthDb = getFirestore(healthApp);
+
+        onSnapshot(doc(healthDb, "sistem_ayarlari", "insulin"), (snap) => {
+            if (!snap.exists() || !snap.data().lastChangedDate) return;
+            const lastDateStr = snap.data().lastChangedDate;
+            const lastDate = new Date(lastDateStr + "T00:00:00");
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+            const bannerEl = document.getElementById('insulin-alert-banner');
+
+            if (diffDays === 27) {
+                bannerEl.className = "alert-banner alert-warning";
+                bannerEl.innerHTML = `⚠️ UYARI: İnsülin kaleminizin değişim zamanına 1 GÜN kaldı!`;
+            } else if (diffDays >= 28) {
+                bannerEl.className = "alert-banner alert-danger";
+                bannerEl.innerHTML = `🚨 ACİL UYARI: İnsülin kaleminin 28 günlük süresi DOLDU! Lütfen yeni kaleme geçiş yapıp tarihi güncelleyin.`;
+            } else {
+                bannerEl.className = "alert-banner";
+                bannerEl.innerHTML = "";
+            }
+        });
     </script>
 </body>
 </html>

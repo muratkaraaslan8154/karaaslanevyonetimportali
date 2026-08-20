@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>İlaç Takibi</title>
+    <title>İlaç ve İnsülin Takibi</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
         :root { --bg-color: #f0f4f8; --card-bg: #ffffff; --text-main: #2d3748; --text-muted: #718096; --water-color: #4299e1; --med-color: #48bb78; --danger: #f56565; --border-radius: 1.2rem; }
@@ -18,69 +18,27 @@
         .sync-status { text-align: center; font-size: 0.8rem; color: var(--med-color); font-weight: bold; margin-top: 0.4rem; }
         .card { background: var(--card-bg); border-radius: var(--border-radius); padding: 1.2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .card h2 { margin-top: 0; font-size: 1.2rem; }
-        .water-tracker { text-align: center; }
         
-        /* Dinamik Dolabilen Dairesel Su Halkası Tasarımı */
-        .water-circle { 
-            width: 140px; 
-            height: 140px; 
-            border-radius: 50%; 
-            background: conic-gradient(var(--water-color) 0%, #ebf8ff 0%); 
-            margin: 0.8rem auto; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            transition: background 0.3s ease;
-        }
-        .water-circle-inner {
-            width: 122px;
-            height: 122px;
-            border-radius: 50%;
-            background: var(--card-bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        .water-amount { font-size: 2rem; font-weight: 700; color: var(--water-color); line-height: 1; }
-        
-        /* Kalan Su Miktarı Metni */
-        .water-remaining-text {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: #4a5568;
-            margin-bottom: 0.8rem;
-        }
-        .water-remaining-text.completed {
-            color: var(--med-color);
-        }
+        /* Uyarı Banner Stilleri */
+        .alert-banner { padding: 1rem; border-radius: 0.8rem; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 0.5rem; display: none; }
+        .alert-warning { background: #ed8936; color: white; display: block; }
+        .alert-danger { background: #e53e3e; color: white; display: block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
+        .water-tracker { text-align: center; }
+        .water-circle { width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(var(--water-color) 0%, #ebf8ff 0%); margin: 0.8rem auto; display: flex; align-items: center; justify-content: center; transition: background 0.3s ease; }
+        .water-circle-inner { width: 122px; height: 122px; border-radius: 50%; background: var(--card-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .water-amount { font-size: 2rem; font-weight: 700; color: var(--water-color); line-height: 1; }
+        .water-remaining-text { font-size: 0.9rem; font-weight: 700; color: #4a5568; margin-bottom: 0.8rem; }
+        .water-remaining-text.completed { color: var(--med-color); }
         .btn-group { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap;}
         .btn { border: none; padding: 0.7rem 1.2rem; border-radius: 0.8rem; font-weight: bold; cursor: pointer; color: white; }
         .btn-water { background: var(--water-color); }
         .btn-remove { background: #e2e8f0; color: var(--text-main); }
-        
-        /* Karton Bardak (Oz) Izgarası Stilleri */
         .oz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.8rem; }
-        .btn-oz { 
-            background: #d69e2e; 
-            color: white; 
-            border: none; 
-            padding: 0.6rem 0.4rem; 
-            border-radius: 0.8rem; 
-            font-weight: bold; 
-            cursor: pointer; 
-            font-size: 0.85rem; 
-            transition: transform 0.1s, opacity 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            line-height: 1.2;
-        }
+        .btn-oz { background: #d69e2e; color: white; border: none; padding: 0.6rem 0.4rem; border-radius: 0.8rem; font-weight: bold; cursor: pointer; font-size: 0.85rem; transition: transform 0.1s, opacity 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
         .btn-oz:hover { opacity: 0.95; transform: translateY(-1px); }
         .btn-oz small { font-size: 0.7rem; font-weight: normal; opacity: 0.92; margin-top: 2px; }
-
         .manual-water-input { padding: 0.7rem; border: 1px solid #cbd5e0; border-radius: 0.8rem; outline: none; width: 80px; text-align: center; font-weight: bold; }
         .extra-med-box { display: flex; gap: 0.5rem; margin-bottom: 1rem; background: #f7fafc; padding: 0.8rem; border-radius: 0.8rem; border: 1px dashed #cbd5e0; }
         .extra-med-box input { flex: 1; padding: 0.6rem; border: 1px solid #cbd5e0; border-radius: 0.5rem; outline: none; }
@@ -100,10 +58,20 @@
         .btn-take-dose { background: var(--water-color); color: white; }
         .btn-reset-dose { background: #e2e8f0; color: var(--text-main); }
         .btn-del-extra { background: var(--danger); color: white; padding: 0.4rem 0.6rem; border: none; border-radius: 0.4rem; cursor: pointer; }
+
+        /* İnsülin Doz Listesi Tablo Stilleri */
+        .insulin-logs-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.85rem; }
+        .insulin-logs-table th { background: #f7fafc; padding: 8px; text-align: left; border-bottom: 2px solid #e2e8f0; color: #4a5568; }
+        .insulin-logs-table td { padding: 8px; border-bottom: 1px solid #edf2f7; vertical-align: middle; }
+        .btn-mini-edit { background: #dd6b20; color: white; border: none; padding: 0.3rem 0.5rem; border-radius: 0.4rem; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+        .btn-mini-delete { background: #e53e3e; color: white; border: none; padding: 0.3rem 0.5rem; border-radius: 0.4rem; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="app-container">
+        <!-- Canlı İnsülin Değişim Uyarı Banner'ı -->
+        <div id="insulin-alert-banner"></div>
+
         <a href="saglik.html" class="nav-back">⬅️ Ana Menü</a>
         <div class="header">
             <h1>💊 İlaç ve Su Takibi</h1>
@@ -114,6 +82,20 @@
             <div class="sync-status" id="sync-status">☁️ Bulut Senkronizasyonu Aktif</div>
         </div>
 
+        <!-- İnsülin Kalem Süresi Yönetim Kartı -->
+        <div class="card" style="border-left: 5px solid #805ad5;">
+            <h2>💉 İnsülin Kalemi Takibi (28 Gün)</h2>
+            <div id="insulin-pen-info" style="font-size:0.9rem; margin-bottom:0.8rem; line-height: 1.4;">
+                ⏳ Yükleniyor...
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap;">
+                <input type="date" id="insulin-pen-date-input" style="flex: 1; min-width: 130px; padding: 0.65rem; border: 1px solid #cbd5e0; border-radius: 0.8rem; font-weight: bold; outline: none;">
+                <button class="btn" style="background:#805ad5; flex: 1; min-width: 130px;" id="btn-change-insulin">
+                    💾 Tarihi Kaydet
+                </button>
+            </div>
+        </div>
+
         <div class="card water-tracker">
             <h2>💧 Su Tüketimi</h2>
             <div class="water-circle" id="water-progress">
@@ -122,43 +104,18 @@
                     <span style="font-size:0.8rem; color:#718096; margin-top: 4px;">/ 2500 ml</span>
                 </div>
             </div>
-            
-            <!-- Kalan Su Göstergesi -->
             <div id="water-remaining" class="water-remaining-text">⏳ Kalan: 2500 ml</div>
-
             <div class="btn-group">
                 <button class="btn btn-remove" id="btn-water-minus">-500</button>
                 <button class="btn btn-water" id="btn-water-plus">+500 ml Ekle</button>
             </div>
-            
-            <!-- Kullanım Alanlı ve İpuçlu Bardak Butonları -->
             <div class="oz-grid">
-                <button class="btn-oz" id="btn-water-4oz" title="Espresso, Double Espresso veya otomat küçük boy bardak">
-                    ☕ 4 oz (90 ml)
-                    <small>Espresso / Otomat</small>
-                </button>
-                
-                <button class="btn-oz" id="btn-water-7oz" title="Ofis otomatlarında kullanılan standart çay/kahve bardağı">
-                    🍵 7 oz (180 ml)
-                    <small>Standart Çay</small>
-                </button>
-                
-                <button class="btn-oz" id="btn-water-8oz" title="Kafelerde orta boy filtre kahve, flat white ve cappuccino">
-                    ☕ 8 oz (210 ml)
-                    <small>Orta Boy Kahve</small>
-                </button>
-                
-                <button class="btn-oz" id="btn-water-12oz" title="Büyük boy americano, latte veya soğuk içecek">
-                    🥤 12 oz (325 ml)
-                    <small>Büyük Boy Latte</small>
-                </button>
-                
-                <button class="btn-oz" id="btn-water-16oz" style="grid-column: span 2;" title="Büyük boy buzlu kahve, meşrubat veya dev kupa">
-                    🥤 16 oz (450 ml)
-                    <small>Dev Boy / Buzlu Kahve</small>
-                </button>
+                <button class="btn-oz" id="btn-water-4oz">☕ 4 oz (90 ml)<small>Espresso / Otomat</small></button>
+                <button class="btn-oz" id="btn-water-7oz">🍵 7 oz (180 ml)<small>Standart Çay</small></button>
+                <button class="btn-oz" id="btn-water-8oz">☕ 8 oz (210 ml)<small>Orta Boy Kahve</small></button>
+                <button class="btn-oz" id="btn-water-12oz">🥤 12 oz (325 ml)<small>Büyük Boy Latte</small></button>
+                <button class="btn-oz" id="btn-water-16oz" style="grid-column: span 2;">🥤 16 oz (450 ml)<small>Dev Boy / Buzlu Kahve</small></button>
             </div>
-
             <div class="btn-group" style="margin-top: 0.8rem;">
                 <input type="number" id="manual-water-input" class="manual-water-input" placeholder="ml">
                 <button class="btn btn-water" id="btn-water-manual">Elle Ekle</button>
@@ -172,6 +129,14 @@
                 <button class="btn-add-taken" id="btn-add-extra">Ekle & İçildi Yap</button>
             </div>
             <ul class="med-list" id="med-list"></ul>
+        </div>
+
+        <!-- Seçili Günün İnsülin Doz Kayıtları Geçmişi (Düzenle / Sil) -->
+        <div class="card" style="border-left: 5px solid #3182ce;">
+            <h2>📋 İnsülin Vurulma Kayıtları Geçmişi</h2>
+            <div id="insulin-logs-container">
+                <p style="font-size:0.85rem; color:#718096; text-align:center;">Seçili güne ait vurulmuş insülin kaydı bulunmuyor.</p>
+            </div>
         </div>
     </div>
 
@@ -193,7 +158,7 @@
         const PRESET_MEDS = [
             { id: "janumet", name: "JANUMET 50/1000 MG", maxDaily: 2, allowedDays: null, ruleText: "Günde 2 adet (Sabah/Akşam)." },
             { id: "delix", name: "DELIX PLUS 5/25 MG", maxDaily: 1, allowedDays: null, ruleText: "Günde 1 adet." },
-            { id: "toujeo", name: "TOUJEO 300 U/ML İNSÜLİN", maxDaily: 1, allowedDays: null, ruleText: "Günde 1 defa vurulur.", needsDose: true, defaultDose: 16 },
+            { id: "toujeo", name: "TOUJEO 300 U/ML İNSÜLİN", maxDaily: 5, allowedDays: null, ruleText: "İnsülin Dozu.", needsDose: true, defaultDose: 16 },
             { id: "oroferon", name: "OROFERON DEPO 80 MG", maxDaily: 1, allowedDays: null, foodWarning: true, ruleText: "Günde 1 adet. Çay/Kahve ile 2 saat ara." },
             { id: "benexol", name: "BENEXOL B12", maxDaily: 1, allowedDays: null, ruleText: "Günde 1 adet." },
             { id: "dcolefor", name: "D-COLEFOR 20.000 İU", maxDaily: 1, allowedDays: [1, 4], ruleText: "Pazartesi ve Perşembe." },
@@ -214,12 +179,107 @@
         let currentDateStr = todayStr;
         let activeUnsubscribe = null;
         let appState = { waterIntake: 0, medsData: {}, extraMeds: [] };
+        let lastSavedInsulinDose = null; // En son kullanılan insülin doz hafızası
 
         const datePicker = document.getElementById('selected-date');
         datePicker.value = todayStr;
         datePicker.addEventListener('change', (e) => { currentDateStr = e.target.value; loadDateData(currentDateStr); });
         document.getElementById('btn-today').onclick = () => { currentDateStr = todayStr; datePicker.value = todayStr; loadDateData(todayStr); };
 
+        /* 1. İnsülin Kalem Süresi ve Son Kullanılan Dozu Canlı Dinleme */
+        const insulinDocRef = doc(db, "sistem_ayarlari", "insulin");
+
+        onSnapshot(insulinDocRef, (snap) => {
+            const dateInput = document.getElementById('insulin-pen-date-input');
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.lastChangedDate) {
+                    if (dateInput && !dateInput.value) {
+                        dateInput.value = data.lastChangedDate;
+                    }
+                    checkInsulinPenStatus(data.lastChangedDate);
+                }
+                // Veritabanından gelen en son insülin dozunu hafızaya al
+                if (data.lastDose) {
+                    lastSavedInsulinDose = data.lastDose;
+                }
+            } else {
+                document.getElementById('insulin-pen-info').innerHTML = "⚠️ İnsülin kalemi değişim tarihi henüz girilmemiş!";
+                if (dateInput && !dateInput.value) {
+                    dateInput.value = todayStr;
+                }
+            }
+        });
+
+        document.getElementById('btn-change-insulin').onclick = async () => {
+            const selectedDate = document.getElementById('insulin-pen-date-input').value;
+            if (!selectedDate) {
+                alert("Lütfen geçerli bir tarih seçiniz!");
+                return;
+            }
+
+            if (confirm(`İnsülin kalem değişim tarihini [ ${selectedDate} ] olarak güncellemek istediğinize emin misiniz?`)) {
+                await setDoc(insulinDocRef, { lastChangedDate: selectedDate }, { merge: true });
+                alert(`✅ İnsülin kalem değişim tarihi ${selectedDate} olarak güncellendi!`);
+            }
+        };
+
+        function checkInsulinPenStatus(lastDateStr) {
+            const lastDate = new Date(lastDateStr + "T00:00:00");
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+            const remainingDays = 28 - diffDays;
+            
+            const infoEl = document.getElementById('insulin-pen-info');
+            const bannerEl = document.getElementById('insulin-alert-banner');
+            
+            infoEl.innerHTML = `📅 Son Kalem Değişimi: <b>${lastDateStr}</b> (${diffDays} gün önce)<br>⏳ Kalan Kullanım Süresi: <b>${remainingDays > 0 ? remainingDays + " Gün" : "Süre Doldu!"}</b>`;
+
+            if (diffDays === 27) {
+                bannerEl.className = "alert-banner alert-warning";
+                bannerEl.innerHTML = `⚠️ UYARI: İnsülin kaleminizin 28 günlük süresinin bitmesine 1 GÜN kaldı! (Yarın değiştirilmeli)`;
+            } else if (diffDays >= 28) {
+                bannerEl.className = "alert-banner alert-danger";
+                bannerEl.innerHTML = `🚨 ACİL UYARI: İnsülin kaleminizin 28 günlük kullanım süresi DOLDU! Lütfen yeni kaleme geçin ve tarihi güncelleyin.`;
+            } else {
+                bannerEl.className = "alert-banner";
+                bannerEl.innerHTML = "";
+            }
+        }
+
+        /* En Son Vurulan İnsülin Dozunu Getiren Yardımcı Fonksiyon */
+        function getLastInsulinDose() {
+            // 1. Öncelik: Seçili/Bugünkü ekrandaki son insülin kaydı
+            let history = appState.medsData['toujeo'] || [];
+            if (Array.isArray(history) && history.length > 0) {
+                let lastEntry = history[history.length - 1];
+                if (lastEntry && lastEntry.dose) return lastEntry.dose;
+            }
+            // 2. Öncelik: Firestore sistem ayarlarından senkronize gelen son doz
+            if (lastSavedInsulinDose) return lastSavedInsulinDose;
+            
+            // 3. Öncelik: Tarayıcının yerel hafızasındaki (localStorage) en son doz
+            let localDose = localStorage.getItem('last_insulin_dose');
+            if (localDose) return localDose;
+
+            // 4. Varsayılan Doz
+            return 16;
+        }
+
+        /* En Son İnsülin Dozunu Bulut ve Yerel Hafızaya Kaydetme */
+        async function updateLastInsulinDose(dose) {
+            lastSavedInsulinDose = dose;
+            localStorage.setItem('last_insulin_dose', dose);
+            try {
+                await setDoc(insulinDocRef, { lastDose: dose }, { merge: true });
+            } catch (e) {
+                console.error("Son insülin dozu kaydedilirken hata oluştu:", e);
+            }
+        }
+
+        /* 2. Günlük Takip Verilerini Yükleme */
         async function loadDateData(dateStr) {
             if (activeUnsubscribe) activeUnsubscribe();
             const docRef = doc(db, "takip_verileri", dateStr);
@@ -252,9 +312,16 @@
             }
             let doseAmount = null;
             if (medConfig.needsDose) {
-                let userDose = prompt(`${medConfig.name} dozu (Ünite):`, medConfig.defaultDose);
+                // En son vurulan dozu otomatik öneri olarak getir
+                let defaultDoseVal = (medConfig.id === 'toujeo') ? getLastInsulinDose() : medConfig.defaultDose;
+                let userDose = prompt(`${medConfig.name} dozu (Ünite):`, defaultDoseVal);
                 if (userDose === null) return;
-                doseAmount = userDose.trim() !== "" ? userDose : medConfig.defaultDose;
+                
+                doseAmount = userDose.trim() !== "" ? userDose.trim() : defaultDoseVal;
+
+                if (medConfig.id === 'toujeo') {
+                    updateLastInsulinDose(doseAmount);
+                }
             }
             history.push({ time: formatDateTime(new Date()), dose: doseAmount });
             appState.medsData[medConfig.id] = history;
@@ -262,10 +329,43 @@
         }
 
         function handleResetMed(medId) {
-            if (confirm("Bu ilacın bugünkü kayıtları SIFIRLANACAK! Emin misiniz?")) {
-                delete appState.medsData[medId]; saveData();
+            if (confirm("Bu ilacın bugünkü tüm kayıtları SIFIRLANACAK! Emin misiniz?")) {
+                delete appState.medsData[medId]; 
+                saveData();
             }
         }
+
+        // İnsülin Dozu Düzenleme Fonksiyonu
+        window.editInsulinDose = function(index) {
+            let history = appState.medsData['toujeo'] || [];
+            if (!history[index]) return;
+
+            let currentDose = history[index].dose || getLastInsulinDose();
+            let newDose = prompt("Yeni insülin doz miktarını (Ünite) giriniz:", currentDose);
+
+            if (newDose !== null && newDose.trim() !== "") {
+                history[index].dose = newDose.trim();
+                appState.medsData['toujeo'] = history;
+                saveData();
+                updateLastInsulinDose(newDose.trim());
+            }
+        };
+
+        // İnsülin Dozu Silme Fonksiyonu
+        window.deleteInsulinDose = function(index) {
+            let history = appState.medsData['toujeo'] || [];
+            if (!history[index]) return;
+
+            if (confirm(`Bu insülin doz kaydını (${history[index].time} - ${history[index].dose} Ünite) silmek istediğinizden emin misiniz?`)) {
+                history.splice(index, 1);
+                if (history.length === 0) {
+                    delete appState.medsData['toujeo'];
+                } else {
+                    appState.medsData['toujeo'] = history;
+                }
+                saveData();
+            }
+        };
 
         document.getElementById('btn-add-extra').onclick = () => {
             const name = document.getElementById('extra-med-name').value.trim();
@@ -281,14 +381,10 @@
             const percentage = Math.min(100, (currentWater / targetWater) * 100);
             const remainingWater = Math.max(0, targetWater - currentWater);
 
-            // İçilen Su Sayacı
             document.getElementById('water-count').innerText = currentWater;
-
-            // Dinamik Dairesel İlerleme Çubuğu Güncellemesi
             const waterCircle = document.getElementById('water-progress');
             waterCircle.style.background = `conic-gradient(var(--water-color) ${percentage}%, #ebf8ff ${percentage}%)`;
 
-            // Kalan Su Miktarı Alanı Güncellemesi
             const remainingEl = document.getElementById('water-remaining');
             if (remainingWater > 0) {
                 remainingEl.innerText = `⏳ Kalan: ${remainingWater} ml`;
@@ -298,13 +394,12 @@
                 remainingEl.className = 'water-remaining-text completed';
             }
 
-            // İlaç Listesini Oluşturma
             const listEl = document.getElementById('med-list'); listEl.innerHTML = "";
             PRESET_MEDS.forEach(med => {
                 let history = appState.medsData[med.id] || [];
                 if(typeof history === 'number') history = Array(history).fill({ time: "Bilinmiyor" });
                 const currentDose = history.length;
-                let logsHTML = history.map((l,i) => `<div>✔️ ${i+1}. Doz: ${l.time} ${l.dose ? '(Doz: '+l.dose+')' : ''}</div>`).join('');
+                let logsHTML = history.map((l,i) => `<div>✔️ ${i+1}. Doz: ${l.time} ${l.dose ? '(Doz: '+l.dose+' Ünite)' : ''}</div>`).join('');
                 
                 const li = document.createElement('li');
                 li.className = `med-item ${currentDose > 0 ? 'taken' : ''}`;
@@ -316,30 +411,73 @@
                     </div>
                     <div class="med-actions">
                         ${currentDose < med.maxDaily ? `<button class="btn-action btn-take-dose" id="t-${med.id}">+1 ${med.needsDose?'Vuruldum':'İçtim'}</button>` : ''}
-                        ${currentDose > 0 ? `<button class="btn-action btn-reset-dose" id="r-${med.id}">Sıfırla</button>` : ''}
+                        ${currentDose > 0 ? `<button class="btn-action btn-reset-dose" id="r-${med.id}">Tümünü Sıfırla</button>` : ''}
                     </div>`;
                 listEl.appendChild(li);
                 if(currentDose < med.maxDaily) document.getElementById(`t-${med.id}`).onclick = () => handleTakeMed(med);
                 if(currentDose > 0) document.getElementById(`r-${med.id}`).onclick = () => handleResetMed(med.id);
             });
+
             appState.extraMeds.forEach(extra => {
                 const li = document.createElement('li'); li.className = 'med-item taken'; li.style.borderLeftColor = '#319795';
                 li.innerHTML = `<div class="med-info"><div class="med-title">📌 ${extra.name}</div><div class="time-logs">✔️ ${extra.time}</div></div><div class="med-actions"><button class="btn-del-extra" id="d-${extra.id}">Sil</button></div>`;
                 listEl.appendChild(li);
                 document.getElementById(`d-${extra.id}`).onclick = () => deleteExtraMed(extra.id);
             });
+
+            // Alt Kısımda İnsülin Kayıt Geçmişini Güncelleme
+            updateInsulinHistoryUI();
         }
 
-        /* Su Ekleme Butonlarının Olayları */
+        function updateInsulinHistoryUI() {
+            const container = document.getElementById('insulin-logs-container');
+            let history = appState.medsData['toujeo'] || [];
+
+            if (typeof history === 'number') {
+                history = Array(history).fill({ time: "Bilinmiyor", dose: getLastInsulinDose() });
+            }
+
+            if (history.length === 0) {
+                container.innerHTML = `<p style="font-size:0.85rem; color:#718096; text-align:center;">Seçili güne (${currentDateStr}) ait insülin vurulma kaydı yok.</p>`;
+                return;
+            }
+
+            let rows = history.map((item, index) => {
+                return `
+                    <tr>
+                        <td><b>${item.time || currentDateStr}</b></td>
+                        <td style="color:#2b6cb0; font-weight:bold;">${item.dose ? item.dose + ' Ünite' : getLastInsulinDose() + ' Ünite'}</td>
+                        <td style="text-align:right;">
+                            <button class="btn-mini-edit" onclick="editInsulinDose(${index})">✏️ Düzenle</button>
+                            <button class="btn-mini-delete" onclick="deleteInsulinDose(${index})">🗑️ Sil</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <table class="insulin-logs-table">
+                    <thead>
+                        <tr>
+                            <th>Tarih / Saat</th>
+                            <th>Doz</th>
+                            <th style="text-align:right;">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            `;
+        }
+
         document.getElementById('btn-water-plus').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+500; saveData(); };
         document.getElementById('btn-water-minus').onclick = () => { appState.waterIntake = Math.max(0,(appState.waterIntake||0)-500); saveData(); };
-        
         document.getElementById('btn-water-4oz').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+90; saveData(); };
         document.getElementById('btn-water-7oz').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+180; saveData(); };
         document.getElementById('btn-water-8oz').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+210; saveData(); };
         document.getElementById('btn-water-12oz').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+325; saveData(); };
         document.getElementById('btn-water-16oz').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+450; saveData(); };
-
         document.getElementById('btn-water-manual').onclick = () => { const v = parseInt(document.getElementById('manual-water-input').value); if(v>0) { appState.waterIntake = (appState.waterIntake||0)+v; document.getElementById('manual-water-input').value=""; saveData(); }};
         
         loadDateData(todayStr);

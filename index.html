@@ -35,6 +35,7 @@
             --primary-green: #27ae60;
             --primary-red: #e53e3e;
             --primary-purple: #805ad5;
+            --primary-gold: #d69e2e;
             --text-main: #2d3748;
             --text-muted: #718096;
         }
@@ -58,6 +59,7 @@
         .link-market { border-left-color: var(--primary-green); }
         .link-saglik { border-left-color: var(--primary-red); }
         .link-ayarlar { border-left-color: var(--primary-purple); }
+        .link-birikim { border-left-color: var(--primary-gold); }
 
         .icon-box { font-size: 2rem; margin-right: 1rem; background: #f7fafc; padding: 0.8rem; border-radius: 50%; min-width: 65px; text-align: center; }
         .text-box { display: flex; flex-direction: column; }
@@ -101,6 +103,17 @@
             </div>
         </a>
 
+        <!-- Özel Finans Modülü (Sadece Murat ve Admin) -->
+        <div id="finans-ozel-section" style="display: none;">
+            <a href="finans.html" class="menu-link link-birikim">
+                <div class="icon-box">💰</div>
+                <div class="text-box">
+                    <span class="title">Finans Yönetimi (Özel)</span>
+                    <span class="desc">Kişisel birikim, taksit takibi, maaş hesaplama ve analiz raporları.</span>
+                </div>
+            </a>
+        </div>
+
         <div id="saglik-menu-section" style="display: none;">
             <div class="section-title">Sağlık & Takip</div>
 
@@ -130,7 +143,6 @@
         </div>
     </div>
 
-    <!-- Mevcut Realtime DB Mantığı -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
@@ -146,9 +158,11 @@
 
         const activeUser = (localStorage.getItem('currentUser') || '').toLowerCase();
 
+        // Admin ve Murat için gizli menüleri açma
         if (activeUser === 'murat' || activeUser === 'admin') {
             document.getElementById('saglik-menu-section').style.display = 'block';
             document.getElementById('admin-menu-section').style.display = 'block';
+            document.getElementById('finans-ozel-section').style.display = 'block';
         }
 
         if (activeUser) {
@@ -184,7 +198,6 @@
         }
     </script>
 
-    <!-- İnsülin Değişim Süresi Canlı Dinleme (Tüm Kullanıcılara Gösterilir) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";

@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yönetici Paneli - KARAASLAN Portalı</title>
     
-    <!-- Firebase v8 SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    <!-- SAYFA GÜVENLİĞİ VE CANLI ENGEL KONTROLÜ -->
     <script>
         const activeUser = (localStorage.getItem('currentUser') || '').toLowerCase();
         const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -36,7 +34,6 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // CANLI ENGEL KONTROLÜ (Kullanıcı Sayfadayken Bloke Edilirse Anında Atılır)
         db.ref('usersDB/' + activeUser).on('value', (snapshot) => {
             const userData = snapshot.val();
             if (userData && userData.isBlocked === true) {
@@ -77,11 +74,6 @@
         
         .gps-link { color: #3182ce; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
         .gps-link:hover { text-decoration: underline; }
-
-        .insulin-box { background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #805ad5; }
-        .insulin-inputs { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-top: 10px; }
-        .insulin-inputs div { flex: 1; min-width: 200px; }
-        .btn-inline { margin-top: 0; padding: 10px 15px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -91,24 +83,6 @@
             <span style="font-size: 0.9rem; font-weight: normal; color: #805ad5;" id="adminLabel"></span>
         </h2>
         
-        <!-- İnsülin Kalem Süresi ve Tarih Seçim Modülü -->
-        <div class="insulin-box">
-            <h3 style="margin-top: 0; font-size: 1.1rem; color: #2d3748;">💉 İnsülin Kalem Süresi Yönetimi (28 Gün)</h3>
-            <div id="insulinPenInfo" style="font-size: 0.9rem; color: #4a5568; margin-bottom: 8px; line-height: 1.5;">
-                ⏳ Kalem değişim durumu yükleniyor...
-            </div>
-            <div class="insulin-inputs">
-                <div>
-                    <label style="font-size: 0.8rem; margin-bottom: 4px;">Değişim Tarihi Seçin:</label>
-                    <input type="date" id="insulinPenDateInput">
-                </div>
-                <button class="btn-save btn-inline" style="background: #319795; flex: 0 0 auto;" id="btnUpdateInsulinDate">
-                    💾 Tarihi Kaydet / Güncelle
-                </button>
-            </div>
-        </div>
-
-        <!-- Kullanıcı Ekle Formu -->
         <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
             <h3 style="margin-top: 0; font-size: 1.1rem; color: #2d3748;" id="formTitle">Yeni Kullanıcı Ekle</h3>
             <div class="form-group">
@@ -123,7 +97,6 @@
             <button class="btn-save" id="cancelBtn" onclick="formuTemizle()" style="display:none; background: #a0aec0;">İptal Et</button>
         </div>
 
-        <!-- Kullanıcı Listesi -->
         <h3 style="font-size: 1.1rem; color: #2d3748; margin-bottom: 10px;">👥 Kullanıcılar & Cihaz Güvenliği</h3>
         <div style="overflow-x:auto;">
             <table>
@@ -132,6 +105,7 @@
                         <th>Kullanıcı</th>
                         <th>PIN</th>
                         <th>Cihaz Kimliği</th>
+                        <th>Birikim Modülü</th>
                         <th>Durum</th>
                         <th>İşlemler</th>
                     </tr>
@@ -140,7 +114,6 @@
             </table>
         </div>
 
-        <!-- Gelişmiş Log Tablosu -->
         <h3 style="font-size: 1.1rem; color: #2d3748; margin-top: 30px; margin-bottom: 10px;">📋 Giriş / Çıkış, IP & Lokasyon Logları</h3>
         <div class="log-box" style="overflow-x:auto;">
             <table>
@@ -161,24 +134,30 @@
         <a href="index.html" class="btn-back">← Ana Menüye Dön</a>
     </div>
 
-    <!-- Mevcut Realtime DB Mantığınız (Kullanıcı & Loglar) -->
     <script>
         document.getElementById('adminLabel').innerText = "Yetkili: " + activeUser.toUpperCase();
 
         let usersDB = {};
+        let savingsVis = {};
 
-        // Kullanıcıları Dinle
+        // Kullanıcılar ve Birikim Görünürlük Verisini Çek
         db.ref('usersDB').on('value', (snapshot) => {
             usersDB = snapshot.val() || {};
-            kullaniciListesiniGuncelle();
+            db.ref('savingsVisibility').on('value', (visSnap) => {
+                savingsVis = visSnap.val() || {};
+                kullaniciListesiniGuncelle();
+            });
         });
 
-        // Logları Dinle (Son 50 Kayıt)
         db.ref('systemLogs').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
             const logsObj = snapshot.val() || {};
             const logArray = Object.values(logsObj).reverse();
             logListesiniGuncelle(logArray);
         });
+
+        async function toggleSavingsVis(user, state) {
+            await db.ref('savingsVisibility/' + user).set(state);
+        }
 
         function kullaniciListesiniGuncelle() {
             const tbody = document.getElementById('userTableBody');
@@ -205,11 +184,21 @@
                     actionBtns += `<button class="btn-delete" onclick="kullaniciSil('${username}')">Sil</button>`;
                 }
 
+                // Birikim görünürlük kontrolü
+                let birikimErisimi = '';
+                if (username !== 'admin') {
+                    const isChecked = savingsVis[username] ? 'checked' : '';
+                    birikimErisimi = `<input type="checkbox" onchange="toggleSavingsVis('${username}', this.checked)" ${isChecked} style="width:auto; cursor:pointer;"> Aktif`;
+                } else {
+                    birikimErisimi = `<span style="color: #a0aec0; font-size: 0.8rem;">Yönetici</span>`;
+                }
+
                 tbody.innerHTML += `
                     <tr>
                         <td style="font-weight:bold;">${username} ${isExempt ? '🛡️' : ''}</td>
                         <td>${details.pin}</td>
                         <td title="${details.registeredDevice || ''}">${regDevice}</td>
+                        <td>${birikimErisimi}</td>
                         <td>${statusBadge}</td>
                         <td>${actionBtns}</td>
                     </tr>
@@ -223,9 +212,7 @@
 
             logs.forEach(log => {
                 let rowColor = (log.action && (log.action.includes('🚫') || log.action.includes('Blokeli'))) ? 'background:#fff5f5;' : '';
-                
                 const ipLocation = (log.ip ? log.ip : 'Bilinmiyor') + (log.location ? ` (${log.location})` : '');
-                
                 let gpsDisplay = '<span style="color:#a0aec0;">Yok</span>';
                 if (log.gpsLat && log.gpsLng) {
                     gpsDisplay = `<a href="https://maps.google.com/?q=${log.gpsLat},${log.gpsLng}" target="_blank" class="gps-link">📍 Haritada Gör</a>`;
@@ -244,7 +231,6 @@
             });
         }
 
-        // IP ve Şehir/Ülke Bilgisi Çekme Fonksiyonu
         async function getIpAndLocation() {
             try {
                 const response = await fetch('https://ipapi.co/json/');
@@ -253,27 +239,20 @@
                     ip: data.ip || 'Bilinmiyor',
                     location: (data.city && data.country_name) ? `${data.city}, ${data.country_name}` : 'Bilinmiyor'
                 };
-            } catch (err) {
-                return { ip: 'Bilinmiyor', location: 'Bilinmiyor' };
-            }
+            } catch (err) { return { ip: 'Bilinmiyor', location: 'Bilinmiyor' }; }
         }
 
-        // GPS Koordinatı Alma Fonksiyonu
         function getGPSCoordinates() {
             return new Promise((resolve) => {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-                        () => resolve(null),
-                        { timeout: 4000 }
+                        () => resolve(null), { timeout: 4000 }
                     );
-                } else {
-                    resolve(null);
-                }
+                } else { resolve(null); }
             });
         }
 
-        // Tam Detaylı Log Oluşturucu
         async function sistemLogYaz(user, action) {
             const ipData = await getIpAndLocation();
             const gpsData = await getGPSCoordinates();
@@ -281,31 +260,19 @@
             const timeStr = `${now.toLocaleDateString('tr-TR')} ${now.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})}`;
 
             db.ref('systemLogs').push({
-                user: user,
-                action: action,
-                device: navigator.userAgent,
-                ip: ipData.ip,
-                location: ipData.location,
-                gpsLat: gpsData ? gpsData.lat : null,
-                gpsLng: gpsData ? gpsData.lng : null,
-                time: timeStr,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
+                user: user, action: action, device: navigator.userAgent,
+                ip: ipData.ip, location: ipData.location, gpsLat: gpsData ? gpsData.lat : null,
+                gpsLng: gpsData ? gpsData.lng : null, time: timeStr, timestamp: firebase.database.ServerValue.TIMESTAMP
             });
         }
 
         async function kullaniciKaydet() {
             const user = document.getElementById('newUsername').value.toLowerCase().trim();
             const pin = document.getElementById('newPin').value.trim();
-            
-            if(!user || !pin) {
-                alert("Lütfen kullanıcı adı ve PIN girin!");
-                return;
-            }
+            if(!user || !pin) return alert("Lütfen kullanıcı adı ve PIN girin!");
 
-            await db.ref('usersDB/' + user).update({
-                pin: pin,
-                isBlocked: false
-            });
+            await db.ref('usersDB/' + user).update({ pin: pin, isBlocked: false });
+            await db.ref('savingsVisibility/' + user).set(true); // Eklendiğinde varsayılan birikim modülü aktif
 
             await sistemLogYaz(activeUser, `Yeni Kullanıcı Eklendi: ${user}`);
             alert("Kullanıcı başarıyla kaydedildi!");
@@ -314,103 +281,27 @@
 
         async function blokeKaldir(username) {
             if(confirm(username + " kullanıcısının blokesini kaldırmak ve cihazını sıfırlamak istiyor musunuz?")) {
-                await db.ref('usersDB/' + username).update({
-                    isBlocked: false,
-                    registeredDevice: null 
-                });
+                await db.ref('usersDB/' + username).update({ isBlocked: false, registeredDevice: null });
                 await sistemLogYaz(activeUser, `Bloke Kaldırıldı & Cihaz Sıfırlandı: ${username}`);
             }
         }
-
         async function blokeEt(username) {
             if(confirm(username + " kullanıcısını bloke etmek istediğinizden emin misiniz?")) {
                 await db.ref('usersDB/' + username).update({ isBlocked: true });
                 await sistemLogYaz(activeUser, `🚫 Kullanıcı Bloke Edildi: ${username}`);
             }
         }
-
         async function kullaniciSil(username) {
             if(confirm(username + " adlı kullanıcıyı silmek istediğinize emin misiniz?")) {
                 await db.ref('usersDB/' + username).remove();
+                await db.ref('savingsVisibility/' + username).remove();
                 await sistemLogYaz(activeUser, `Kullanıcı Silindi: ${username}`);
             }
         }
 
         function formuTemizle() {
-            document.getElementById('newUsername').value = "";
-            document.getElementById('newPin').value = "";
+            document.getElementById('newUsername').value = ""; document.getElementById('newPin').value = "";
         }
-    </script>
-
-    <!-- İnsülin Değişim Tarihi Yönetimi (Firestore Entegrasyonu ve Özel Tarih Seçici) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-
-        const healthConfig = {
-            apiKey: "AIzaSyAhjq7KL_e80LiW8fC-wttmn8gba5UvhVE",
-            authDomain: "muratilactakip.firebaseapp.com",
-            projectId: "muratilactakip"
-        };
-        const healthApp = initializeApp(healthConfig, "healthApp_Ayarlar");
-        const healthDb = getFirestore(healthApp);
-
-        function getLocalDateString() {
-            const d = new Date();
-            const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
-            return `${y}-${m}-${day}`;
-        }
-
-        const insulinDocRef = doc(healthDb, "sistem_ayarlari", "insulin");
-
-        // Firestore'dan Kayıtlı Tarihi Dinle ve Tarih Seçiciye Yükle
-        onSnapshot(insulinDocRef, (snap) => {
-            const infoEl = document.getElementById('insulinPenInfo');
-            const dateInput = document.getElementById('insulinPenDateInput');
-
-            if (snap.exists() && snap.data().lastChangedDate) {
-                const lastDateStr = snap.data().lastChangedDate;
-                
-                // Eğer input henüz doldurulmadıysa kayıtlı tarihi yaz
-                if (!dateInput.value) {
-                    dateInput.value = lastDateStr;
-                }
-
-                const lastDate = new Date(lastDateStr + "T00:00:00");
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                
-                const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
-                const remaining = 28 - diffDays;
-
-                infoEl.innerHTML = `
-                    <b>📅 Kayıtlı Değişim Tarihi:</b> ${lastDateStr} (${diffDays} gün geçti)<br>
-                    <b>⏳ Kalan Kullanım Süresi:</b> ${remaining > 0 ? remaining + ' gün' : '<span style="color:#e53e3e; font-weight:bold;">Süre Doldu!</span>'}
-                `;
-            } else {
-                infoEl.innerHTML = "⚠️ İnsülin kalem değişim kaydı henüz bulunmuyor.";
-                if (!dateInput.value) dateInput.value = getLocalDateString();
-            }
-        });
-
-        // Seçilen Tarihi Firestore'a Kaydet
-        document.getElementById('btnUpdateInsulinDate').onclick = async () => {
-            const selectedDate = document.getElementById('insulinPenDateInput').value;
-            
-            if (!selectedDate) {
-                alert("Lütfen geçerli bir tarih seçiniz!");
-                return;
-            }
-
-            if (confirm(`İnsülin kalem değişim tarihini [ ${selectedDate} ] olarak kaydetmek istiyor musunuz?`)) {
-                await setDoc(insulinDocRef, { lastChangedDate: selectedDate });
-                
-                if (typeof sistemLogYaz === 'function') {
-                    sistemLogYaz(activeUser, `İnsülin Değişim Tarihi Güncellendi: ${selectedDate}`);
-                }
-                alert(`✅ İnsülin kalem değişim tarihi ${selectedDate} olarak güncellendi!`);
-            }
-        };
     </script>
 </body>
 </html>

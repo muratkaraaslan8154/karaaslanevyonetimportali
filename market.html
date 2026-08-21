@@ -83,7 +83,7 @@
         <div class="user-info" id="kullanici-etiket">👤 Kullanıcı</div>
     </div>
 
-    <!-- CANLI KASA & KK ÖZETİ PANORAMASI (YETKİLİLERE GÖSTERİLİR) -->
+    <!-- CANLI KASA & KK ÖZETİ PANORAMASI -->
     <div id="kasa-ozet-paneli" style="display: none;">
         <div class="kasa-summary-grid">
             <div class="summary-card market">
@@ -152,10 +152,20 @@
                     <label>Fişin GENEL Toplamı (TL)</label>
                     <input type="number" id="k-genel-toplam" step="0.01" min="0" oninput="karmaHesapla()">
                 </div>
+                
                 <div class="form-group">
-                    <label>Sebze / Meyve (PAZAR) Tutarı (TL)</label>
-                    <input type="number" id="k-pazar-tutar" step="0.01" min="0" oninput="karmaHesapla()">
+                    <label>Girmek İstediğiniz Alt Kategori Tutarı</label>
+                    <select id="k-alt-secim" onchange="karmaHesapla()">
+                        <option value="Pazar">Sadece Pazar Tutarını Gireceğim</option>
+                        <option value="Market">Sadece Market Tutarını Gireceğim</option>
+                    </select>
                 </div>
+
+                <div class="form-group">
+                    <label id="k-alt-label">Sebze / Meyve (PAZAR) Tutarı (TL)</label>
+                    <input type="number" id="k-alt-tutar" step="0.01" min="0" oninput="karmaHesapla()">
+                </div>
+                
                 <div class="form-group">
                     <label>Ödenen Toplam NAKİT (TL)</label>
                     <input type="number" id="k-genel-nakit" step="0.01" min="0" oninput="karmaHesapla()">
@@ -179,6 +189,7 @@
                 <thead>
                     <tr>
                         <th>Tarih</th>
+                        <th>Saat</th>
                         <th>Kategori</th>
                         <th>Kişi</th>
                         <th>Fiş</th>
@@ -211,7 +222,10 @@
         let duzenlenenGorselUrl = '';
         let harcamalarObje = {};
         let kasaSayimiObje = {};
-        let sabitAyarlar = { market200: 17, pazar200: 15, pazarEkstra: 300 };
+        
+        // YENİ BÜTÇE AYARI: Eski sistem (200'lük banknot) yerine doğrudan bütçe okunacak.
+        let sabitAyarlar = { marketButce: 3400, pazarButce: 3000 };
+        
         let aktifHaftaBaslangic = "";
 
         function getAktifKullanici() {
@@ -264,8 +278,14 @@
         function kasaHesaplaVeGuncelle() {
             if (!yetkiliMi()) return;
 
-            const mHedef = (sabitAyarlar.market200 || 17) * 200;
-            const pHedef = ((sabitAyarlar.pazar200 || 15) * 200) + (parseInt(sabitAyarlar.pazarEkstra) || 300);
+            // YENİ HEDEF HESAPLAMA: Doğrudan admin panelindeki sabit ayarlardan net tutarı çeker. +300 vb. manuel eklemeler kaldırıldı.
+            const mHedef = sabitAyarlar.marketButce !== undefined 
+                ? parseFloat(sabitAyarlar.marketButce) 
+                : ((sabitAyarlar.market200 || 17) * 200);
+
+            const pHedef = sabitAyarlar.pazarButce !== undefined 
+                ? parseFloat(sabitAyarlar.pazarButce) 
+                : ((sabitAyarlar.pazar200 || 15) * 200);
 
             let mNakit = 0, pNakit = 0, mKK = 0, pKK = 0;
 
@@ -338,14 +358,40 @@
 
         function karmaHesapla() {
             const gTop = parseFloat(document.getElementById('k-genel-toplam').value) || 0;
-            const pTop = parseFloat(document.getElementById('k-pazar-tutar').value) || 0;
+            const altTutar = parseFloat(document.getElementById('k-alt-tutar').value) || 0;
             const gNak = parseFloat(document.getElementById('k-genel-nakit').value) || 0;
+            const altSecim = document.getElementById('k-alt-secim').value;
 
-            const mTop = Math.max(0, gTop - pTop);
-            const pNak = Math.min(pTop, gNak);
-            const pKK = Math.max(0, pTop - pNak);
-            const mNak = Math.max(0, gNak - pNak);
-            const mKK = Math.max(0, mTop - mNak);
+            document.getElementById('k-alt-label').innerText = altSecim === 'Pazar' 
+                ? "Sebze / Meyve (PAZAR) Tutarı (TL)" 
+                : "Market Tutarı (TL)";
+
+            let pTop = 0;
+            let mTop = 0;
+
+            if (altSecim === 'Pazar') {
+                pTop = Math.min(altTutar, gTop);
+                mTop = Math.max(0, gTop - pTop);
+            } else {
+                mTop = Math.min(altTutar, gTop);
+                pTop = Math.max(0, gTop - mTop);
+            }
+
+            const harcananNakit = Math.min(gTop, gNak);
+            const toplamKK = Math.max(0, gTop - harcananNakit);
+
+            let pNak = 0, pKK = 0, mNak = 0, mKK = 0;
+            
+            if (gTop > 0) {
+                const pOran = pTop / gTop;
+                const mOran = mTop / gTop;
+
+                pNak = harcananNakit * pOran;
+                pKK = toplamKK * pOran;
+
+                mNak = harcananNakit * mOran;
+                mKK = toplamKK * mOran;
+            }
 
             document.getElementById('pazar-ozet').innerText = `🥬 Pazar: ${pTop.toFixed(2)} TL (${pNak.toFixed(2)} TL Nakit, ${pKK.toFixed(2)} TL KK)`;
             document.getElementById('market-ozet').innerText = `🛒 Market: ${mTop.toFixed(2)} TL (${mNak.toFixed(2)} TL Nakit, ${mKK.toFixed(2)} TL KK)`;
@@ -353,7 +399,6 @@
             return { pTop, pNak, pKK, mTop, mNak, mKK };
         }
 
-        // Görseli Sıkıştırıp Base64 Metnine Dönüştüren Yardımcı Fonksiyon
         function getBase64Image(fileInput) {
             return new Promise((resolve) => {
                 const file = fileInput.files[0];
@@ -365,7 +410,7 @@
                         const canvas = document.createElement('canvas');
                         let width = img.width;
                         let height = img.height;
-                        const maxDim = 800; // Maksimum genişlik/yükseklik
+                        const maxDim = 800;
                         if (width > maxDim || height > maxDim) {
                             if (width > height) {
                                 height = Math.round((height * maxDim) / width);
@@ -379,7 +424,7 @@
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Sıkıştırılmış JPEG
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
                     };
                     img.src = e.target.result;
                 };
@@ -394,7 +439,7 @@
             liste.innerHTML = '';
 
             if (!snapshot.exists()) {
-                liste.innerHTML = `<tr><td colspan="${isAuth ? 9 : 8}" style="text-align:center;">Henüz kayıt bulunmuyor.</td></tr>`;
+                liste.innerHTML = `<tr><td colspan="${isAuth ? 10 : 9}" style="text-align:center;">Henüz kayıt bulunmuyor.</td></tr>`;
                 return;
             }
 
@@ -409,6 +454,7 @@
 
                 tr.innerHTML = `
                     <td>${item.tarih || '-'}</td>
+                    <td>${item.saat || '-'}</td>
                     <td>${item.kategori || '-'}</td>
                     <td><b>${item.kisi || '-'}</b></td>
                     <td style="text-align:center;">${gorselHtml}</td>
@@ -433,7 +479,8 @@
             const kat = document.getElementById('kategori').value;
             const aciklama = document.getElementById('harcama-aciklama').value.trim();
             const kisi = activeUser || 'Bilinmiyor';
-
+            
+            const saat = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
             const gorselInput = document.getElementById('harcama-gorsel');
             let gorselData = await getBase64Image(gorselInput);
 
@@ -442,23 +489,30 @@
                 const toplam = parseFloat(document.getElementById('toplam-tutar').value) || 0;
                 const nakit = parseFloat(document.getElementById('nakit-odenen').value) || 0;
                 
-                // Yeni görsel seçilmediyse eski görseli koru
+                if (toplam <= 0) return alert("⚠️ Lütfen 0'dan büyük bir tutar giriniz!");
+
                 const gorsel = gorselData || duzenlenenGorselUrl;
 
                 db.ref('harcamalar/' + duzenlenenKayitId).update({
-                    tarih, kategori: kat === 'Karma' ? 'Market' : kat, kisi, aciklama,
+                    tarih, saat, kategori: kat === 'Karma' ? 'Market' : kat, kisi, aciklama,
                     toplam, nakit, kk: Math.max(0, toplam - nakit), gorsel
                 });
                 duzenlemeIptal();
             } else {
                 if (kat === 'Karma') {
                     const guncel = karmaHesapla();
-                    if (guncel.pTop > 0) db.ref('harcamalar').push({ tarih, kategori: 'Pazar', kisi, aciklama, toplam: guncel.pTop, nakit: guncel.pNak, kk: guncel.pKK, gorsel: gorselData });
-                    if (guncel.mTop > 0) db.ref('harcamalar').push({ tarih, kategori: 'Market', kisi, aciklama, toplam: guncel.mTop, nakit: guncel.mNak, kk: guncel.mKK, gorsel: gorselData });
+                    
+                    if (guncel.pTop <= 0 && guncel.mTop <= 0) return alert("⚠️ Lütfen 0'dan büyük bir tutar giriniz!");
+
+                    if (guncel.pTop > 0) db.ref('harcamalar').push({ tarih, saat, kategori: 'Pazar', kisi, aciklama, toplam: guncel.pTop, nakit: guncel.pNak, kk: guncel.pKK, gorsel: gorselData });
+                    if (guncel.mTop > 0) db.ref('harcamalar').push({ tarih, saat, kategori: 'Market', kisi, aciklama, toplam: guncel.mTop, nakit: guncel.mNak, kk: guncel.mKK, gorsel: gorselData });
                 } else {
                     const toplam = parseFloat(document.getElementById('toplam-tutar').value) || 0;
                     const nakit = parseFloat(document.getElementById('nakit-odenen').value) || 0;
-                    db.ref('harcamalar').push({ tarih, kategori: kat, kisi, aciklama, toplam, nakit, kk: Math.max(0, toplam - nakit), gorsel: gorselData });
+                    
+                    if (toplam <= 0) return alert("⚠️ Lütfen 0'dan büyük bir tutar giriniz!");
+
+                    db.ref('harcamalar').push({ tarih, saat, kategori: kat, kisi, aciklama, toplam, nakit, kk: Math.max(0, toplam - nakit), gorsel: gorselData });
                 }
             }
             formuSifirla();

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>İlaç ve İnsülin Takibi</title>
+    <!-- Chart.js Kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
         :root { --bg-color: #f0f4f8; --card-bg: #ffffff; --text-main: #2d3748; --text-muted: #718096; --water-color: #4299e1; --med-color: #48bb78; --danger: #f56565; --border-radius: 1.2rem; }
@@ -35,14 +37,19 @@
         .btn { border: none; padding: 0.7rem 1.2rem; border-radius: 0.8rem; font-weight: bold; cursor: pointer; color: white; }
         .btn-water { background: var(--water-color); }
         .btn-remove { background: #e2e8f0; color: var(--text-main); }
+        .btn-chart { background: #3182ce; width: 100%; margin-bottom: 0.5rem; }
+        .btn-print { background: #4a5568; width: 100%; margin-bottom: 1rem; }
+        
         .oz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.8rem; }
         .btn-oz { background: #d69e2e; color: white; border: none; padding: 0.6rem 0.4rem; border-radius: 0.8rem; font-weight: bold; cursor: pointer; font-size: 0.85rem; transition: transform 0.1s, opacity 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
         .btn-oz:hover { opacity: 0.95; transform: translateY(-1px); }
         .btn-oz small { font-size: 0.7rem; font-weight: normal; opacity: 0.92; margin-top: 2px; }
         .manual-water-input { padding: 0.7rem; border: 1px solid #cbd5e0; border-radius: 0.8rem; outline: none; width: 80px; text-align: center; font-weight: bold; }
+        
         .extra-med-box { display: flex; gap: 0.5rem; margin-bottom: 1rem; background: #f7fafc; padding: 0.8rem; border-radius: 0.8rem; border: 1px dashed #cbd5e0; }
         .extra-med-box input { flex: 1; padding: 0.6rem; border: 1px solid #cbd5e0; border-radius: 0.5rem; outline: none; }
         .btn-add-taken { background: #319795; color: white; border: none; padding: 0.6rem 0.9rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer; }
+        
         .med-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.8rem; }
         .med-item { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 5px solid #cbd5e0; padding: 0.9rem; border-radius: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
         .med-item.taken { border-left-color: var(--med-color); background: #f0fff4; }
@@ -58,6 +65,7 @@
         .btn-take-dose { background: var(--water-color); color: white; }
         .btn-reset-dose { background: #e2e8f0; color: var(--text-main); }
         .btn-del-extra { background: var(--danger); color: white; padding: 0.4rem 0.6rem; border: none; border-radius: 0.4rem; cursor: pointer; }
+        .btn-toggle-completed { width: 100%; margin-top: 0.8rem; padding: 0.6rem; border: none; border-radius: 0.8rem; font-weight: bold; cursor: pointer; background: #e2e8f0; color: #4a5568; display: none; }
 
         /* İnsülin Doz Listesi Tablo Stilleri */
         .insulin-logs-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.85rem; }
@@ -65,6 +73,26 @@
         .insulin-logs-table td { padding: 8px; border-bottom: 1px solid #edf2f7; vertical-align: middle; }
         .btn-mini-edit { background: #dd6b20; color: white; border: none; padding: 0.3rem 0.5rem; border-radius: 0.4rem; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
         .btn-mini-delete { background: #e53e3e; color: white; border: none; padding: 0.3rem 0.5rem; border-radius: 0.4rem; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+        .pagination-btn { background: #e2e8f0; color: var(--text-main); border: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+        .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Grafik Konteyner */
+        #chart-container { display: none; margin-bottom: 1.5rem; padding: 10px; background: #f7fafc; border-radius: 0.8rem; border: 1px solid #e2e8f0; }
+
+        /* YAZDIRMA (PDF) STİLLERİ */
+        #print-area { display: none; }
+        @media print {
+            body { background: #fff; color: #000; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+            .app-container { display: none !important; }
+            #print-area { display: block !important; width: 100%; }
+            .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+            .print-header h1 { margin: 0; font-size: 24px; color: #000; }
+            .print-header p { margin: 5px 0; font-size: 14px; color: #333; }
+            .print-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: left; }
+            .print-table th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; }
+            .print-footer { margin-top: 30px; font-size: 12px; text-align: right; color: #555; }
+        }
     </style>
 </head>
 <body>
@@ -129,20 +157,32 @@
                 <button class="btn-add-taken" id="btn-add-extra">Ekle & İçildi Yap</button>
             </div>
             <ul class="med-list" id="med-list"></ul>
+            <button id="btn-toggle-completed" class="btn-toggle-completed">Tamamlananları Göster</button>
         </div>
 
-        <!-- Seçili Günün İnsülin Doz Kayıtları Geçmişi (Düzenle / Sil) -->
-        <div class="card" style="border-left: 5px solid #3182ce;">
-            <h2>📋 İnsülin Vurulma Kayıtları Geçmişi</h2>
-            <div id="insulin-logs-container">
-                <p style="font-size:0.85rem; color:#718096; text-align:center;">Seçili güne ait vurulmuş insülin kaydı bulunmuyor.</p>
+        <!-- Global İnsülin Doz Listesi -->
+        <div class="card" style="border-left: 5px solid #3182ce; margin-top: 0.5rem;">
+            <h2>📋 Tüm İnsülin Geçmişi</h2>
+            
+            <button class="btn btn-chart" id="btn-toggle-chart">📈 Grafiği Göster / Gizle</button>
+            <button class="btn btn-print" id="btn-print-report">🖨️ Doktor Raporu (PDF / Yazdır)</button>
+            
+            <div id="chart-container">
+                <canvas id="insulinChart"></canvas>
+            </div>
+
+            <div id="global-insulin-logs-container">
+                <p style="font-size:0.85rem; color:#718096; text-align:center;">Yükleniyor...</p>
             </div>
         </div>
     </div>
 
+    <!-- YAZDIRILACAK ALAN -->
+    <div id="print-area"></div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAhjq7KL_e80LiW8fC-wttmn8gba5UvhVE",
@@ -158,7 +198,7 @@
         const PRESET_MEDS = [
             { id: "janumet", name: "JANUMET 50/1000 MG", maxDaily: 2, allowedDays: null, ruleText: "Günde 2 adet (Sabah/Akşam)." },
             { id: "delix", name: "DELIX PLUS 5/25 MG", maxDaily: 1, allowedDays: null, ruleText: "Günde 1 adet." },
-            { id: "toujeo", name: "TOUJEO 300 U/ML İNSÜLİN", maxDaily: 5, allowedDays: null, ruleText: "İnsülin Dozu.", needsDose: true, defaultDose: 16 },
+            { id: "toujeo", name: "TOUJEO 300 U/ML İNSÜLİN", maxDaily: 1, allowedDays: null, ruleText: "Günde 1 kez.", needsDose: true, defaultDose: 16 },
             { id: "oroferon", name: "OROFERON DEPO 80 MG", maxDaily: 1, allowedDays: null, foodWarning: true, ruleText: "Günde 1 adet. Çay/Kahve ile 2 saat ara." },
             { id: "benexol", name: "BENEXOL B12", maxDaily: 1, allowedDays: null, ruleText: "Günde 1 adet." },
             { id: "dcolefor", name: "D-COLEFOR 20.000 İU", maxDaily: 1, allowedDays: [1, 4], ruleText: "Pazartesi ve Perşembe." },
@@ -174,50 +214,55 @@
             const h = String(d.getHours()).padStart(2,'0'), min = String(d.getMinutes()).padStart(2,'0');
             return `${day}-${m}-${y} ${h}:${min}`;
         }
+        function parseCustomDate(timeStr) {
+            if (!timeStr || timeStr === "Bilinmiyor") return 0;
+            try {
+                const parts = timeStr.split(' ');
+                if (parts.length !== 2) return 0;
+                const [day, month, year] = parts[0].split('-');
+                const [hour, minute] = parts[1].split(':');
+                return new Date(year, month - 1, day, hour, minute).getTime();
+            } catch(e) { return 0; }
+        }
 
         const todayStr = getLocalDateString();
         let currentDateStr = todayStr;
         let activeUnsubscribe = null;
         let appState = { waterIntake: 0, medsData: {}, extraMeds: [] };
-        let lastSavedInsulinDose = null; // En son kullanılan insülin doz hafızası
+        let lastSavedInsulinDose = null; 
+        
+        let globalInsulinLogs = [];
+        let currentInsulinPage = 1;
+        const insulinPerPage = 5;
+        let insulinChartInstance = null; 
+        
+        // Tamamlanan ilaçları gizleme/gösterme state'i
+        let showCompletedMeds = false;
 
         const datePicker = document.getElementById('selected-date');
         datePicker.value = todayStr;
         datePicker.addEventListener('change', (e) => { currentDateStr = e.target.value; loadDateData(currentDateStr); });
         document.getElementById('btn-today').onclick = () => { currentDateStr = todayStr; datePicker.value = todayStr; loadDateData(todayStr); };
 
-        /* 1. İnsülin Kalem Süresi ve Son Kullanılan Dozu Canlı Dinleme */
         const insulinDocRef = doc(db, "sistem_ayarlari", "insulin");
-
         onSnapshot(insulinDocRef, (snap) => {
             const dateInput = document.getElementById('insulin-pen-date-input');
             if (snap.exists()) {
                 const data = snap.data();
                 if (data.lastChangedDate) {
-                    if (dateInput && !dateInput.value) {
-                        dateInput.value = data.lastChangedDate;
-                    }
+                    if (dateInput && !dateInput.value) dateInput.value = data.lastChangedDate;
                     checkInsulinPenStatus(data.lastChangedDate);
                 }
-                // Veritabanından gelen en son insülin dozunu hafızaya al
-                if (data.lastDose) {
-                    lastSavedInsulinDose = data.lastDose;
-                }
+                if (data.lastDose) lastSavedInsulinDose = data.lastDose;
             } else {
                 document.getElementById('insulin-pen-info').innerHTML = "⚠️ İnsülin kalemi değişim tarihi henüz girilmemiş!";
-                if (dateInput && !dateInput.value) {
-                    dateInput.value = todayStr;
-                }
+                if (dateInput && !dateInput.value) dateInput.value = todayStr;
             }
         });
 
         document.getElementById('btn-change-insulin').onclick = async () => {
             const selectedDate = document.getElementById('insulin-pen-date-input').value;
-            if (!selectedDate) {
-                alert("Lütfen geçerli bir tarih seçiniz!");
-                return;
-            }
-
+            if (!selectedDate) return alert("Lütfen geçerli bir tarih seçiniz!");
             if (confirm(`İnsülin kalem değişim tarihini [ ${selectedDate} ] olarak güncellemek istediğinize emin misiniz?`)) {
                 await setDoc(insulinDocRef, { lastChangedDate: selectedDate }, { merge: true });
                 alert(`✅ İnsülin kalem değişim tarihi ${selectedDate} olarak güncellendi!`);
@@ -226,9 +271,7 @@
 
         function checkInsulinPenStatus(lastDateStr) {
             const lastDate = new Date(lastDateStr + "T00:00:00");
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            
+            const today = new Date(); today.setHours(0,0,0,0);
             const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
             const remainingDays = 28 - diffDays;
             
@@ -239,47 +282,30 @@
 
             if (diffDays === 27) {
                 bannerEl.className = "alert-banner alert-warning";
-                bannerEl.innerHTML = `⚠️ UYARI: İnsülin kaleminizin 28 günlük süresinin bitmesine 1 GÜN kaldı! (Yarın değiştirilmeli)`;
+                bannerEl.innerHTML = `⚠️ UYARI: İnsülin kaleminizin 28 günlük süresinin bitmesine 1 GÜN kaldı!`;
             } else if (diffDays >= 28) {
                 bannerEl.className = "alert-banner alert-danger";
-                bannerEl.innerHTML = `🚨 ACİL UYARI: İnsülin kaleminizin 28 günlük kullanım süresi DOLDU! Lütfen yeni kaleme geçin ve tarihi güncelleyin.`;
+                bannerEl.innerHTML = `🚨 ACİL UYARI: İnsülin kaleminizin 28 günlük kullanım süresi DOLDU!`;
             } else {
-                bannerEl.className = "alert-banner";
-                bannerEl.innerHTML = "";
+                bannerEl.className = "alert-banner"; bannerEl.innerHTML = "";
             }
         }
 
-        /* En Son Vurulan İnsülin Dozunu Getiren Yardımcı Fonksiyon */
         function getLastInsulinDose() {
-            // 1. Öncelik: Seçili/Bugünkü ekrandaki son insülin kaydı
-            let history = appState.medsData['toujeo'] || [];
-            if (Array.isArray(history) && history.length > 0) {
-                let lastEntry = history[history.length - 1];
-                if (lastEntry && lastEntry.dose) return lastEntry.dose;
-            }
-            // 2. Öncelik: Firestore sistem ayarlarından senkronize gelen son doz
+            if (globalInsulinLogs.length > 0 && globalInsulinLogs[0].dose) return globalInsulinLogs[0].dose;
             if (lastSavedInsulinDose) return lastSavedInsulinDose;
-            
-            // 3. Öncelik: Tarayıcının yerel hafızasındaki (localStorage) en son doz
             let localDose = localStorage.getItem('last_insulin_dose');
             if (localDose) return localDose;
-
-            // 4. Varsayılan Doz
             return 16;
         }
 
-        /* En Son İnsülin Dozunu Bulut ve Yerel Hafızaya Kaydetme */
         async function updateLastInsulinDose(dose) {
             lastSavedInsulinDose = dose;
             localStorage.setItem('last_insulin_dose', dose);
-            try {
-                await setDoc(insulinDocRef, { lastDose: dose }, { merge: true });
-            } catch (e) {
-                console.error("Son insülin dozu kaydedilirken hata oluştu:", e);
-            }
+            try { await setDoc(insulinDocRef, { lastDose: dose }, { merge: true }); } 
+            catch (e) {}
         }
 
-        /* 2. Günlük Takip Verilerini Yükleme */
         async function loadDateData(dateStr) {
             if (activeUnsubscribe) activeUnsubscribe();
             const docRef = doc(db, "takip_verileri", dateStr);
@@ -294,16 +320,15 @@
                 updateUI();
             });
         }
+        
         async function saveData() { await setDoc(doc(db, "takip_verileri", currentDateStr), appState); }
 
-        function handleTakeMed(medConfig) {
+        async function handleTakeMed(medConfig) {
             let history = appState.medsData[medConfig.id] || [];
             if(typeof history === 'number') history = Array(history).fill({ time: "Bilinmiyor" });
             
-            if (history.length >= medConfig.maxDaily) {
-                alert(`⚠️ HAK DOLDU: Günlük (${medConfig.maxDaily}) sınırına ulaştınız.`);
-                return;
-            }
+            if (history.length >= medConfig.maxDaily) return alert(`⚠️ HAK DOLDU: Günlük (${medConfig.maxDaily}) sınırına ulaştınız.`);
+            
             if (medConfig.allowedDays && !medConfig.allowedDays.includes(new Date(currentDateStr + "T00:00:00").getDay())) {
                 if (!confirm(`⚠️ UYARI: Bu ilaç Pzt/Perş içilir. Devam edilsin mi?`)) return;
             }
@@ -312,59 +337,168 @@
             }
             let doseAmount = null;
             if (medConfig.needsDose) {
-                // En son vurulan dozu otomatik öneri olarak getir
                 let defaultDoseVal = (medConfig.id === 'toujeo') ? getLastInsulinDose() : medConfig.defaultDose;
                 let userDose = prompt(`${medConfig.name} dozu (Ünite):`, defaultDoseVal);
                 if (userDose === null) return;
-                
                 doseAmount = userDose.trim() !== "" ? userDose.trim() : defaultDoseVal;
-
-                if (medConfig.id === 'toujeo') {
-                    updateLastInsulinDose(doseAmount);
-                }
+                if (medConfig.id === 'toujeo') updateLastInsulinDose(doseAmount);
             }
             history.push({ time: formatDateTime(new Date()), dose: doseAmount });
             appState.medsData[medConfig.id] = history;
-            saveData();
+            
+            await saveData();
+            if(medConfig.id === 'toujeo') fetchGlobalInsulinLogs(); 
         }
 
-        function handleResetMed(medId) {
+        async function handleResetMed(medId) {
             if (confirm("Bu ilacın bugünkü tüm kayıtları SIFIRLANACAK! Emin misiniz?")) {
                 delete appState.medsData[medId]; 
-                saveData();
+                await saveData();
+                if(medId === 'toujeo') fetchGlobalInsulinLogs();
             }
         }
 
-        // İnsülin Dozu Düzenleme Fonksiyonu
-        window.editInsulinDose = function(index) {
-            let history = appState.medsData['toujeo'] || [];
-            if (!history[index]) return;
+        async function fetchGlobalInsulinLogs() {
+            const querySnapshot = await getDocs(collection(db, "takip_verileri"));
+            let allLogs = [];
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                if (data.medsData && data.medsData['toujeo']) {
+                    let history = data.medsData['toujeo'];
+                    if (Array.isArray(history)) {
+                        history.forEach((log, index) => {
+                            allLogs.push({ docId: docSnap.id, time: log.time, dose: log.dose, index: index, parsedDate: parseCustomDate(log.time) });
+                        });
+                    }
+                }
+            });
+            allLogs.sort((a, b) => b.parsedDate - a.parsedDate);
+            globalInsulinLogs = allLogs;
+            
+            if (globalInsulinLogs.length > 0 && globalInsulinLogs[0].dose) lastSavedInsulinDose = globalInsulinLogs[0].dose;
+            
+            renderGlobalInsulinLogs();
+            if (document.getElementById('chart-container').style.display === 'block') renderChart();
+        }
 
-            let currentDose = history[index].dose || getLastInsulinDose();
-            let newDose = prompt("Yeni insülin doz miktarını (Ünite) giriniz:", currentDose);
+        function renderGlobalInsulinLogs() {
+            const container = document.getElementById('global-insulin-logs-container');
+            if (globalInsulinLogs.length === 0) {
+                container.innerHTML = `<p style="font-size:0.85rem; color:#718096; text-align:center;">İnsülin kaydı bulunamadı.</p>`; return;
+            }
 
-            if (newDose !== null && newDose.trim() !== "") {
-                history[index].dose = newDose.trim();
-                appState.medsData['toujeo'] = history;
-                saveData();
-                updateLastInsulinDose(newDose.trim());
+            const totalPages = Math.ceil(globalInsulinLogs.length / insulinPerPage);
+            if (currentInsulinPage > totalPages) currentInsulinPage = totalPages || 1;
+            if (currentInsulinPage < 1) currentInsulinPage = 1;
+            const startIndex = (currentInsulinPage - 1) * insulinPerPage;
+            const paginatedLogs = globalInsulinLogs.slice(startIndex, startIndex + insulinPerPage);
+
+            let rows = paginatedLogs.map((item) => `
+                <tr>
+                    <td><b>${item.time}</b></td>
+                    <td style="color:#2b6cb0; font-weight:bold;">${item.dose ? item.dose + ' Ünite' : 'Bilinmiyor'}</td>
+                    <td style="text-align:right;">
+                        <button class="btn-mini-edit" onclick="editGlobalInsulinDose('${item.docId}', ${item.index})">✏️</button>
+                        <button class="btn-mini-delete" onclick="deleteGlobalInsulinDose('${item.docId}', ${item.index})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            container.innerHTML = `
+                <table class="insulin-logs-table">
+                    <thead><tr><th>Tarih / Saat</th><th>Doz</th><th style="text-align:right;">İşlem</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                <div style="display:flex; justify-content:space-between; margin-top:12px; align-items:center;">
+                    <button class="pagination-btn" onclick="changeInsulinPage(-1)" ${currentInsulinPage === 1 ? 'disabled' : ''}>⬅️ Geri</button>
+                    <span style="font-size:0.85rem; font-weight:bold;">Sayfa ${currentInsulinPage} / ${totalPages}</span>
+                    <button class="pagination-btn" onclick="changeInsulinPage(1)" ${currentInsulinPage === totalPages ? 'disabled' : ''}>İleri ➡️</button>
+                </div>
+            `;
+        }
+
+        window.changeInsulinPage = function(dir) { currentInsulinPage += dir; renderGlobalInsulinLogs(); };
+        window.editGlobalInsulinDose = async function(docId, index) {
+            const docRef = doc(db, "takip_verileri", docId);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                let data = snap.data();
+                if (data.medsData && data.medsData['toujeo'] && data.medsData['toujeo'][index]) {
+                    let currentDose = data.medsData['toujeo'][index].dose || getLastInsulinDose();
+                    let newDose = prompt("Yeni insülin doz miktarını (Ünite) giriniz:", currentDose);
+                    if (newDose !== null && newDose.trim() !== "") {
+                        data.medsData['toujeo'][index].dose = newDose.trim();
+                        await setDoc(docRef, data); updateLastInsulinDose(newDose.trim());
+                        fetchGlobalInsulinLogs(); if (docId === currentDateStr) loadDateData(currentDateStr);
+                    }
+                }
             }
         };
 
-        // İnsülin Dozu Silme Fonksiyonu
-        window.deleteInsulinDose = function(index) {
-            let history = appState.medsData['toujeo'] || [];
-            if (!history[index]) return;
-
-            if (confirm(`Bu insülin doz kaydını (${history[index].time} - ${history[index].dose} Ünite) silmek istediğinizden emin misiniz?`)) {
-                history.splice(index, 1);
-                if (history.length === 0) {
-                    delete appState.medsData['toujeo'];
-                } else {
-                    appState.medsData['toujeo'] = history;
+        window.deleteGlobalInsulinDose = async function(docId, index) {
+            if (!confirm("Bu insülin kaydını SİLMEK istediğinize emin misiniz?")) return;
+            const docRef = doc(db, "takip_verileri", docId);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                let data = snap.data();
+                if (data.medsData && data.medsData['toujeo']) {
+                    data.medsData['toujeo'].splice(index, 1);
+                    if (data.medsData['toujeo'].length === 0) delete data.medsData['toujeo'];
+                    await setDoc(docRef, data); fetchGlobalInsulinLogs();
+                    if (docId === currentDateStr) loadDateData(currentDateStr); 
                 }
-                saveData();
             }
+        };
+        
+        function renderChart() {
+            const ctx = document.getElementById('insulinChart').getContext('2d');
+            if (insulinChartInstance) insulinChartInstance.destroy();
+            const sortedLogs = [...globalInsulinLogs].sort((a, b) => a.parsedDate - b.parsedDate);
+            const labels = sortedLogs.map(log => log.time.split(' ')[0]); 
+            const dataValues = sortedLogs.map(log => parseInt(log.dose) || 0);
+            insulinChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{ label: 'İnsülin Dozu (Ünite)', data: dataValues, borderColor: '#3182ce', backgroundColor: 'rgba(49, 130, 206, 0.2)', borderWidth: 2, pointBackgroundColor: '#2b6cb0', pointRadius: 4, fill: true, tension: 0.3 }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: false, title: { display: true, text: 'Ünite Miktarı' } } } }
+            });
+        }
+
+        document.getElementById('btn-toggle-chart').addEventListener('click', () => {
+            const chartContainer = document.getElementById('chart-container');
+            if (chartContainer.style.display === 'none' || chartContainer.style.display === '') {
+                chartContainer.style.display = 'block'; renderChart();
+            } else { chartContainer.style.display = 'none'; }
+        });
+
+        document.getElementById('btn-print-report').addEventListener('click', () => {
+            const printArea = document.getElementById('print-area');
+            const sortedLogs = [...globalInsulinLogs].sort((a, b) => a.parsedDate - b.parsedDate);
+            const todayDate = new Date().toLocaleDateString('tr-TR');
+            
+            let htmlContent = `
+                <div class="print-header">
+                    <h1>Hasta İnsülin Geçmişi Raporu</h1>
+                    <p><strong>Uygulanan İlaç:</strong> TOUJEO 300 U/ML İNSÜLİN</p>
+                    <p><strong>Rapor Oluşturulma Tarihi:</strong> ${todayDate}</p>
+                </div>
+                <table class="print-table">
+                    <thead><tr><th>Tarih ve Saat</th><th>Uygulanan Doz</th></tr></thead>
+                    <tbody>
+            `;
+            if (sortedLogs.length === 0) { htmlContent += `<tr><td colspan="2" style="text-align:center;">Kayıt bulunamadı.</td></tr>`; } 
+            else { sortedLogs.forEach(log => { htmlContent += `<tr><td>${log.time}</td><td>${log.dose ? log.dose + ' Ünite' : 'Bilinmiyor'}</td></tr>`; }); }
+            htmlContent += `</tbody></table><div class="print-footer">Bu belge sistem tarafından otomatik oluşturulmuştur.</div>`;
+            printArea.innerHTML = htmlContent;
+            window.print();
+        });
+
+        // Tamamlananları göster/gizle butonu eventi
+        document.getElementById('btn-toggle-completed').onclick = () => {
+            showCompletedMeds = !showCompletedMeds;
+            updateUI();
         };
 
         document.getElementById('btn-add-extra').onclick = () => {
@@ -386,23 +520,40 @@
             waterCircle.style.background = `conic-gradient(var(--water-color) ${percentage}%, #ebf8ff ${percentage}%)`;
 
             const remainingEl = document.getElementById('water-remaining');
-            if (remainingWater > 0) {
-                remainingEl.innerText = `⏳ Kalan: ${remainingWater} ml`;
-                remainingEl.className = 'water-remaining-text';
-            } else {
-                remainingEl.innerText = `🎉 Tebrikler! Günlük hedef tamamlandı.`;
-                remainingEl.className = 'water-remaining-text completed';
-            }
+            if (remainingWater > 0) { remainingEl.innerText = `⏳ Kalan: ${remainingWater} ml`; remainingEl.className = 'water-remaining-text'; } 
+            else { remainingEl.innerText = `🎉 Tebrikler! Günlük hedef tamamlandı.`; remainingEl.className = 'water-remaining-text completed'; }
 
-            const listEl = document.getElementById('med-list'); listEl.innerHTML = "";
+            const listEl = document.getElementById('med-list'); 
+            listEl.innerHTML = "";
+            let completedCount = 0;
+            
+            const selectedDateObj = new Date(currentDateStr + "T00:00:00");
+            const currentDayIndex = selectedDateObj.getDay();
+
             PRESET_MEDS.forEach(med => {
                 let history = appState.medsData[med.id] || [];
                 if(typeof history === 'number') history = Array(history).fill({ time: "Bilinmiyor" });
+                
+                if (med.allowedDays && !med.allowedDays.includes(currentDayIndex)) {
+                    if (history.length === 0) return;
+                }
+
                 const currentDose = history.length;
+                const isCompleted = currentDose >= med.maxDaily;
+                
+                // Eğer tamamlandıysa sayacı artır
+                if (isCompleted) completedCount++;
+
                 let logsHTML = history.map((l,i) => `<div>✔️ ${i+1}. Doz: ${l.time} ${l.dose ? '(Doz: '+l.dose+' Ünite)' : ''}</div>`).join('');
                 
                 const li = document.createElement('li');
                 li.className = `med-item ${currentDose > 0 ? 'taken' : ''}`;
+                
+                // Tamamlanan ilaçları gizleme mantığı (Eğer showCompletedMeds false ise)
+                if (isCompleted && !showCompletedMeds) {
+                    li.style.display = 'none';
+                }
+
                 li.innerHTML = `
                     <div class="med-info">
                         <div class="med-title">${med.name}</div><div class="med-rule">${med.ruleText}</div>
@@ -413,6 +564,7 @@
                         ${currentDose < med.maxDaily ? `<button class="btn-action btn-take-dose" id="t-${med.id}">+1 ${med.needsDose?'Vuruldum':'İçtim'}</button>` : ''}
                         ${currentDose > 0 ? `<button class="btn-action btn-reset-dose" id="r-${med.id}">Tümünü Sıfırla</button>` : ''}
                     </div>`;
+                
                 listEl.appendChild(li);
                 if(currentDose < med.maxDaily) document.getElementById(`t-${med.id}`).onclick = () => handleTakeMed(med);
                 if(currentDose > 0) document.getElementById(`r-${med.id}`).onclick = () => handleResetMed(med.id);
@@ -425,50 +577,16 @@
                 document.getElementById(`d-${extra.id}`).onclick = () => deleteExtraMed(extra.id);
             });
 
-            // Alt Kısımda İnsülin Kayıt Geçmişini Güncelleme
-            updateInsulinHistoryUI();
-        }
-
-        function updateInsulinHistoryUI() {
-            const container = document.getElementById('insulin-logs-container');
-            let history = appState.medsData['toujeo'] || [];
-
-            if (typeof history === 'number') {
-                history = Array(history).fill({ time: "Bilinmiyor", dose: getLastInsulinDose() });
+            // "Tamamlananları Göster/Gizle" Butonunun Yönetimi
+            const btnToggle = document.getElementById('btn-toggle-completed');
+            if (completedCount > 0) {
+                btnToggle.style.display = 'block';
+                btnToggle.innerText = showCompletedMeds 
+                    ? `Tamamlananları Gizle (${completedCount})` 
+                    : `Tamamlananları Göster (${completedCount})`;
+            } else {
+                btnToggle.style.display = 'none';
             }
-
-            if (history.length === 0) {
-                container.innerHTML = `<p style="font-size:0.85rem; color:#718096; text-align:center;">Seçili güne (${currentDateStr}) ait insülin vurulma kaydı yok.</p>`;
-                return;
-            }
-
-            let rows = history.map((item, index) => {
-                return `
-                    <tr>
-                        <td><b>${item.time || currentDateStr}</b></td>
-                        <td style="color:#2b6cb0; font-weight:bold;">${item.dose ? item.dose + ' Ünite' : getLastInsulinDose() + ' Ünite'}</td>
-                        <td style="text-align:right;">
-                            <button class="btn-mini-edit" onclick="editInsulinDose(${index})">✏️ Düzenle</button>
-                            <button class="btn-mini-delete" onclick="deleteInsulinDose(${index})">🗑️ Sil</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            container.innerHTML = `
-                <table class="insulin-logs-table">
-                    <thead>
-                        <tr>
-                            <th>Tarih / Saat</th>
-                            <th>Doz</th>
-                            <th style="text-align:right;">İşlem</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-            `;
         }
 
         document.getElementById('btn-water-plus').onclick = () => { appState.waterIntake = (appState.waterIntake||0)+500; saveData(); };
@@ -481,6 +599,7 @@
         document.getElementById('btn-water-manual').onclick = () => { const v = parseInt(document.getElementById('manual-water-input').value); if(v>0) { appState.waterIntake = (appState.waterIntake||0)+v; document.getElementById('manual-water-input').value=""; saveData(); }};
         
         loadDateData(todayStr);
+        fetchGlobalInsulinLogs();
     </script>
 </body>
 </html>

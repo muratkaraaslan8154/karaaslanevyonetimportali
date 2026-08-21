@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maaş Hesaplama & Dönem Takibi - KARAASLAN</title>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const activeUser = (localStorage.getItem('currentUser') || '').toLowerCase();
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+
+        if (!isLoggedIn) window.location.replace('giris.html');
+        if (activeUser !== 'murat' && activeUser !== 'admin') {
+            alert("Yetkisiz Erişim! Bu sayfaya sadece yöneticiler girebilir.");
+            window.location.replace('index.html');
+        }
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
+            authDomain: "karaaslanhomebutcetakip.firebaseapp.com",
+            databaseURL: "https://karaaslanhomebutcetakip-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "karaaslanhomebutcetakip"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1.5rem 1rem; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 950px; }
+        
+        .card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+        h2 { margin-top: 0; color: #2d3748; border-bottom: 2px solid #805ad5; padding-bottom: 8px; display:flex; justify-content:space-between; align-items:center; font-size: 1.4rem; flex-wrap: wrap; gap: 10px; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #4a5568; font-size: 0.9rem; }
+        input[type="text"], input[type="number"], input[type="date"], select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; }
+        
+        .btn { background: #805ad5; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1rem; }
+        .btn:hover { background: #6b46c1; }
+        .btn-calc { background: #319795; }
+        .btn-calc:hover { background: #2c7a7b; }
+
+        .calc-preview-box { background: #f7fafc; border: 2px dashed #cbd5e0; padding: 15px; border-radius: 8px; margin-top: 10px; margin-bottom: 15px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f7fafc; color: #4a5568; }
+        
+        .btn-mini { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size:0.8rem; }
+        .btn-edit { background: #ecc94b; color: #744210; }
+        .btn-del { background: #fc8181; color: white; }
+
+        /* Özet Bar Stilleri */
+        .summary-card { background: linear-gradient(135deg, #4c51bf 0%, #6b46c1 100%); color: white; }
+        .summary-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .total-amount { font-size: 1.8rem; font-weight: 700; color: #e2e8f0; margin-top: 4px; }
+        .user-salary-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .user-salary-badge { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(5px); border: 1px solid rgba(255, 255, 255, 0.25); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
+        .user-salary-badge strong { color: #feebc8; text-transform: uppercase; }
+        .user-salary-badge .desc-tag { opacity: 0.85; font-size: 0.78rem; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>
+            <span>💵 Maaş Hesaplama & Gelecek Dönem Planlama</span>
+            <div style="font-size: 0.85rem;">
+                <a href="kisiselbirikim.html" style="color: #718096; text-decoration: none; font-weight: bold;">⬅️ Birikim Sayfası</a>
+            </div>
+        </h2>
+
+        <!-- GÜNCEL MAAŞLAR VE AYLIK TOPLAM GÖSTERGESİ -->
+        <div class="card summary-card">
+            <div class="summary-header">
+                <div>
+                    <span style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9;">💳 Güncel Toplam Aylık Ödenen Tutar</span>
+                    <div class="total-amount" id="totalMonthlyPayout">0.00 TL</div>
+                </div>
+                <div style="font-size: 0.85rem; opacity: 0.9;">
+                    👥 Aktif Personel Sayısı: <strong id="activeUserCount">0</strong>
+                </div>
+            </div>
+            <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 12px 0;">
+            <div style="font-size: 0.85rem; font-weight: bold; margin-bottom: 6px;">📌 Kişi Bazlı Güncel Maaşlar ve Açıklamalar:</div>
+            <div class="user-salary-grid" id="userCurrentSalaries">
+                <!-- Dinamik olarak yüklenecek -->
+            </div>
+        </div>
+
+        <!-- TOPLU ZAM KARTI -->
+        <div class="card" style="border-left: 5px solid #319795;">
+            <h3 style="margin-top:0; color:#2d3748;">🚀 Tüm Liste İçin Toplu Zam Uygula</h3>
+            <p style="font-size:0.85rem; color:#718096; margin-top:-5px; margin-bottom:15px;">
+                Tüm kullanıcıların veritabanındaki son aktif maaşlarına belirtilen yüzde oranında toplu zam uygular ve yeni dönem kayıtlarını ekler.
+            </p>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label>Toplu Zam Oranı (%):</label>
+                    <input type="number" id="bulkRaiseRate" placeholder="Örn: 25">
+                </div>
+                <div class="form-group">
+                    <label>Geçerlilik Tarihi:</label>
+                    <input type="date" id="bulkRecordDate">
+                </div>
+                <div class="form-group">
+                    <label>Açıklama / Dönem:</label>
+                    <input type="text" id="bulkRecordDesc" placeholder="Örn: 2026 Genel Dönem Zammı">
+                </div>
+            </div>
+
+            <button class="btn btn-calc" onclick="applyBulkRaise()">⚡ Tüm Listeye Toplu Zam Yap ve Kaydet</button>
+        </div>
+
+        <!-- BİREYSEL MAAŞ HESAPLAMA VE ZAM FORMU -->
+        <div class="card">
+            <h3 style="margin-top:0; color:#2d3748;">⚡ Bireysel Zam ve Dönem Maaşı Ekle</h3>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label>Kullanıcı Seçin:</label>
+                    <select id="salaryUser"></select>
+                </div>
+                <div class="form-group">
+                    <label>Ödeme Tipi:</label>
+                    <select id="payType" onchange="calculateSalaryPreview()">
+                        <option value="aylik">Aylık Maaş</option>
+                        <option value="haftalik">Haftalık Maaş (x4 Aylık)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label id="baseSalaryLabel">Mevcut Maaş / Tutar (TL):</label>
+                    <input type="number" id="baseSalary" placeholder="Örn: 25000" oninput="calculateSalaryPreview()">
+                </div>
+                <div class="form-group">
+                    <label>Zam Oranı (%):</label>
+                    <input type="number" id="raiseRate" placeholder="Örn: 30" value="0" oninput="calculateSalaryPreview()">
+                </div>
+            </div>
+
+            <!-- HESAPLANAN DEĞERLER -->
+            <div class="calc-preview-box">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="form-group" style="margin:0;">
+                        <label style="color:#2c7a7b;">Hesaplanan Aylık Taban Maaş (TL):</label>
+                        <input type="number" id="calcMonthlyBase" readonly style="background:#edf2f7; font-weight:bold;">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="color:#805ad5;">Zamlı / Önümüzdeki Dönem Maaşı (TL) [Düzenlenebilir]:</label>
+                        <input type="number" id="finalSalary" style="font-weight:bold; font-size:1.1rem; color:#2b6cb0; border:2px solid #3182ce;">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label>Geçerlilik Tarihi:</label>
+                    <input type="date" id="recordDate">
+                </div>
+                <div class="form-group">
+                    <label>Açıklama / Dönem:</label>
+                    <input type="text" id="recordDesc" placeholder="Örn: 2026 1. Yarıyıl Zamı">
+                </div>
+            </div>
+
+            <button class="btn" onclick="saveSalaryRecord()">🔒 Maaş Kaydını Veritabanına Kaydet</button>
+        </div>
+
+        <!-- MAAŞ GEÇMİŞİ VE KAYITLAR -->
+        <div class="card">
+            <h3 style="margin-top:0; color:#2d3748;">📋 Maaş Kayıtları ve Geçmişi</h3>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Kullanıcı</th>
+                            <th>Ödeme Tipi</th>
+                            <th>Girilen Tutar</th>
+                            <th>Zam %</th>
+                            <th>Son Maaş (Aylık)</th>
+                            <th>Açıklama</th>
+                            <th>Yönetim</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salaryTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PIN_CODE = "1234";
+        const FIXED_ORDER = ['murat', 'hatunum', 'melek', 'emre', 'kerem'];
+        let targetUsers = [];
+        let salaryRecords = [];
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('recordDate').value = todayStr;
+        document.getElementById('bulkRecordDate').value = todayStr;
+
+        function verifyPin() {
+            return prompt("Bu işlem için yetki şifresini girin:") === PIN_CODE;
+        }
+
+        function sortUsersCustom(usersArray) {
+            return usersArray.sort((a, b) => {
+                let ia = FIXED_ORDER.indexOf(a.toLowerCase());
+                let ib = FIXED_ORDER.indexOf(b.toLowerCase());
+                if (ia === -1) ia = 99;
+                if (ib === -1) ib = 99;
+                return ia - ib;
+            });
+        }
+
+        function initData() {
+            db.ref('usersDB').once('value', snap => {
+                const allUsers = snap.val() || {};
+                let userKeys = Object.keys(allUsers).filter(u => u.toLowerCase() !== 'admin');
+                
+                if (userKeys.length === 0) {
+                    targetUsers = FIXED_ORDER;
+                } else {
+                    targetUsers = sortUsersCustom(userKeys);
+                }
+                
+                setupUserSelect();
+                fetchSalaryRecords();
+            });
+        }
+
+        function setupUserSelect() {
+            const select = document.getElementById('salaryUser');
+            select.innerHTML = "";
+            targetUsers.forEach(u => {
+                select.innerHTML += `<option value="${u}">${u.toUpperCase()}</option>`;
+            });
+        }
+
+        function calculateSalaryPreview() {
+            const payType = document.getElementById('payType').value;
+            const baseSalary = parseFloat(document.getElementById('baseSalary').value) || 0;
+            const raiseRate = parseFloat(document.getElementById('raiseRate').value) || 0;
+
+            let monthlyBase = baseSalary;
+            if (payType === 'haftalik') {
+                monthlyBase = baseSalary * 4;
+            }
+
+            const calculatedFinal = monthlyBase * (1 + (raiseRate / 100));
+
+            document.getElementById('calcMonthlyBase').value = monthlyBase.toFixed(2);
+            document.getElementById('finalSalary').value = calculatedFinal.toFixed(2);
+
+            const label = document.getElementById('baseSalaryLabel');
+            label.innerText = payType === 'haftalik' ? "Mevcut Haftalık Maaş (TL):" : "Mevcut Aylık Maaş (TL):";
+        }
+
+        function fetchSalaryRecords() {
+            db.ref('salaryRecords').on('value', snap => {
+                const data = snap.val() || {};
+                salaryRecords = Object.keys(data).map(key => ({ id: key, ...data[key] })).sort((a,b) => b.timestamp - a.timestamp);
+                
+                updateSummaryData();
+                renderSalaryTable();
+            });
+        }
+
+        function getLatestSalariesMap() {
+            const latestMap = {};
+            targetUsers.forEach(u => {
+                const userRecs = salaryRecords.filter(r => r.userId && r.userId.toLowerCase() === u.toLowerCase());
+                if (userRecs.length > 0) {
+                    latestMap[u] = userRecs[0]; // İlk eleman en güncel olanıdır (timestamp desc)
+                }
+            });
+            return latestMap;
+        }
+
+        function updateSummaryData() {
+            const latestMap = getLatestSalariesMap();
+            const badgeContainer = document.getElementById('userCurrentSalaries');
+            badgeContainer.innerHTML = "";
+
+            let totalPayout = 0;
+            let activeCount = 0;
+
+            targetUsers.forEach(user => {
+                const rec = latestMap[user];
+                const salaryVal = rec ? parseFloat(rec.finalSalary) || 0 : 0;
+                const descText = rec ? (rec.desc || (rec.payType === 'haftalik' ? 'Haftalık Maaş' : 'Aylık Maaş')) : 'Kayıt Yok';
+
+                totalPayout += salaryVal;
+                if (salaryVal > 0) activeCount++;
+
+                badgeContainer.innerHTML += `
+                    <div class="user-salary-badge">
+                        <strong>${user}:</strong> 
+                        <span>${salaryVal.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL</span>
+                        <span class="desc-tag">(${descText})</span>
+                    </div>
+                `;
+            });
+
+            document.getElementById('totalMonthlyPayout').innerText = totalPayout.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " TL";
+            document.getElementById('activeUserCount').innerText = activeCount;
+        }
+
+        async function applyBulkRaise() {
+            const raiseRate = parseFloat(document.getElementById('bulkRaiseRate').value);
+            const date = document.getElementById('bulkRecordDate').value;
+            const desc = document.getElementById('bulkRecordDesc').value.trim();
+
+            if (isNaN(raiseRate) || raiseRate <= 0 || !date) {
+                return alert("Lütfen geçerli bir zam oranı ve tarih giriniz!");
+            }
+
+            if (!verifyPin()) return;
+
+            const latestMap = getLatestSalariesMap();
+            let addedCount = 0;
+
+            for (const user of targetUsers) {
+                const latestRec = latestMap[user];
+                const currentSalary = latestRec ? parseFloat(latestRec.finalSalary) || 0 : 0;
+
+                if (currentSalary > 0) {
+                    const newFinalSalary = currentSalary * (1 + (raiseRate / 100));
+
+                    await db.ref('salaryRecords').push({
+                        userId: user,
+                        payType: latestRec ? latestRec.payType : 'aylik',
+                        baseSalary: currentSalary,
+                        raiseRate: raiseRate,
+                        finalSalary: newFinalSalary,
+                        date: date,
+                        desc: desc || `%${raiseRate} Toplu Zam`,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
+
+                    addedCount++;
+                }
+            }
+
+            if (addedCount > 0) {
+                alert(`✅ Toplam ${addedCount} kullanıcı için %${raiseRate} toplu zam uygulandı!`);
+                document.getElementById('bulkRaiseRate').value = "";
+                document.getElementById('bulkRecordDesc').value = "";
+            } else {
+                alert("⚠️ Toplu zam uygulanacak aktif maaş kaydı bulunan kullanıcı bulunamadı!");
+            }
+        }
+
+        function renderSalaryTable() {
+            const tbody = document.getElementById('salaryTableBody');
+            tbody.innerHTML = "";
+
+            if (salaryRecords.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#718096;">Henüz kayıtlı maaş verisi bulunmamaktadır.</td></tr>`;
+                return;
+            }
+
+            salaryRecords.forEach(rec => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-size:0.85rem;">${rec.date}</td>
+                        <td style="font-weight:bold;">${(rec.userId || '').toUpperCase()}</td>
+                        <td>${rec.payType === 'haftalik' ? '<span style="color:#d69e2e; font-weight:bold;">Haftalık</span>' : '<span style="color:#3182ce; font-weight:bold;">Aylık</span>'}</td>
+                        <td>${parseFloat(rec.baseSalary).toFixed(2)} TL</td>
+                        <td style="font-weight:bold; color:#38a169;">%${rec.raiseRate}</td>
+                        <td style="font-weight:bold; font-size:1rem; color:#2b6cb0;">${parseFloat(rec.finalSalary).toFixed(2)} TL</td>
+                        <td style="font-size:0.85rem;">${rec.desc || '-'}</td>
+                        <td>
+                            <button class="btn-mini btn-edit" onclick="editSalaryRecord('${rec.id}', '${rec.finalSalary}', '${rec.desc || ''}')">✏️ Edit</button>
+                            <button class="btn-mini btn-del" onclick="deleteSalaryRecord('${rec.id}')">🗑️ Sil</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function saveSalaryRecord() {
+            const userId = document.getElementById('salaryUser').value;
+            const payType = document.getElementById('payType').value;
+            const baseSalary = parseFloat(document.getElementById('baseSalary').value);
+            const raiseRate = parseFloat(document.getElementById('raiseRate').value) || 0;
+            const finalSalary = parseFloat(document.getElementById('finalSalary').value);
+            const date = document.getElementById('recordDate').value;
+            const desc = document.getElementById('recordDesc').value.trim();
+
+            if (!baseSalary || baseSalary <= 0 || !finalSalary || !date) {
+                return alert("Lütfen tüm zorunlu alanları (Maaş, Tarih) doldurun!");
+            }
+
+            if (!verifyPin()) return;
+
+            await db.ref('salaryRecords').push({
+                userId: userId,
+                payType: payType,
+                baseSalary: baseSalary,
+                raiseRate: raiseRate,
+                finalSalary: finalSalary,
+                date: date,
+                desc: desc,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            document.getElementById('baseSalary').value = "";
+            document.getElementById('raiseRate').value = "0";
+            document.getElementById('calcMonthlyBase').value = "";
+            document.getElementById('finalSalary').value = "";
+            document.getElementById('recordDesc').value = "";
+            
+            alert("✅ Maaş kaydı başarıyla eklendi.");
+        }
+
+        async function editSalaryRecord(id, oldFinalSalary, oldDesc) {
+            if(!verifyPin()) return;
+            let newFinal = prompt("Yeni Son Maaş Tutarını Girin (TL):", oldFinalSalary);
+            let newDesc = prompt("Yeni Açıklamayı Girin:", oldDesc);
+
+            if(newFinal !== null && newFinal !== "" && newDesc !== null) {
+                await db.ref('salaryRecords/' + id).update({
+                    finalSalary: parseFloat(newFinal),
+                    desc: newDesc
+                });
+            }
+        }
+
+        async function deleteSalaryRecord(id) {
+            if(!verifyPin()) return;
+            if(confirm("Bu maaş kaydını silmek istediğinize emin misiniz?")) {
+                await db.ref('salaryRecords/' + id).remove();
+            }
+        }
+
+        initData();
+    </script>
+</body>
+</html>

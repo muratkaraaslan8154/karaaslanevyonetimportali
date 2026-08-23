@@ -91,7 +91,7 @@
         </div>
 
         <div class="card">
-            <h3 style="margin-top:0; color:#2d3748;">🗓️ Bu Ayki Taksit Ödeme Tablosu</h3>
+            <h3 id="tableTitle" style="margin-top:0; color:#2d3748;">🗓️ Taksit Ödeme Tablosu</h3>
             <div style="overflow-x:auto;">
                 <table>
                     <thead>
@@ -268,45 +268,94 @@
         }
 
         function calculateBalances() {
-            const currentMonthStr = new Date().toISOString().substring(0, 7);
-            userBalances = {};
+            let currentMonthStr = new Date().toISOString().substring(0, 7);
             
-            targetUsers.forEach(u => {
-                userBalances[u] = { savings: 0, totalDebt: 0, pastAndCurrentTaksit: 0, totalPaid: 0, thisMonthDue: 0 };
-            });
+            // Yardımcı fonksiyon: İstenilen aya kadar olan hesaplamaları yapar
+            function computeForMonth(monthStr) {
+                let tempBalances = {};
+                targetUsers.forEach(u => {
+                    tempBalances[u] = { savings: 0, totalDebt: 0, pastAndCurrentTaksit: 0, totalPaid: 0, thisMonthDue: 0 };
+                });
 
-            transactions.forEach(tx => {
-                if(!userBalances[tx.userId]) return;
-                const amt = parseFloat(tx.amount) || 0;
+                transactions.forEach(tx => {
+                    if(!tempBalances[tx.userId]) return;
+                    const amt = parseFloat(tx.amount) || 0;
+                    
+                    if(tx.type === 'birikim_ekle') tempBalances[tx.userId].savings += amt;
+                    if(tx.type === 'birikim_dus') tempBalances[tx.userId].savings -= amt;
+                    
+                    if(tx.type === 'taksit_ekle') {
+                        tempBalances[tx.userId].totalDebt += amt;
+                        // İşlem tarihi, kontrol edilen aydan küçük/eşitse taksit vadesi gelmiş sayılır
+                        if(tx.date && tx.date.substring(0, 7) <= monthStr) {
+                            tempBalances[tx.userId].pastAndCurrentTaksit += amt;
+                        }
+                    }
+                    if(tx.type === 'taksit_odendi') {
+                        tempBalances[tx.userId].totalDebt -= amt;
+                        tempBalances[tx.userId].totalPaid += amt;
+                    }
+                });
+
+                let totalDue = 0;
+                targetUsers.forEach(u => {
+                    const b = tempBalances[u];
+                    b.thisMonthDue = Math.max(0, b.pastAndCurrentTaksit - b.totalPaid);
+                    b.debt = Math.max(0, b.totalDebt);
+                    totalDue += b.thisMonthDue;
+                });
+                return { balances: tempBalances, totalDue: totalDue };
+            }
+
+            let result = computeForMonth(currentMonthStr);
+            let displayMonthStr = currentMonthStr;
+            let isFutureMonth = false;
+
+            // Eğer bu ayki tüm taksitler ödendiyse, sonraki aylara bak
+            if (result.totalDue === 0) {
+                let targetDate = new Date();
                 
-                if(tx.type === 'birikim_ekle') userBalances[tx.userId].savings += amt;
-                if(tx.type === 'birikim_dus') userBalances[tx.userId].savings -= amt;
-                
-                if(tx.type === 'taksit_ekle') {
-                    userBalances[tx.userId].totalDebt += amt;
-                    if(tx.date && tx.date.substring(0, 7) <= currentMonthStr) {
-                        userBalances[tx.userId].pastAndCurrentTaksit += amt;
+                // İleriye dönük max 12 aya kadar borçlu olunan ilk ayı bul
+                for(let i = 1; i <= 12; i++) {
+                    targetDate.setMonth(targetDate.getMonth() + 1);
+                    let nextMonthStr = targetDate.toISOString().substring(0, 7);
+                    let nextResult = computeForMonth(nextMonthStr);
+                    
+                    if (nextResult.totalDue > 0) {
+                        result = nextResult;
+                        displayMonthStr = nextMonthStr;
+                        isFutureMonth = true;
+                        break;
                     }
                 }
-                if(tx.type === 'taksit_odendi') {
-                    userBalances[tx.userId].totalDebt -= amt;
-                    userBalances[tx.userId].totalPaid += amt;
+                
+                // Eğer gelecekte hiç borç yoksa, yine de bir sonraki ayın boş halini göster
+                if (result.totalDue === 0) {
+                    targetDate = new Date();
+                    targetDate.setMonth(targetDate.getMonth() + 1);
+                    displayMonthStr = targetDate.toISOString().substring(0, 7);
+                    result = computeForMonth(displayMonthStr);
+                    isFutureMonth = true;
                 }
-            });
+            }
 
-            targetUsers.forEach(u => {
-                const b = userBalances[u];
-                b.thisMonthDue = Math.max(0, b.pastAndCurrentTaksit - b.totalPaid);
-                b.debt = Math.max(0, b.totalDebt);
-            });
-
-            renderBalances();
+            userBalances = result.balances;
+            // Tabloyu çizerken, gösterilen ayın bilgisini ve gelecek ay olup olmadığını gönderiyoruz
+            renderBalances(displayMonthStr, isFutureMonth);
         }
 
-        function renderBalances() {
+        function renderBalances(displayMonthStr, isFutureMonth) {
             const cont = document.getElementById('balancesContainer');
             const payTbody = document.getElementById('monthlyPayTableBody');
+            const tableTitle = document.getElementById('tableTitle');
             
+            // Başlığı dinamik olarak değiştir (Örn: "Ağustos 2026")
+            const dateObj = new Date(displayMonthStr + "-01");
+            const monthName = dateObj.toLocaleString('tr-TR', { month: 'long', year: 'numeric' });
+            if (tableTitle) {
+                tableTitle.innerHTML = `🗓️ ${monthName} Taksit Ödeme Tablosu`;
+            }
+
             cont.innerHTML = "";
             payTbody.innerHTML = "";
 
@@ -330,17 +379,26 @@
 
                 if (bal.thisMonthDue > 0) {
                     activeMonthlyDebtsCount++;
+                    
+                    // Gelecek ay gösteriliyorsa butonu inaktif (disabled) yap
+                    let actionButton = "";
+                    if (isFutureMonth) {
+                        actionButton = `<button class="btn-mini" style="background:#cbd5e0; color:#4a5568; cursor:not-allowed;" disabled title="Bu ay henüz gelmedi">
+                                    ⏳ Zamanı Gelmedi
+                                </button>`;
+                    } else {
+                        actionButton = `<button class="btn-mini" style="background:#319795; color:white;" onclick="payMonthlyInstallment('${u}', ${bal.thisMonthDue})">
+                                    💳 Taksiti Birikimden Öde
+                                </button>`;
+                    }
+
                     payTbody.innerHTML += `
                         <tr>
                             <td style="font-weight:bold;">${u.toUpperCase()}</td>
                             <td class="${savClass}" style="font-weight:bold;">${bal.savings.toFixed(2)} TL</td>
                             <td class="${monthDueClass}" style="font-weight:bold; font-size:1.05rem;">${bal.thisMonthDue.toFixed(2)} TL</td>
                             <td style="color:#718096;">${bal.debt.toFixed(2)} TL</td>
-                            <td>
-                                <button class="btn-mini" style="background:#319795; color:white;" onclick="payMonthlyInstallment('${u}', ${bal.thisMonthDue})">
-                                    💳 Taksiti Birikimden Öde
-                                </button>
-                            </td>
+                            <td>${actionButton}</td>
                         </tr>
                     `;
                 }
@@ -350,7 +408,7 @@
                 payTbody.innerHTML = `
                     <tr>
                         <td colspan="5" style="text-align:center; color:#38a169; font-weight:bold; padding:15px;">
-                            🎉 Bu ay ödenmesi gereken aktif bir taksit borcu bulunmamaktadır!
+                            🎉 ${monthName} döneminde ödenmesi gereken aktif bir taksit borcu bulunmamaktadır!
                         </td>
                     </tr>
                 `;

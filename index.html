@@ -46,7 +46,9 @@
         body { background-color: var(--bg-color); margin: 0; padding: 2rem 1rem; display: flex; flex-direction: column; align-items: center; color: var(--text-main); }
         .container { width: 100%; max-width: 450px; text-align: center; }
 
-        .alert-banner { padding: 1rem; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 1.2rem; display: none; }
+        /* Uyarı Kutu Tasarımları */
+        .alert-box-container { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.2rem; width: 100%; }
+        .alert-banner { padding: 1rem; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 0.9rem; line-height: 1.4; }
         .alert-warning { background: var(--primary-orange); color: white; display: block; }
         .alert-danger { background: var(--primary-red); color: white; display: block; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
@@ -79,8 +81,8 @@
 <body>
 
     <div class="container">
-        <!-- Tüm Kullanıcılar İçin Canlı Üst Uyarı Banner'ı -->
-        <div id="insulin-alert-banner"></div>
+        <!-- Tüm Kullanıcılar İçin Canlı Üst Uyarı Banner Alanı -->
+        <div id="alert-box-container" class="alert-box-container"></div>
 
         <button class="logout-btn" onclick="cikisYap()">Güvenli Çıkış</button>
         <div style="clear: both;"></div>
@@ -263,6 +265,7 @@
         }
     </script>
 
+    <!-- SAĞLIK SİSTEMİ BÜTÜN UYARILARI -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -275,30 +278,122 @@
         const healthApp = initializeApp(healthConfig, "healthApp");
         const healthDb = getFirestore(healthApp);
 
-        onSnapshot(doc(healthDb, "sistem_ayarlari", "insulin"), (snap) => {
-            if (!snap.exists() || !snap.data().lastChangedDate) return;
-            const lastDateStr = snap.data().lastChangedDate;
-            const parts = lastDateStr.split('-');
-            if (parts.length !== 3) return;
-            
-            const lastDate = new Date(parts[0], parts[1] - 1, parts[2]);
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            
-            const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
-            const bannerEl = document.getElementById('insulin-alert-banner');
+        // Veri Durumları
+        let masterMeds = [];
+        let insulinState = { lastChangedDate: "" };
+        let reportsState = { diabetesEndDate: "", hypertensionEndDate: "" };
 
-            if (diffDays === 27) {
-                bannerEl.className = "alert-banner alert-warning";
-                bannerEl.innerHTML = `⚠️ UYARI: İnsülin kaleminizin değişim zamanına 1 GÜN kaldı!`;
-            } else if (diffDays >= 28) {
-                bannerEl.className = "alert-banner alert-danger";
-                bannerEl.innerHTML = `🚨 ACİL UYARI: İnsülin kaleminin 28 günlük süresi DOLDU! Lütfen yeni kaleme geçiş yapıp tarihi güncelleyin.`;
-            } else {
-                bannerEl.className = "alert-banner";
-                bannerEl.innerHTML = "";
+        // Yardımcı Tarih Fonksiyonları (İlaç Sayfasından Alındı)
+        function getRemainingDays(med) {
+            if (med.endDate) {
+                const parts = med.endDate.split('-');
+                if (parts.length === 3) {
+                    const end = new Date(parts[0], parts[1] - 1, parts[2]);
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    return Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+                }
             }
+            if (med.stock !== undefined && med.stock !== null && med.maxDaily) {
+                return Math.floor(med.stock / med.maxDaily);
+            }
+            return 999;
+        }
+
+        function calculateDaysRemaining(targetDateStr) {
+            if (!targetDateStr) return null;
+            const parts = targetDateStr.split('-');
+            if (parts.length !== 3) return null;
+            const target = new Date(parts[0], parts[1] - 1, parts[2]);
+            const today = new Date(); today.setHours(0,0,0,0);
+            return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+        }
+
+        // Ana Uyarı Gösterim Fonksiyonu
+        function checkAllGlobalAlerts() {
+            const container = document.getElementById('alert-box-container');
+            if(!container) return;
+            let alertHTMLs = [];
+
+            // 1. İlaç Bitiş & Stok Uyarısı
+            if (masterMeds && masterMeds.length > 0) {
+                masterMeds.forEach(med => {
+                    if (!med.noReorder) {
+                        const daysLeft = getRemainingDays(med);
+                        if (daysLeft <= 0) {
+                            alertHTMLs.push(`<div class="alert-banner alert-danger">🚨 ACİL UYARI: <b>${med.name}</b> ilacının dozu / süresi BİTTİ!</div>`);
+                        } else if (daysLeft <= 15) {
+                            alertHTMLs.push(`<div class="alert-banner alert-warning">⚠️ UYARI: <b>${med.name}</b> ilacının bitmesine <b>${daysLeft} GÜN</b> kaldı!</div>`);
+                        }
+                    }
+                });
+            }
+
+            // 2. İnsülin Kalem Süresi Uyarısı
+            if (insulinState && insulinState.lastChangedDate) {
+                const parts = insulinState.lastChangedDate.split('-');
+                if (parts.length === 3) {
+                    const lastDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays === 27) {
+                        alertHTMLs.push(`<div class="alert-banner alert-warning">⚠️ UYARI: İnsülin kaleminizin 28 günlük süresinin bitmesine 1 GÜN kaldı!</div>`);
+                    } else if (diffDays >= 28) {
+                        alertHTMLs.push(`<div class="alert-banner alert-danger">🚨 ACİL UYARI: İnsülin kaleminizin 28 günlük kullanım süresi DOLDU! Lütfen yeni kaleme geçiş yapıp tarihi güncelleyin.</div>`);
+                    }
+                }
+            }
+
+            // 3. Diyabet Rapor Uyarısı
+            if (reportsState && reportsState.diabetesEndDate) {
+                const dDays = calculateDaysRemaining(reportsState.diabetesEndDate);
+                if (dDays !== null) {
+                    if (dDays <= 0) {
+                        alertHTMLs.push(`<div class="alert-banner alert-danger">🚨 UYARI: Diyabet Sağlık Raporunuzun süresi DOLDU! Yeniletmeniz gerekmektedir.</div>`);
+                    } else if (dDays <= 30) {
+                        alertHTMLs.push(`<div class="alert-banner alert-warning">⚠️ UYARI: Diyabet Sağlık Raporunuzun bitmesine ${dDays} GÜN (1 aydan az) kaldı!</div>`);
+                    }
+                }
+            }
+
+            // 4. Tansiyon Rapor Uyarısı
+            if (reportsState && reportsState.hypertensionEndDate) {
+                const hDays = calculateDaysRemaining(reportsState.hypertensionEndDate);
+                if (hDays !== null) {
+                    if (hDays <= 0) {
+                        alertHTMLs.push(`<div class="alert-banner alert-danger">🚨 UYARI: Tansiyon Sağlık Raporunuzun süresi DOLDU! Yeniletmeniz gerekmektedir.</div>`);
+                    } else if (hDays <= 30) {
+                        alertHTMLs.push(`<div class="alert-banner alert-warning">⚠️ UYARI: Tansiyon Sağlık Raporunuzun bitmesine ${hDays} GÜN (1 aydan az) kaldı!</div>`);
+                    }
+                }
+            }
+
+            // Tüm uyarıları ekrana yazdır (Yoksa boş kalır)
+            container.innerHTML = alertHTMLs.join('');
+        }
+
+        // Veri Dinleyicileri (Firestore Listeners)
+        onSnapshot(doc(healthDb, "sistem_ayarlari", "ilac_tanimlari"), (snap) => {
+            if (snap.exists() && snap.data().list) {
+                masterMeds = snap.data().list;
+            }
+            checkAllGlobalAlerts();
         });
+
+        onSnapshot(doc(healthDb, "sistem_ayarlari", "insulin"), (snap) => {
+            if (snap.exists()) {
+                insulinState = snap.data();
+            }
+            checkAllGlobalAlerts();
+        });
+
+        onSnapshot(doc(healthDb, "sistem_ayarlari", "saglik_raporlari"), (snap) => {
+            if (snap.exists()) {
+                reportsState = snap.data();
+            }
+            checkAllGlobalAlerts();
+        });
+
     </script>
 </body>
 </html>

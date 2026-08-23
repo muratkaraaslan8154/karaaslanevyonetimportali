@@ -117,15 +117,17 @@
         </div>
 
         <!-- Uygulama Portalı Bölümü -->
-        <div class="section-title">Uygulamalar & Araçlar</div>
+        <div id="uygulama-portali-section" style="display: none;">
+            <div class="section-title">Uygulamalar & Araçlar</div>
 
-        <a href="https://muratkaraaslan8154.github.io/uygulamalar/" class="menu-link link-portal">
-            <div class="icon-box">📱</div>
-            <div class="text-box">
-                <span class="title">Uygulama Portalı</span>
-                <span class="desc">Bozuk para sayacı, sayaç ve zikirmatik gibi yardımcı araçlar.</span>
-            </div>
-        </a>
+            <a href="https://muratkaraaslan8154.github.io/uygulamalar/" class="menu-link link-portal">
+                <div class="icon-box">📱</div>
+                <div class="text-box">
+                    <span class="title">Uygulama Portalı</span>
+                    <span class="desc">Bozuk para sayacı, sayaç ve zikirmatik gibi yardımcı araçlar.</span>
+                </div>
+            </a>
+        </div> 
 
         <div id="saglik-menu-section" style="display: none;">
             <div class="section-title">Sağlık & Takip</div>
@@ -176,16 +178,38 @@
             document.getElementById('saglik-menu-section').style.display = 'block';
             document.getElementById('admin-menu-section').style.display = 'block';
             document.getElementById('finans-ozel-section').style.display = 'block';
+            document.getElementById('uygulama-portali-section').style.display = 'block';
         }
 
+        // YENİ: Anlık Bloklanma VE Cihaz Silinme Kontrolü
         if (activeUser) {
             db.ref('usersDB/' + activeUser).on('value', (snapshot) => {
                 const userData = snapshot.val();
-                if (userData && userData.isBlocked === true) {
+                if (!userData) return;
+
+                // 1. Genel Bloke Kontrolü
+                if (userData.isBlocked === true) {
                     alert("🚫 Hesabınız yönetici tarafından bloke edilmiştir! Oturum kapatılıyor.");
                     localStorage.clear();
                     sessionStorage.clear();
                     window.location.replace('giris.html');
+                    return;
+                }
+
+                // 2. Anlık Cihaz İzni Kontrolü
+                const isExempt = (activeUser === 'murat' || activeUser === 'admin');
+                if (!isExempt) {
+                    const currentDeviceId = localStorage.getItem('app_device_id');
+                    const isMainDevice = (userData.registeredDevice === currentDeviceId);
+                    const isSafeDevice = (userData.safeDevices && userData.safeDevices[currentDeviceId]);
+                    
+                    // Eğer kullanıcının cihazı ayarlardan silindiyse (hem ana cihaz değil, hem de ek cihazlarda yoksa) dışarı at!
+                    if (userData.registeredDevice && !isMainDevice && !isSafeDevice) {
+                        alert("📱 Bu cihazın sisteme erişim izni yönetici tarafından iptal edilmiştir! Güvenlik sebebiyle oturum kapatılıyor.");
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        window.location.replace('giris.html');
+                    }
                 }
             });
         }

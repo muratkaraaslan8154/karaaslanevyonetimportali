@@ -104,7 +104,7 @@
                     <tr>
                         <th>Kullanıcı</th>
                         <th>PIN</th>
-                        <th>Cihaz Kimliği</th>
+                        <th>Cihaz Bilgileri</th>
                         <th>Birikim Modülü</th>
                         <th>Durum</th>
                         <th>İşlemler</th>
@@ -124,7 +124,7 @@
                         <th>İşlem</th>
                         <th>IP / Şehir</th>
                         <th>GPS Konumu</th>
-                        <th>Cihaz</th>
+                        <th>Cihaz <span style="font-size: 0.7rem; font-weight:normal;">(Kopyalamak için tıkla)</span></th>
                     </tr>
                 </thead>
                 <tbody id="logTableBody"></tbody>
@@ -165,8 +165,24 @@
 
             for (const [username, details] of Object.entries(usersDB)) {
                 const isBlocked = details.isBlocked || false;
-                const regDevice = details.registeredDevice ? details.registeredDevice.substring(0, 12) + "..." : "Henüz Yok";
                 const isExempt = (username === 'murat' || username === 'admin');
+
+                // Ana Cihaz ve Ek İzinli Cihazları Listeleyen Bölüm
+                let regDeviceTxt = details.registeredDevice ? details.registeredDevice.substring(0, 15) + "..." : "Henüz Yok";
+                let deviceCellHTML = `<div><strong style="color: #4a5568;">Ana:</strong> ${regDeviceTxt}</div>`;
+                
+                if (details.safeDevices) {
+                    deviceCellHTML += `<div style="margin-top: 6px; font-size: 0.8rem; color: #3182ce;">
+                                        <strong>İzinli Ek Cihazlar:</strong>
+                                        <ul style="margin: 2px 0; padding-left: 15px; color: #2d3748;">`;
+                    for (const [devId, not] of Object.entries(details.safeDevices)) {
+                        deviceCellHTML += `<li style="margin-bottom:3px;" title="${devId}">
+                                              ${not} 
+                                              <span style="color:#e53e3e; cursor:pointer; font-weight:bold; margin-left: 5px; background:#fed7d7; padding:0 4px; border-radius:3px;" onclick="cihazSil('${username}', '${devId}')" title="Bu cihazı sil">✖</span>
+                                           </li>`;
+                    }
+                    deviceCellHTML += `</ul></div>`;
+                }
 
                 let statusBadge = isBlocked 
                     ? `<span class="badge badge-blocked">BLOKELİ</span>` 
@@ -182,6 +198,7 @@
 
                 if (!isExempt) {
                     actionBtns += `<button class="btn-delete" onclick="kullaniciSil('${username}')">Sil</button>`;
+                    actionBtns += `<br><button class="btn-save" style="padding: 5px 10px; margin-top: 8px; width: auto; background: #3182ce; font-size:0.8rem;" onclick="cihazEkle('${username}')">📱 Ek Cihaz İzni Ver</button>`;
                 }
 
                 // Birikim görünürlük kontrolü
@@ -197,13 +214,42 @@
                     <tr>
                         <td style="font-weight:bold;">${username} ${isExempt ? '🛡️' : ''}</td>
                         <td>${details.pin}</td>
-                        <td title="${details.registeredDevice || ''}">${regDevice}</td>
+                        <td>${deviceCellHTML}</td>
                         <td>${birikimErisimi}</td>
                         <td>${statusBadge}</td>
                         <td>${actionBtns}</td>
                     </tr>
                 `;
             }
+        }
+
+        // YENİ: Cihaz Ekleme Fonksiyonu
+        async function cihazEkle(username) {
+            const cihazId = prompt(`${username} kullanıcısı için Güvenli Cihaz Kimliğini (ID) girin:\n\n(İpucu: Sayfanın altındaki loglarda cihaz isimlerine tıklayarak kopyalayabilirsiniz.)`);
+            if (!cihazId || cihazId.trim() === "") return;
+            
+            // Firebase anahtarlarında nokta veya köşeli parantez kullanılamayacağı için temizliyoruz
+            const cleanId = cihazId.trim().replace(/[.#$\[\]]/g, '_'); 
+            
+            const cihazNotu = prompt("Bu cihazı sonradan hatırlamak için bir not girin:\nÖrn: Eşimin Tableti, Salondaki PC, Mert'in Telefonu");
+            if (!cihazNotu || cihazNotu.trim() === "") return;
+
+            await db.ref(`usersDB/${username}/safeDevices/${cleanId}`).set(cihazNotu.trim());
+            await sistemLogYaz(activeUser, `Ek Cihaz İzni Eklendi (${username}): ${cihazNotu}`);
+        }
+
+        // YENİ: Cihaz Silme Fonksiyonu
+        async function cihazSil(username, devId) {
+            if(confirm("Bu cihazın sisteme giriş iznini iptal etmek istediğinize emin misiniz?")) {
+                await db.ref(`usersDB/${username}/safeDevices/${devId}`).remove();
+                await sistemLogYaz(activeUser, `Cihaz İzni Kaldırıldı (${username})`);
+            }
+        }
+
+        function kopyala(metin) {
+            navigator.clipboard.writeText(metin).then(() => {
+                alert("Cihaz ID kopyalandı:\n" + metin);
+            });
         }
 
         function logListesiniGuncelle(logs) {
@@ -218,6 +264,10 @@
                     gpsDisplay = `<a href="https://maps.google.com/?q=${log.gpsLat},${log.gpsLng}" target="_blank" class="gps-link">📍 Haritada Gör</a>`;
                 }
 
+                // Cihaz metnine tıklandığında kopyalama eklendi
+                let deviceText = log.device || '-';
+                let shortDeviceText = log.device ? log.device.substring(0, 20) + '...' : '-';
+
                 tbody.innerHTML += `
                     <tr style="${rowColor}">
                         <td>${log.time || '-'}</td>
@@ -225,7 +275,7 @@
                         <td>${log.action || '-'}</td>
                         <td style="font-size:0.8rem; color:#2d3748;">${ipLocation}</td>
                         <td>${gpsDisplay}</td>
-                        <td style="font-size:0.75rem; color:#718096;" title="${log.device || ''}">${log.device ? log.device.substring(0, 20) + '...' : '-'}</td>
+                        <td style="font-size:0.75rem; color:#3182ce; cursor:pointer; text-decoration:underline;" onclick="kopyala('${deviceText}')" title="Kopyalamak için tıkla">${shortDeviceText}</td>
                     </tr>
                 `;
             });
@@ -280,7 +330,7 @@
         }
 
         async function blokeKaldir(username) {
-            if(confirm(username + " kullanıcısının blokesini kaldırmak ve cihazını sıfırlamak istiyor musunuz?")) {
+            if(confirm(username + " kullanıcısının blokesini kaldırmak ve ana cihazını sıfırlamak istiyor musunuz?")) {
                 await db.ref('usersDB/' + username).update({ isBlocked: false, registeredDevice: null });
                 await sistemLogYaz(activeUser, `Bloke Kaldırıldı & Cihaz Sıfırlandı: ${username}`);
             }

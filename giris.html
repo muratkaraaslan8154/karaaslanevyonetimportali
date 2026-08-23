@@ -19,18 +19,36 @@
     <style>
         body { font-family: -apple-system, sans-serif; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .login-box { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 90%; max-width: 340px; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 8px 0 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 15px; }
         #status { font-size: 0.9rem; margin-top: 15px; font-weight: bold; color: #e74c3c; line-height: 1.4; }
+        
+        .pin-container { position: relative; width: 100%; margin: 8px 0 15px; }
+        .pin-container input { margin: 0; padding-right: 40px; }
+        .toggle-password { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.1rem; user-select: none; color: #718096; }
+        
+        /* YENİ: Cihaz ID Gösterim Stili */
+        .dev-id-display { font-size: 0.75rem; color: #a0aec0; margin-top: 25px; cursor: pointer; word-break: break-all; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+        .dev-id-display:hover { color: #3182ce; }
     </style>
 </head>
 <body>
     <div class="login-box">
         <h2>🔒 Giriş Yap</h2>
         <input type="text" id="username" placeholder="Kullanıcı Adı" autocomplete="off">
-        <input type="password" id="pin" placeholder="PIN Kodu" autocomplete="off">
+        
+        <div class="pin-container">
+            <input type="password" id="pin" placeholder="PIN Kodu" autocomplete="off">
+            <span class="toggle-password" onclick="togglePin()" title="Şifreyi Göster/Gizle">👁️</span>
+        </div>
+
         <button onclick="login()">Giriş</button>
         <div id="status"></div>
+        
+        <!-- YENİ: Cihaz ID'sini ekranda gösteriyoruz -->
+        <div id="devIdDisplay" class="dev-id-display" onclick="kopyalaDevId()" title="Kopyalamak için tıklayın">
+            Cihaz ID Yükleniyor...
+        </div>
     </div>
 
     <script>
@@ -46,6 +64,14 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        document.getElementById('username').addEventListener('keypress', function(e) { if (e.key === 'Enter') login(); });
+        document.getElementById('pin').addEventListener('keypress', function(e) { if (e.key === 'Enter') login(); });
+        
+        function togglePin() {
+            const pinInput = document.getElementById('pin');
+            pinInput.type = pinInput.type === 'password' ? 'text' : 'password';
+        }
+
         // Benzersiz Cihaz Kimliği Oluşturma / Okuma
         function getDeviceId() {
             let devId = localStorage.getItem('app_device_id');
@@ -54,6 +80,16 @@
                 localStorage.setItem('app_device_id', devId);
             }
             return devId;
+        }
+
+        // Sayfa yüklendiğinde Cihaz ID'yi göster
+        const currentDeviceId = getDeviceId();
+        document.getElementById('devIdDisplay').innerHTML = `📱 Cihaz ID:<br><b>${currentDeviceId}</b>`;
+
+        function kopyalaDevId() {
+            navigator.clipboard.writeText(currentDeviceId).then(() => {
+                alert("Cihaz ID kopyalandı:\n" + currentDeviceId + "\n\nŞimdi bunu ayarlar sayfasından Ek Cihaz olarak ekleyebilirsiniz.");
+            });
         }
 
         // Log Kaydetme Fonksiyonu
@@ -85,7 +121,6 @@
             try {
                 const snapshot = await db.ref('usersDB').once('value');
                 const users = snapshot.val() || {};
-                const currentDeviceId = getDeviceId();
                 const isExempt = (user === 'murat' || user === 'admin');
 
                 if (!users[user] || users[user].pin !== pin) {
@@ -100,28 +135,31 @@
                 // 1. Bloke Kontrolü
                 if (userData.isBlocked) {
                     status.style.color = "#e74c3c";
-                    status.innerText = "⛔ Hesabınız bloke edilmiştir! Yöneticiniz ile iletişime geçin.";
+                    status.innerHTML = `⛔ Hesabınız bloke edilmiştir!<br>Mevcut Cihaz: <b>${currentDeviceId}</b>`;
                     await createLog(user, "Blokeli Hesap Giriş Denemesi", currentDeviceId);
                     return;
                 }
 
-                // 2. Cihaz Güvenlik Kontrolü (Murat ve Admin Muaf)
+                // 2. Gelişmiş Çoklu Cihaz Güvenlik Kontrolü
                 if (!isExempt) {
-                    if (userData.registeredDevice && userData.registeredDevice !== currentDeviceId) {
-                        // Farklı Cihaz Tespiti -> Otomatik Bloke Et
+                    const isMainDevice = (userData.registeredDevice === currentDeviceId);
+                    const isSafeDevice = (userData.safeDevices && userData.safeDevices[currentDeviceId]);
+
+                    if (!userData.registeredDevice && !isSafeDevice) {
+                        // İlk Giriş Yapılan Cihazı Ana Cihaz Olarak Kaydet
+                        await db.ref('usersDB/' + user).update({ registeredDevice: currentDeviceId });
+                    } else if (!isMainDevice && !isSafeDevice) {
+                        // Farklı / İzinsiz Cihaz Tespiti -> Otomatik Bloke Et
                         await db.ref('usersDB/' + user).update({ isBlocked: true });
-                        await createLog(user, "🚫 İZLENSİZ CİHAZ! Hesap Otomatik Bloke Edildi", currentDeviceId);
+                        await createLog(user, "🚫 İZİNSİZ CİHAZ! Hesap Otomatik Bloke Edildi", currentDeviceId);
                         
                         status.style.color = "#e74c3c";
-                        status.innerText = "⛔ Farklı bir cihazdan giriş algılandı! Hesabınız güvenlik sebebiyle bloke edildi.";
+                        status.innerHTML = `⛔ İzinsiz cihaz algılandı!<br>Sisteme girmeye çalıştığınız cihazın ID'si:<br><b>${currentDeviceId}</b><br><br>Yöneticinize ileterek izin isteyin.`;
                         return;
-                    } else if (!userData.registeredDevice) {
-                        // İlk Giriş Yapılan Cihazı Kaydet
-                        await db.ref('usersDB/' + user).update({ registeredDevice: currentDeviceId });
                     }
                 }
 
-                // Başarılı Giriş Logu ve Geçiş
+                // Başarılı Giriş
                 await createLog(user, "Giriş Yapıldı", currentDeviceId);
                 grantAccess(user);
 

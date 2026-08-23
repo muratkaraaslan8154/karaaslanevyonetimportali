@@ -557,6 +557,7 @@
             }
             updateMedSelectDropdown();
             updateUI();
+            checkAllGlobalAlerts();
         });
 
         // FORM ALANLARINI TEMİZLE
@@ -713,7 +714,7 @@
                     return Math.ceil((end - today) / (1000 * 60 * 60 * 24));
                 }
             }
-            if (med.stock && med.maxDaily) {
+            if (med.stock !== undefined && med.stock !== null && med.maxDaily) {
                 return Math.floor(med.stock / med.maxDaily);
             }
             return 999;
@@ -1056,6 +1057,21 @@
             container.innerHTML = "";
             let alertHTMLs = [];
 
+            // 1. İlaç Bitiş & Stok Uyarısı (noReorder işaretlenmemiş olanlar)
+            if (masterMeds && masterMeds.length > 0) {
+                masterMeds.forEach(med => {
+                    if (!med.noReorder) {
+                        const daysLeft = getRemainingDays(med);
+                        if (daysLeft <= 0) {
+                            alertHTMLs.push(`<div class="alert-banner alert-danger">🚨 ACİL UYARI: <b>${med.name}</b> ilacının dozu / süresi BİTTİ!</div>`);
+                        } else if (daysLeft <= 15) {
+                            alertHTMLs.push(`<div class="alert-banner alert-warning">⚠️ UYARI: <b>${med.name}</b> ilacının bitmesine <b>${daysLeft} GÜN</b> kaldı!</div>`);
+                        }
+                    }
+                });
+            }
+
+            // 2. İnsülin Kalem Süresi Uyarısı
             if (insulinState && insulinState.lastChangedDate) {
                 const parts = insulinState.lastChangedDate.split('-');
                 if (parts.length === 3) {
@@ -1076,6 +1092,7 @@
                 document.getElementById('insulin-pen-info').innerHTML = "⚠️ İnsülin kalemi değişim tarihi henüz girilmemiş!";
             }
 
+            // 3. Diyabet Rapor Uyarısı
             const diabStatusEl = document.getElementById('diabetes-report-status');
             if (reportsState && reportsState.diabetesEndDate) {
                 const dDays = calculateDaysRemaining(reportsState.diabetesEndDate);
@@ -1094,6 +1111,7 @@
                 diabStatusEl.innerHTML = `<span style="font-size:0.75rem; color:#718096; margin-top:0.2rem; display:block;">Tarih seçilmedi</span>`;
             }
 
+            // 4. Tansiyon Rapor Uyarısı
             const hypStatusEl = document.getElementById('hypertension-report-status');
             if (reportsState && reportsState.hypertensionEndDate) {
                 const hDays = calculateDaysRemaining(reportsState.hypertensionEndDate);

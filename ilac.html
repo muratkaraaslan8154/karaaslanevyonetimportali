@@ -331,20 +331,22 @@
                 <h2>⚙️ İlaç Tanımlama & Kurallar</h2>
                 
                 <div style="background: #f7fafc; padding: 0.6rem; border-radius: 0.6rem; border: 1px solid #cbd5e0; margin-bottom: 0.8rem;">
-                    <label style="font-size:0.75rem; font-weight:bold; color:#4a5568; display:block; margin-bottom:0.2rem;">📋 İlaç Seçin veya Yeni Tanımlayın:</label>
-                    <select id="med-select" style="width: 100%; padding: 0.4rem; border-radius: 0.4rem; border: 1px solid #cbd5e0; margin-bottom: 0.4rem; font-weight: bold; background: white;">
+                    <label style="font-size:0.75rem; font-weight:bold; color:#4a5568; display:block; margin-bottom:0.4rem;">📋 İlaç Seçin veya Yeni Tanımlayın:</label>
+                    <select id="med-select" style="width: 100%; padding: 0.4rem; border-radius: 0.4rem; border: 1px solid #cbd5e0; font-weight: bold; background: white;">
+                        <option value="DEFAULT" disabled selected>🔽 Seçiniz veya Düzenle...</option>
                         <option value="NEW">➕ Yeni İlaç Tanımla...</option>
                     </select>
 
-                    <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                    <!-- GİZLENEBİLİR FORM ALANI -->
+                    <div id="med-form-container" style="display: none; flex-direction: column; gap: 0.4rem; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed #cbd5e0;">
                         <input type="text" id="med-name" placeholder="İlaç Adı (Örn: Parasetamol)" style="padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none;">
                         
                         <input type="text" id="med-diagnosis" placeholder="Teşhis / İCD Kodu (Örn: E11 - Tip 2 Diyabet)" style="padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; background: white;">
 
                         <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-                            <input type="number" id="med-box-count" placeholder="Kutu Adet" min="1" value="1" title="Kutu Adedi" style="width: 85px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
+                            <input type="number" id="med-box-count" placeholder="Kutu" min="1" value="1" title="Kutu Adedi" style="width: 65px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
                             <input type="number" id="med-max-daily" placeholder="G. Doz" min="1" value="1" title="Günlük Kullanılacak Doz Adedi" style="width: 70px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
-                            <input type="number" id="med-stock" placeholder="Eldeki Doz / Adet" min="0" title="Eldeki Kalan Kutudaki Toplam Doz" style="width: 110px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
+                            <input type="number" id="med-stock" placeholder="Eldeki Doz" min="0" title="Eldeki Kalan Kutudaki Toplam Doz" style="width: 100px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
                             <input type="text" id="med-rule" placeholder="Kurallar / Açıklama" style="flex: 1; min-width: 110px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none;">
                         </div>
 
@@ -365,8 +367,9 @@
                         </div>
 
                         <div style="display: flex; gap: 0.4rem; margin-top: 0.1rem;">
-                            <button class="btn" style="background: #319795; flex: 1; padding: 0.5rem; font-size: 0.8rem;" id="btn-save-med">💾 Kaydet / Güncelle</button>
+                            <button class="btn" style="background: #319795; flex: 1; padding: 0.5rem; font-size: 0.8rem;" id="btn-save-med">💾 Kaydet</button>
                             <button class="btn" style="background: #e53e3e; padding: 0.5rem; font-size: 0.8rem; display: none;" id="btn-delete-master-med">🗑️ Sil</button>
+                            <button class="btn" style="background: #a0aec0; padding: 0.5rem; font-size: 0.8rem;" id="btn-cancel-med">❌ Kapat</button>
                         </div>
                     </div>
                 </div>
@@ -513,7 +516,7 @@
             return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
         }
 
-        // SABİT REÇETE VE LİSTE EŞİĞİ FONKSİYONU (Varsayılan: 15 Gün)
+        // SABİT REÇETE VE LİSTE EŞİĞİ FONKSİYONU
         function getDocThreshold() {
             return 15;
         }
@@ -556,26 +559,69 @@
             updateUI();
         });
 
+        // FORM ALANLARINI TEMİZLE
+        function resetMedFormFields() {
+            document.getElementById('med-name').value = '';
+            document.getElementById('med-box-count').value = '1';
+            document.getElementById('med-diagnosis').value = '';
+            document.getElementById('med-max-daily').value = '1';
+            document.getElementById('med-stock').value = '';
+            document.getElementById('med-rule').value = '';
+            document.getElementById('med-doctor').value = '';
+            document.getElementById('med-prescribed-date').value = '';
+            document.getElementById('med-end-date').value = '';
+            document.getElementById('med-no-reorder').checked = false;
+            document.getElementById('btn-delete-master-med').style.display = 'none';
+        }
+
+        // FORMU KAPAT
+        function closeMedForm() {
+            resetMedFormFields();
+            document.getElementById('med-form-container').style.display = 'none';
+            document.getElementById('med-select').value = "DEFAULT";
+        }
+
+        document.getElementById('btn-cancel-med').onclick = (e) => {
+            e.preventDefault();
+            closeMedForm();
+        };
+
         function updateMedSelectDropdown() {
             const select = document.getElementById('med-select');
             const currentValue = select.value;
-            select.innerHTML = `<option value="NEW">➕ Yeni İlaç Tanımla...</option>`;
+            select.innerHTML = `
+                <option value="DEFAULT" disabled selected>🔽 Seçiniz veya Düzenle...</option>
+                <option value="NEW">➕ Yeni İlaç Tanımla...</option>
+            `;
             masterMeds.forEach(med => {
                 const statusTag = med.noReorder ? " 🚫 (Yazdırılmayacak)" : "";
                 select.innerHTML += `<option value="${med.id}">${med.name} (Günde ${med.maxDaily} Doz | Kalan: ${med.stock || 0})${statusTag}</option>`;
             });
-            if (currentValue && masterMeds.some(m => m.id === currentValue)) {
+            
+            // Eğer önceki bir seçim varsa (ve form açıksa) onu koru
+            if (currentValue && currentValue !== "DEFAULT" && masterMeds.some(m => m.id === currentValue)) {
                 select.value = currentValue;
-            } else {
+            } else if (currentValue === "NEW") {
                 select.value = "NEW";
-                resetMedForm();
+            } else {
+                select.value = "DEFAULT";
             }
         }
 
         document.getElementById('med-select').addEventListener('change', (e) => {
             const selectedId = e.target.value;
+            const formContainer = document.getElementById('med-form-container');
+            
+            if (selectedId === "DEFAULT") {
+                formContainer.style.display = 'none';
+                return;
+            }
+            
+            // Formu göster (Expand)
+            formContainer.style.display = 'flex';
+
             if (selectedId === "NEW") {
-                resetMedForm();
+                resetMedFormFields();
             } else {
                 const med = masterMeds.find(m => m.id === selectedId);
                 if (med) {
@@ -593,21 +639,6 @@
                 }
             }
         });
-
-        function resetMedForm() {
-            document.getElementById('med-name').value = '';
-            document.getElementById('med-box-count').value = '1';
-            document.getElementById('med-diagnosis').value = '';
-            document.getElementById('med-max-daily').value = '1';
-            document.getElementById('med-stock').value = '';
-            document.getElementById('med-rule').value = '';
-            document.getElementById('med-doctor').value = '';
-            document.getElementById('med-prescribed-date').value = '';
-            document.getElementById('med-end-date').value = '';
-            document.getElementById('med-no-reorder').checked = false;
-            document.getElementById('btn-delete-master-med').style.display = 'none';
-            document.getElementById('med-select').value = 'NEW';
-        }
 
         document.getElementById('btn-save-med').onclick = async () => {
             const selectVal = document.getElementById('med-select').value;
@@ -652,16 +683,16 @@
             }
 
             await setDoc(masterMedsDocRef, { list: updatedList });
-            resetMedForm();
+            closeMedForm(); // Kaydedince formu kapat (collapse)
         };
 
         document.getElementById('btn-delete-master-med').onclick = async () => {
             const selectVal = document.getElementById('med-select').value;
-            if (selectVal === "NEW") return;
+            if (selectVal === "NEW" || selectVal === "DEFAULT") return;
             if (confirm("Bu ilacı kayıtlı ilaçlar listesinden silmek istediğinize emin misiniz?")) {
                 const updatedList = masterMeds.filter(m => m.id !== selectVal);
                 await setDoc(masterMedsDocRef, { list: updatedList });
-                resetMedForm();
+                closeMedForm(); // Silince formu kapat (collapse)
                 alert("🗑️ İlaç listeden silindi.");
             }
         };
@@ -669,7 +700,7 @@
         window.editMasterMed = function(medId) {
             const select = document.getElementById('med-select');
             select.value = medId;
-            select.dispatchEvent(new Event('change'));
+            select.dispatchEvent(new Event('change')); // Formun açılmasını tetikler
             window.scrollTo({ top: document.getElementById('med-select').offsetTop - 20, behavior: 'smooth' });
         };
 

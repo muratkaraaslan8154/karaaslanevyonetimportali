@@ -110,7 +110,6 @@
         
         .sync-status { text-align: center; font-size: 0.75rem; color: var(--med-color); font-weight: bold; width: 100%; margin-top: 2px; }
 
-        /* 3 SÜTUNLU IZGARA DÜZENİ */
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -142,7 +141,6 @@
         .alert-danger { background: #e53e3e; color: white; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        /* Su Tüketimi */
         .water-tracker { text-align: center; }
         .water-circle { width: 110px; height: 110px; border-radius: 50%; background: conic-gradient(var(--water-color) 0%, #ebf8ff 0%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin: 0 auto; }
         .water-circle-inner { width: 94px; height: 94px; border-radius: 50%; background: var(--card-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -252,13 +250,13 @@
             body { background: #fff; color: #000; margin: 0; padding: 0; font-family: Arial, sans-serif; }
             .app-container { display: none !important; }
             #print-area { display: block !important; width: 100%; }
-            .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
-            .print-header h1 { margin: 0; font-size: 22px; color: #000; }
-            .print-header p { margin: 5px 0; font-size: 13px; color: #333; }
-            .print-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            .print-table th, .print-table td { border: 1px solid #000; padding: 6px 8px; text-align: left; }
-            .print-table th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; }
-            .print-footer { margin-top: 30px; font-size: 11px; text-align: right; color: #555; }
+            .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 15px; }
+            .print-header h1 { margin: 0; font-size: 20px; color: #000; }
+            .print-header p { margin: 4px 0; font-size: 12px; color: #333; }
+            .print-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 6px 8px; text-align: left; word-break: break-word; }
+            .print-table th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .print-footer { margin-top: 25px; font-size: 10px; text-align: right; color: #555; }
         }
     </style>
 </head>
@@ -343,10 +341,11 @@
                         
                         <input type="text" id="med-diagnosis" placeholder="Teşhis / İCD Kodu (Örn: E11 - Tip 2 Diyabet)" style="padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; background: white;">
 
-                        <div style="display: flex; gap: 0.4rem;">
-                            <input type="number" id="med-max-daily" placeholder="G. Doz" min="1" value="1" title="Günlük Kullanılacak Doz Adedi" style="width: 75px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
-                            <input type="number" id="med-stock" placeholder="Eldeki Doz / Adet" min="0" title="Eldeki Kalan Kutudaki Toplam Doz" style="width: 120px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
-                            <input type="text" id="med-rule" placeholder="Kurallar / Açıklama" style="flex: 1; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none;">
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                            <input type="number" id="med-box-count" placeholder="Kutu Adet" min="1" value="1" title="Kutu Adedi" style="width: 85px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
+                            <input type="number" id="med-max-daily" placeholder="G. Doz" min="1" value="1" title="Günlük Kullanılacak Doz Adedi" style="width: 70px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
+                            <input type="number" id="med-stock" placeholder="Eldeki Doz / Adet" min="0" title="Eldeki Kalan Kutudaki Toplam Doz" style="width: 110px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
+                            <input type="text" id="med-rule" placeholder="Kurallar / Açıklama" style="flex: 1; min-width: 110px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none;">
                         </div>
 
                         <div style="display: flex; gap: 0.4rem;">
@@ -359,6 +358,12 @@
                             <input type="date" id="med-end-date" style="width: 100%; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; background: white; font-weight: bold;">
                         </div>
 
+                        <!-- TEKRAR YAZDIRILMAYACAK SEÇENEĞİ -->
+                        <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.2rem; background: #edf2f7; padding: 0.4rem; border-radius: 0.4rem;">
+                            <input type="checkbox" id="med-no-reorder" style="width:16px; height:16px; cursor:pointer;">
+                            <label for="med-no-reorder" style="font-size:0.75rem; font-weight:bold; color:#4a5568; cursor:pointer;">🚫 Süresi bitti, tekrar yazdırılmayacak (Doktor listesinden çıkar)</label>
+                        </div>
+
                         <div style="display: flex; gap: 0.4rem; margin-top: 0.1rem;">
                             <button class="btn" style="background: #319795; flex: 1; padding: 0.5rem; font-size: 0.8rem;" id="btn-save-med">💾 Kaydet / Güncelle</button>
                             <button class="btn" style="background: #e53e3e; padding: 0.5rem; font-size: 0.8rem; display: none;" id="btn-delete-master-med">🗑️ Sil</button>
@@ -366,10 +371,9 @@
                     </div>
                 </div>
 
-                <!-- Doktora Gönderim Butonları (15 Gün ve Altı Kalanlar) -->
-                <div style="display: flex; gap: 0.4rem; margin-bottom: 0.6rem;">
-                    <button class="btn" style="background: #e53e3e; flex: 1; padding: 0.45rem; font-size: 0.75rem;" id="btn-doc-pdf">🖨️ Doktora PDF (≤15 Gün)</button>
-                    <button class="btn" style="background: #3182ce; flex: 1; padding: 0.45rem; font-size: 0.75rem;" id="btn-doc-copy">📋 Tabloyu Kopyala (≤15 Gün)</button>
+                <!-- TEK BUTON İLAÇ RAPOR & LİSTE İŞLEMLERİ -->
+                <div style="margin-bottom: 0.6rem;">
+                    <button class="btn" style="background: #2b6cb0; width: 100%; padding: 0.6rem; font-size: 0.85rem;" id="btn-export-options">📋 İlaç Listesi Raporu / Kopyala</button>
                 </div>
 
                 <ul class="med-list" id="med-list"></ul>
@@ -459,13 +463,13 @@
         let insulinChartInstance = null;
 
         const DEFAULT_MASTER_MEDS = [
-            { id: "janumet", name: "JANUMET 50/1000 MG", diagnosis: "E11 - Tip 2 Diyabet", maxDaily: 2, stock: 56, ruleText: "Günde 2 adet (Sabah/Akşam).", doctor: "Dr. Ahmet Yılmaz", prescribedDate: "2026-08-01", endDate: "2026-09-21" },
-            { id: "delix", name: "DELIX PLUS 5/25 MG", diagnosis: "I10 - Esansiyel Hipertansiyon", maxDaily: 1, stock: 28, ruleText: "Günde 1 adet.", doctor: "Dr. Ahmet Yılmaz", prescribedDate: "2026-08-01", endDate: "2026-09-20" },
-            { id: "toujeo", name: "TOUJEO 300 U/ML İNSÜLİN", diagnosis: "E11 - Tip 2 Diyabet", maxDaily: 1, stock: 30, ruleText: "Günde 1 kez.", needsDose: true, defaultDose: 16, doctor: "Dr. Mehmet Kaya", prescribedDate: "2026-08-10", endDate: "2026-09-23" },
-            { id: "oroferon", name: "OROFERON DEPO 80 MG", diagnosis: "D50 - Demir Eksikliği Anemisi", maxDaily: 1, stock: 10, foodWarning: true, ruleText: "Günde 1 adet. Çay/Kahve ile 2 saat ara.", doctor: "Dr. Ayşe Demir", prescribedDate: "2026-08-05", endDate: "2026-09-03" },
-            { id: "benexol", name: "BENEXOL B12", diagnosis: "E53 - Vitamin B Eksikliği", maxDaily: 1, stock: 30, ruleText: "Günde 1 adet.", doctor: "Dr. Ayşe Demir", prescribedDate: "2026-08-05", endDate: "2026-09-23" },
-            { id: "dcolefor", name: "D-COLEFOR 20.000 İU", diagnosis: "E55 - D Vitamini Eksikliği", maxDaily: 1, stock: 4, allowedDays: [1, 4], ruleText: "Pazartesi ve Perşembe.", doctor: "Dr. Ayşe Demir", prescribedDate: "2026-08-05", endDate: "2026-09-10" },
-            { id: "voltaren", name: "VOLTAREN SR 75 MG", diagnosis: "M54 - Sırt/Eklem Ağrısı", maxDaily: 1, stock: 10, ruleText: "Ağrı durumunda (Max 1).", doctor: "", prescribedDate: "", endDate: "" }
+            { id: "janumet", name: "JANUMET 50/1000 MG", boxCount: 1, diagnosis: "E11 - Tip 2 Diyabet", maxDaily: 2, stock: 56, ruleText: "Günde 2 adet (Sabah/Akşam).", doctor: "Dr. Ahmet Yılmaz", prescribedDate: "2026-08-01", endDate: "2026-09-21", noReorder: false },
+            { id: "delix", name: "DELIX PLUS 5/25 MG", boxCount: 1, diagnosis: "I10 - Esansiyel Hipertansiyon", maxDaily: 1, stock: 28, ruleText: "Günde 1 adet.", doctor: "Dr. Ahmet Yılmaz", prescribedDate: "2026-08-01", endDate: "2026-09-20", noReorder: false },
+            { id: "toujeo", name: "TOUJEO 300 U/ML İNSÜLİN", boxCount: 1, diagnosis: "E11 - Tip 2 Diyabet", maxDaily: 1, stock: 30, ruleText: "Günde 1 kez.", needsDose: true, defaultDose: 16, doctor: "Dr. Mehmet Kaya", prescribedDate: "2026-08-10", endDate: "2026-09-23", noReorder: false },
+            { id: "oroferon", name: "OROFERON DEPO 80 MG", boxCount: 1, diagnosis: "D50 - Demir Eksikliği Anemisi", maxDaily: 1, stock: 10, foodWarning: true, ruleText: "Günde 1 adet. Çay/Kahve ile 2 saat ara.", doctor: "Dr. Ayşe Demir", prescribedDate: "2026-08-05", endDate: "2026-09-03", noReorder: false },
+            { id: "benexol", name: "BENEXOL B12", boxCount: 1, diagnosis: "E53 - Vitamin B Eksikliği", maxDaily: 1, stock: 30, ruleText: "Günde 1 adet.", doctor: "Dr. Ayşe Demir", prescribedDate: "2026-08-05", endDate: "2026-09-23", noReorder: false },
+            { id: "dcolefor", name: "D-COLEFOR 20.000 İU", boxCount: 1, diagnosis: "E55 - D Vitamini Eksikliği", maxDaily: 1, stock: 4, allowedDays: [1, 4], ruleText: "Pazartesi ve Perşembe.", doctor: "Dr. Ayşe Demir", prescribedDate: "2026-08-05", endDate: "2026-09-10", noReorder: false },
+            { id: "voltaren", name: "VOLTAREN SR 75 MG", boxCount: 1, diagnosis: "M54 - Sırt/Eklem Ağrısı", maxDaily: 1, stock: 10, ruleText: "Ağrı durumunda (Max 1).", doctor: "", prescribedDate: "", endDate: "", noReorder: false }
         ];
 
         let masterMeds = [];
@@ -482,6 +486,14 @@
             const h = String(d.getHours()).padStart(2,'0'), min = String(d.getMinutes()).padStart(2,'0');
             return `${day}-${m}-${y} ${h}:${min}`;
         }
+        
+        function formatDateDMY(dateStr) {
+            if (!dateStr) return '—';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            return `${parts[2]}.${parts[1]}.${parts[0]}`;
+        }
+
         function parseCustomDate(timeStr) {
             if (!timeStr || timeStr === "Bilinmiyor") return 0;
             try {
@@ -499,6 +511,11 @@
             const target = new Date(parts[0], parts[1] - 1, parts[2]);
             const today = new Date(); today.setHours(0,0,0,0);
             return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+        }
+
+        // SABİT REÇETE VE LİSTE EŞİĞİ FONKSİYONU (Varsayılan: 15 Gün)
+        function getDocThreshold() {
+            return 15;
         }
 
         const todayStr = getLocalDateString();
@@ -544,7 +561,8 @@
             const currentValue = select.value;
             select.innerHTML = `<option value="NEW">➕ Yeni İlaç Tanımla...</option>`;
             masterMeds.forEach(med => {
-                select.innerHTML += `<option value="${med.id}">${med.name} (Günde ${med.maxDaily} Doz | Kalan: ${med.stock || 0})</option>`;
+                const statusTag = med.noReorder ? " 🚫 (Yazdırılmayacak)" : "";
+                select.innerHTML += `<option value="${med.id}">${med.name} (Günde ${med.maxDaily} Doz | Kalan: ${med.stock || 0})${statusTag}</option>`;
             });
             if (currentValue && masterMeds.some(m => m.id === currentValue)) {
                 select.value = currentValue;
@@ -562,6 +580,7 @@
                 const med = masterMeds.find(m => m.id === selectedId);
                 if (med) {
                     document.getElementById('med-name').value = med.name || '';
+                    document.getElementById('med-box-count').value = med.boxCount !== undefined ? med.boxCount : 1;
                     document.getElementById('med-diagnosis').value = med.diagnosis || '';
                     document.getElementById('med-max-daily').value = med.maxDaily || 1;
                     document.getElementById('med-stock').value = med.stock !== undefined ? med.stock : '';
@@ -569,6 +588,7 @@
                     document.getElementById('med-doctor').value = med.doctor || '';
                     document.getElementById('med-prescribed-date').value = med.prescribedDate || '';
                     document.getElementById('med-end-date').value = med.endDate || '';
+                    document.getElementById('med-no-reorder').checked = !!med.noReorder;
                     document.getElementById('btn-delete-master-med').style.display = 'inline-block';
                 }
             }
@@ -576,6 +596,7 @@
 
         function resetMedForm() {
             document.getElementById('med-name').value = '';
+            document.getElementById('med-box-count').value = '1';
             document.getElementById('med-diagnosis').value = '';
             document.getElementById('med-max-daily').value = '1';
             document.getElementById('med-stock').value = '';
@@ -583,6 +604,7 @@
             document.getElementById('med-doctor').value = '';
             document.getElementById('med-prescribed-date').value = '';
             document.getElementById('med-end-date').value = '';
+            document.getElementById('med-no-reorder').checked = false;
             document.getElementById('btn-delete-master-med').style.display = 'none';
             document.getElementById('med-select').value = 'NEW';
         }
@@ -590,6 +612,7 @@
         document.getElementById('btn-save-med').onclick = async () => {
             const selectVal = document.getElementById('med-select').value;
             const name = document.getElementById('med-name').value.trim();
+            const boxCount = parseInt(document.getElementById('med-box-count').value) || 1;
             const diagnosis = document.getElementById('med-diagnosis').value.trim();
             const maxDaily = parseInt(document.getElementById('med-max-daily').value) || 1;
             const stock = parseInt(document.getElementById('med-stock').value) || 0;
@@ -597,6 +620,7 @@
             const doctor = document.getElementById('med-doctor').value.trim();
             const prescribedDate = document.getElementById('med-prescribed-date').value;
             const endDate = document.getElementById('med-end-date').value;
+            const noReorder = document.getElementById('med-no-reorder').checked;
 
             if (!name) return alert("Lütfen ilaç adını giriniz!");
 
@@ -604,13 +628,15 @@
 
             const medDataObj = {
                 name,
+                boxCount,
                 diagnosis,
                 maxDaily,
                 stock,
                 ruleText,
                 doctor,
                 prescribedDate,
-                endDate
+                endDate,
+                noReorder
             };
 
             if (selectVal === "NEW") {
@@ -662,29 +688,51 @@
             return 999;
         }
 
-        // DOKTORA GÖNDERİM: PDF & YAZDIR
-        document.getElementById('btn-doc-pdf').onclick = () => {
-            const urgentMeds = masterMeds.filter(m => getRemainingDays(m) <= 15);
-            if (urgentMeds.length === 0) {
-                return alert("⚠️ Bitişine 15 gün ve daha az kalan ilaç bulunamadı.");
+        function getPeriodText(med) {
+            const isWeekly = med.allowedDays && med.allowedDays.length > 0;
+            const periodStr = isWeekly ? "1 Haftada" : "1 Günde";
+            const doseStr = med.maxDaily ? `${med.maxDaily}x1` : "1x1";
+            return `${doseStr} (${periodStr})`;
+        }
+
+        function setPrintOrientation(isLandscape) {
+            let styleEl = document.getElementById('dynamic-print-style');
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = 'dynamic-print-style';
+                document.head.appendChild(styleEl);
             }
+            if (isLandscape) {
+                styleEl.innerHTML = '@media print { @page { size: landscape; margin: 8mm; } }';
+            } else {
+                styleEl.innerHTML = '@media print { @page { size: portrait; margin: 10mm; } }';
+            }
+        }
+
+        // --- İLAÇ ÇIKTI VE RAPOR FONKSİYONLARI ---
+        function generateDocPdf() {
+            const threshold = getDocThreshold();
+            const urgentMeds = masterMeds.filter(m => getRemainingDays(m) <= threshold && !m.noReorder);
+            if (urgentMeds.length === 0) {
+                return alert(`⚠️ Bitişine ${threshold} gün ve daha az kalan ve yazdırılacak ilaç bulunamadı.`);
+            }
+            setPrintOrientation(false);
             const printArea = document.getElementById('print-area');
-            const todayDate = new Date().toLocaleDateString('tr-TR');
+            const todayDate = formatDateDMY(getLocalDateString());
             
             let htmlContent = `
                 <div class="print-header">
-                    <h1>Bitişi Yaklaşan İlaçlar Raporu (≤ 15 Gün)</h1>
+                    <h1>Bitişi Yaklaşan İlaçlar Raporu (≤ ${threshold} Gün)</h1>
                     <p><strong>Rapor Tarihi:</strong> ${todayDate}</p>
                 </div>
                 <table class="print-table">
                     <thead>
                         <tr>
                             <th>İlaç Adı</th>
-                            <th>Teşhis / İCD</th>
-                            <th>Günlük Doz</th>
-                            <th>Kalan Stok</th>
-                            <th>Tahmini Bitiş Tarihi</th>
-                            <th>Açıklama / Kural</th>
+                            <th>Kutu Adet</th>
+                            <th>Periyot</th>
+                            <th>Doz Bitiş Tarihi</th>
+                            <th>Rapor Teşhisi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -693,24 +741,23 @@
                 htmlContent += `
                     <tr>
                         <td><b>${m.name}</b></td>
+                        <td>${m.boxCount || 1} Kutu</td>
+                        <td>${getPeriodText(m)}</td>
+                        <td>${formatDateDMY(m.endDate)}</td>
                         <td>${m.diagnosis || '—'}</td>
-                        <td>${m.maxDaily} Doz</td>
-                        <td>${m.stock || 0} Adet</td>
-                        <td>${m.endDate || '—'}</td>
-                        <td>${m.ruleText || '—'}</td>
                     </tr>
                 `;
             });
             htmlContent += `</tbody></table><div class="print-footer">Bu rapor doktora sunulmak üzere sistem tarafından otomatik üretilmiştir.</div>`;
             printArea.innerHTML = htmlContent;
             window.print();
-        };
+        }
 
-        // DOKTORA GÖNDERİM: TABLO KOPYALAMA
-        document.getElementById('btn-doc-copy').onclick = async () => {
-            const urgentMeds = masterMeds.filter(m => getRemainingDays(m) <= 15);
+        async function copyDocTable() {
+            const threshold = getDocThreshold();
+            const urgentMeds = masterMeds.filter(m => getRemainingDays(m) <= threshold && !m.noReorder);
             if (urgentMeds.length === 0) {
-                return alert("⚠️ Bitişine 15 gün ve daha az kalan ilaç bulunamadı.");
+                return alert(`⚠️ Bitişine ${threshold} gün ve daha az kalan ve yazdırılacak ilaç bulunamadı.`);
             }
             
             let htmlTable = `
@@ -718,38 +765,35 @@
                     <thead>
                         <tr style="background-color: #f2f2f2;">
                             <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">İlaç Adı</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Teşhis / İCD</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Günlük Doz</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Kalan Stok</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Tahmini Bitiş Tarihi</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Açıklama / Kural</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Kutu Adet</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Periyot</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Doz Bitiş Tarihi</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Rapor Teşhisi</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
 
-            let plainText = "İlaç Adı\tTeşhis / İCD\tGünlük Doz\tKalan Stok\tTahmini Bitiş Tarihi\tAçıklama / Kural\n";
+            let plainText = "İlaç Adı\tKutu Adet\tPeriyot\tDoz Bitiş Tarihi\tRapor Teşhisi\n";
 
             urgentMeds.forEach(m => {
                 const name = m.name || '—';
+                const boxCount = (m.boxCount || 1) + ' Kutu';
+                const period = getPeriodText(m);
+                const endDate = formatDateDMY(m.endDate);
                 const diagnosis = m.diagnosis || '—';
-                const maxDaily = (m.maxDaily || '1') + ' Doz';
-                const stock = (m.stock || 0) + ' Adet';
-                const endDate = m.endDate || '—';
-                const ruleText = m.ruleText || '—';
 
                 htmlTable += `
                     <tr>
                         <td style="padding: 8px; border: 1px solid #ddd;"><b>${name}</b></td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${diagnosis}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${maxDaily}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${stock}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${boxCount}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${period}</td>
                         <td style="padding: 8px; border: 1px solid #ddd;">${endDate}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${ruleText}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${diagnosis}</td>
                     </tr>
                 `;
 
-                plainText += `${name}\t${diagnosis}\t${maxDaily}\t${stock}\t${endDate}\t${ruleText}\n`;
+                plainText += `${name}\t${boxCount}\t${period}\t${endDate}\t${diagnosis}\n`;
             });
 
             htmlTable += `</tbody></table>`;
@@ -760,15 +804,171 @@
                 const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
                 
                 await navigator.clipboard.write(data);
-                alert("✅ Tablo başarıyla kopyalandı!\n\nWord, Excel veya WhatsApp'a yapıştırdığınızda tablo düzeninde görünecektir.");
+                alert("✅ Doktor Tablosu kopyalandı!\n\nWord, Excel veya WhatsApp'a doğrudan yapıştırabilirsiniz.");
             } catch (err) {
                 navigator.clipboard.writeText(plainText).then(() => {
                     alert("✅ Tablo metin formatında kopyalandı.");
                 });
             }
+        }
+
+        function generateFullPdf() {
+            const threshold = getDocThreshold();
+            const filteredMeds = masterMeds.filter(m => getRemainingDays(m) <= threshold);
+            if (filteredMeds.length === 0) {
+                return alert(`⚠️ Bitişine ${threshold} gün ve daha az kalan ilaç bulunamadı.`);
+            }
+            setPrintOrientation(true);
+            const printArea = document.getElementById('print-area');
+            const todayDate = formatDateDMY(getLocalDateString());
+
+            let htmlContent = `
+                <div class="print-header">
+                    <h1>Tüm İlaçlar Tam Detaylı Rapor Liste (≤ ${threshold} Gün)</h1>
+                    <p><strong>Rapor Tarihi:</strong> ${todayDate}</p>
+                </div>
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th>İlaç Adı</th>
+                            <th>Kutu Adet</th>
+                            <th>Periyot</th>
+                            <th>Doz Bitiş Tarihi</th>
+                            <th>Rapor Teşhisi</th>
+                            <th>Eldeki Doz</th>
+                            <th>Kurallar / Açıklama</th>
+                            <th>Yazdıran Doktor</th>
+                            <th>Reçete Tarihi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            filteredMeds.forEach(m => {
+                const statusInfo = m.noReorder ? " (Yazdırılmayacak)" : "";
+                htmlContent += `
+                    <tr>
+                        <td><b>${m.name}${statusInfo}</b></td>
+                        <td>${m.boxCount || 1} Kutu</td>
+                        <td>${getPeriodText(m)}</td>
+                        <td>${formatDateDMY(m.endDate)}</td>
+                        <td>${m.diagnosis || '—'}</td>
+                        <td>${m.stock !== undefined ? m.stock : '—'} Adet</td>
+                        <td>${m.ruleText || '—'}</td>
+                        <td>${m.doctor || '—'}</td>
+                        <td>${formatDateDMY(m.prescribedDate)}</td>
+                    </tr>
+                `;
+            });
+
+            htmlContent += `</tbody></table><div class="print-footer">Sistemde kayıtlı, filtreye uyan bütün ilaç ve kural verilerini içerir.</div>`;
+            printArea.innerHTML = htmlContent;
+            window.print();
+        }
+
+        async function copyFullTable() {
+            const threshold = getDocThreshold();
+            const filteredMeds = masterMeds.filter(m => getRemainingDays(m) <= threshold);
+            if (filteredMeds.length === 0) {
+                return alert(`⚠️ Bitişine ${threshold} gün ve daha az kalan ilaç bulunamadı.`);
+            }
+
+            let htmlTable = `
+                <table border="1" style="border-collapse: collapse; font-family: Arial, sans-serif; width: 100%;">
+                    <thead>
+                        <tr style="background-color: #f2f2f2;">
+                            <th style="padding: 6px; border: 1px solid #ddd;">İlaç Adı</th>
+                            <th style="padding: 6px; border: 1px solid #ddd;">Kutu Adet</th>
+                            <th style="padding: 6px; border: 1px solid #ddd;">Periyot</th>
+                            <th style="padding: 6px; border: 1px solid #ddd;">Doz Bitiş Tarihi</th>
+                            <th style="padding: 6px; border: 1px solid #ddd;">Rapor Teşhisi</th>
+                            <th style="padding: 6px; border: 1px solid #ddd;">Eldeki Doz</th>
+                            <th style="padding: 6px; border: 1px solid #ddd;">Kurallar / Açıklama</th>
+                            <th style="padding: 6px; border: 1px solid #ddd;">Yazdıran Doktor</th>
+                            <th style="padding: 6px; border: 1px solid #ddd;">Reçete Tarihi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            let plainText = "İlaç Adı\tKutu Adet\tPeriyot\tDoz Bitiş Tarihi\tRapor Teşhisi\tEldeki Doz\tKurallar\tDoktor\tReçete Tarihi\n";
+
+            filteredMeds.forEach(m => {
+                const statusInfo = m.noReorder ? " (Yazdırılmayacak)" : "";
+                const name = (m.name || '—') + statusInfo;
+                const boxCount = (m.boxCount || 1) + ' Kutu';
+                const period = getPeriodText(m);
+                const endDate = formatDateDMY(m.endDate);
+                const diagnosis = m.diagnosis || '—';
+                const stock = (m.stock !== undefined ? m.stock : '—') + ' Adet';
+                const ruleText = m.ruleText || '—';
+                const doctor = m.doctor || '—';
+                const prescribedDate = formatDateDMY(m.prescribedDate);
+
+                htmlTable += `
+                    <tr>
+                        <td style="padding: 6px; border: 1px solid #ddd;"><b>${name}</b></td>
+                        <td style="padding: 6px; border: 1px solid #ddd;">${boxCount}</td>
+                        <td style="padding: 6px; border: 1px solid #ddd;">${period}</td>
+                        <td style="padding: 6px; border: 1px solid #ddd;">${endDate}</td>
+                        <td style="padding: 6px; border: 1px solid #ddd;">${diagnosis}</td>
+                        <td style="padding: 6px; border: 1px solid #ddd;">${stock}</td>
+                        <td style="padding: 6px; border: 1px solid #ddd;">${ruleText}</td>
+                        <td style="padding: 6px; border: 1px solid #ddd;">${doctor}</td>
+                        <td style="padding: 6px; border: 1px solid #ddd;">${prescribedDate}</td>
+                    </tr>
+                `;
+
+                plainText += `${name}\t${boxCount}\t${period}\t${endDate}\t${diagnosis}\t${stock}\t${ruleText}\t${doctor}\t${prescribedDate}\n`;
+            });
+
+            htmlTable += `</tbody></table>`;
+
+            try {
+                const blobHtml = new Blob([htmlTable], { type: 'text/html' });
+                const blobText = new Blob([plainText], { type: 'text/plain' });
+                const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
+                
+                await navigator.clipboard.write(data);
+                alert(`✅ Bitişine ≤ ${threshold} gün kalan tüm ilaçların tam tablosu kopyalandı!\n\nWord veya Excel'e doğrudan yapıştırabilirsiniz.`);
+            } catch (err) {
+                navigator.clipboard.writeText(plainText).then(() => {
+                    alert("✅ Tam tablo metin formatında kopyalandı.");
+                });
+            }
+        }
+
+        // TEK BUTON TIKLAMA YÖNETİMİ
+        document.getElementById('btn-export-options').onclick = () => {
+            const choice = prompt(
+                "Lütfen yapmak istediğiniz işlemi seçin (1-4):\n\n" +
+                "1 - 🖨️ Doktor PDF (≤15 Gün)\n" +
+                "2 - 📋 Doktor Tablo Kopyala (≤15 Gün)\n" +
+                "3 - 🖼️ Tam Liste PDF (≤15 Gün)\n" +
+                "4 - 📋 Tam Liste Kopyala (≤15 Gün)"
+            );
+
+            if (choice === null) return; // Kullanıcı iptal etti
+
+            switch (choice.trim()) {
+                case "1":
+                    generateDocPdf();
+                    break;
+                case "2":
+                    copyDocTable();
+                    break;
+                case "3":
+                    generateFullPdf();
+                    break;
+                case "4":
+                    copyFullTable();
+                    break;
+                default:
+                    alert("⚠️ Geçersiz bir seçim yaptınız! Lütfen 1, 2, 3 veya 4 yazınız.");
+            }
         };
 
-        // İNSÜLİN KALEMİ & SAĞLIK RAPORLARI DOKÜMAN DİNLENMESİ
+        // İNSÜLİN KALEMİ & SAĞLIK RAPORLARI FİREBASE DİNLENMESİ
         const insulinDocRef = doc(db, "sistem_ayarlari", "insulin");
         onSnapshot(insulinDocRef, (snap) => {
             const dateInput = document.getElementById('insulin-pen-date-input');
@@ -788,13 +988,12 @@
         document.getElementById('btn-change-insulin').onclick = async () => {
             const selectedDate = document.getElementById('insulin-pen-date-input').value;
             if (!selectedDate) return alert("Lütfen geçerli bir tarih seçiniz!");
-            if (confirm(`İnsülin kalem değişim tarihini [ ${selectedDate} ] olarak güncellemek istediğinize emin misiniz?`)) {
+            if (confirm(`İnsülin kalem değişim tarihini [ ${formatDateDMY(selectedDate)} ] olarak güncellemek istediğinize emin misiniz?`)) {
                 await setDoc(insulinDocRef, { lastChangedDate: selectedDate }, { merge: true });
-                alert(`✅ İnsülin kalem değişim tarihi ${selectedDate} olarak güncellendi!`);
+                alert(`✅ İnsülin kalem değişim tarihi ${formatDateDMY(selectedDate)} olarak güncellendi!`);
             }
         };
 
-        // DİYABET VE TANSİYON RAPORLARI FİREBASE DİNLENMESİ
         const reportsDocRef = doc(db, "sistem_ayarlari", "saglik_raporlari");
         onSnapshot(reportsDocRef, (snap) => {
             if (snap.exists()) {
@@ -823,13 +1022,11 @@
             alert("✅ Tansiyon Raporu Bitiş Tarihi Kaydedildi!");
         };
 
-        // UYARI SİSTEMİ
         function checkAllGlobalAlerts() {
             const container = document.getElementById('alert-box-container');
             container.innerHTML = "";
             let alertHTMLs = [];
 
-            // 1. İnsülin Kalemi Süresi
             if (insulinState && insulinState.lastChangedDate) {
                 const parts = insulinState.lastChangedDate.split('-');
                 if (parts.length === 3) {
@@ -838,7 +1035,7 @@
                     const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
                     const remainingDays = 28 - diffDays;
                     
-                    document.getElementById('insulin-pen-info').innerHTML = `📅 Son Değişim: <b>${insulinState.lastChangedDate}</b> (${diffDays} gün önce)<br>⏳ Kalan Kullanım: <b>${remainingDays > 0 ? remainingDays + " Gün" : "Süre Doldu!"}</b>`;
+                    document.getElementById('insulin-pen-info').innerHTML = `📅 Son Değişim: <b>${formatDateDMY(insulinState.lastChangedDate)}</b> (${diffDays} gün önce)<br>⏳ Kalan Kullanım: <b>${remainingDays > 0 ? remainingDays + " Gün" : "Süre Doldu!"}</b>`;
 
                     if (diffDays === 27) {
                         alertHTMLs.push(`<div class="alert-banner alert-warning">⚠️ UYARI: İnsülin kaleminizin 28 günlük süresinin bitmesine 1 GÜN kaldı!</div>`);
@@ -850,38 +1047,36 @@
                 document.getElementById('insulin-pen-info').innerHTML = "⚠️ İnsülin kalemi değişim tarihi henüz girilmemiş!";
             }
 
-            // 2. Diyabet Raporu
             const diabStatusEl = document.getElementById('diabetes-report-status');
             if (reportsState && reportsState.diabetesEndDate) {
                 const dDays = calculateDaysRemaining(reportsState.diabetesEndDate);
                 if (dDays !== null) {
                     if (dDays <= 0) {
-                        diabStatusEl.innerHTML = `<span class="report-status report-expired">🚨 Diyabet Rapor Süresi DOLDU! (${reportsState.diabetesEndDate})</span>`;
+                        diabStatusEl.innerHTML = `<span class="report-status report-expired">🚨 Diyabet Rapor Süresi DOLDU! (${formatDateDMY(reportsState.diabetesEndDate)})</span>`;
                         alertHTMLs.push(`<div class="alert-banner alert-danger">🚨 UYARI: Diyabet Sağlık Raporunuzun süresi DOLDU! Yeniletmeniz gerekmektedir.</div>`);
                     } else if (dDays <= 30) {
-                        diabStatusEl.innerHTML = `<span class="report-status report-warn">⚠️ Kalan Süre: ${dDays} Gün (${reportsState.diabetesEndDate})</span>`;
+                        diabStatusEl.innerHTML = `<span class="report-status report-warn">⚠️ Kalan Süre: ${dDays} Gün (${formatDateDMY(reportsState.diabetesEndDate)})</span>`;
                         alertHTMLs.push(`<div class="alert-banner alert-warning">⚠️ UYARI: Diyabet Sağlık Raporunuzun bitmesine ${dDays} GÜN (1 aydan az) kaldı!</div>`);
                     } else {
-                        diabStatusEl.innerHTML = `<span class="report-status report-ok">✅ Kalan Süre: ${dDays} Gün (${reportsState.diabetesEndDate})</span>`;
+                        diabStatusEl.innerHTML = `<span class="report-status report-ok">✅ Kalan Süre: ${dDays} Gün (${formatDateDMY(reportsState.diabetesEndDate)})</span>`;
                     }
                 }
             } else {
                 diabStatusEl.innerHTML = `<span style="font-size:0.75rem; color:#718096; margin-top:0.2rem; display:block;">Tarih seçilmedi</span>`;
             }
 
-            // 3. Tansiyon Raporu
             const hypStatusEl = document.getElementById('hypertension-report-status');
             if (reportsState && reportsState.hypertensionEndDate) {
                 const hDays = calculateDaysRemaining(reportsState.hypertensionEndDate);
                 if (hDays !== null) {
                     if (hDays <= 0) {
-                        hypStatusEl.innerHTML = `<span class="report-status report-expired">🚨 Tansiyon Rapor Süresi DOLDU! (${reportsState.hypertensionEndDate})</span>`;
+                        hypStatusEl.innerHTML = `<span class="report-status report-expired">🚨 Tansiyon Rapor Süresi DOLDU! (${formatDateDMY(reportsState.hypertensionEndDate)})</span>`;
                         alertHTMLs.push(`<div class="alert-banner alert-danger">🚨 UYARI: Tansiyon Sağlık Raporunuzun süresi DOLDU! Yeniletmeniz gerekmektedir.</div>`);
                     } else if (hDays <= 30) {
-                        hypStatusEl.innerHTML = `<span class="report-status report-warn">⚠️ Kalan Süre: ${hDays} Gün (${reportsState.hypertensionEndDate})</span>`;
+                        hypStatusEl.innerHTML = `<span class="report-status report-warn">⚠️ Kalan Süre: ${hDays} Gün (${formatDateDMY(reportsState.hypertensionEndDate)})</span>`;
                         alertHTMLs.push(`<div class="alert-banner alert-warning">⚠️ UYARI: Tansiyon Sağlık Raporunuzun bitmesine ${hDays} GÜN (1 aydan az) kaldı!</div>`);
                     } else {
-                        hypStatusEl.innerHTML = `<span class="report-status report-ok">✅ Kalan Süre: ${hDays} Gün (${reportsState.hypertensionEndDate})</span>`;
+                        hypStatusEl.innerHTML = `<span class="report-status report-ok">✅ Kalan Süre: ${hDays} Gün (${formatDateDMY(reportsState.hypertensionEndDate)})</span>`;
                     }
                 }
             } else {
@@ -1167,9 +1362,10 @@
         });
 
         document.getElementById('btn-print-report').addEventListener('click', () => {
+            setPrintOrientation(false);
             const printArea = document.getElementById('print-area');
             const sortedLogs = [...globalInsulinLogs].sort((a, b) => a.parsedDate - b.parsedDate);
-            const todayDate = new Date().toLocaleDateString('tr-TR');
+            const todayDate = formatDateDMY(getLocalDateString());
             
             let htmlContent = `
                 <div class="print-header">
@@ -1236,18 +1432,20 @@
                 let expiryBadgeHTML = '';
                 let isWarning = false;
 
-                if (daysLeft <= 15) {
+                if (med.noReorder) {
+                    expiryBadgeHTML = `<span class="med-badge" style="background:#edf2f7; color:#4a5568; border:1px solid #cbd5e0;">🚫 Süresi Bitti / Yazdırılmayacak</span>`;
+                } else if (daysLeft <= 15) {
                     isWarning = true;
-                    expiryBadgeHTML = `<span class="med-badge badge-danger">⚠️ Bitişe ${daysLeft <= 0 ? 'Süre Doldu!' : daysLeft + ' Gün Kaldı'} (${med.endDate || 'Tarih Yok'})</span>`;
+                    expiryBadgeHTML = `<span class="med-badge badge-danger">⚠️ Bitişe ${daysLeft <= 0 ? 'Süre Doldu!' : daysLeft + ' Gün Kaldı'} (${formatDateDMY(med.endDate)})</span>`;
                 } else if (med.endDate) {
-                    expiryBadgeHTML = `<span class="med-badge badge-info">📅 Bitiş: ${med.endDate} (${daysLeft} gün kaldı)</span>`;
+                    expiryBadgeHTML = `<span class="med-badge badge-info">📅 Bitiş: ${formatDateDMY(med.endDate)} (${daysLeft} gün kaldı)</span>`;
                 }
 
                 let doctorDiagnosisHTML = '';
                 if (med.doctor || med.diagnosis || med.prescribedDate) {
                     doctorDiagnosisHTML = `<div class="med-rule" style="color:#2b6cb0; font-weight:500; margin-top:2px;">
                         ${med.diagnosis ? '📌 Teşhis: ' + med.diagnosis + ' | ' : ''}
-                        👨‍⚕️ Dr: ${med.doctor || 'Belirtilmedi'} ${med.prescribedDate ? '| Reçete: ' + med.prescribedDate : ''}
+                        👨‍⚕️ Dr: ${med.doctor || 'Belirtilmedi'} ${med.prescribedDate ? '| Reçete: ' + formatDateDMY(med.prescribedDate) : ''}
                     </div>`;
                 }
 
@@ -1260,7 +1458,7 @@
 
                 li.innerHTML = `
                     <div class="med-info">
-                        <div class="med-title">${med.name} <small style="color:#718096; font-weight:normal;">(Kalan Stok: ${med.stock !== undefined ? med.stock : '—'})</small></div>
+                        <div class="med-title">${med.name} <small style="color:#718096; font-weight:normal;">(Kutu: ${med.boxCount || 1} | Kalan Stok: ${med.stock !== undefined ? med.stock : '—'})</small></div>
                         <div class="med-rule">${med.ruleText || 'Özel kural belirtilmedi.'}</div>
                         ${doctorDiagnosisHTML}
                         <span class="med-badge ${currentDose > 0 ? 'badge-success' : 'badge-info'}">${currentDose}/${med.maxDaily} İçildi</span>

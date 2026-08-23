@@ -16,6 +16,7 @@
             --water-color: #4299e1; 
             --med-color: #48bb78; 
             --danger: #f56565; 
+            --warning: #ed8936;
             --border-radius: 1rem; 
         }
 
@@ -64,7 +65,9 @@
             font-size: 0.85rem; 
             display: inline-flex;
             align-items: center;
+            transition: background 0.2s;
         }
+        .nav-back:hover { background: #cbd5e0; }
 
         .header-title-box { text-align: center; }
         .header-title-box h1 { margin: 0; font-size: 1.2rem; }
@@ -129,9 +132,14 @@
         }
         .card h2 { margin: 0 0 0.6rem 0; font-size: 1.05rem; display: flex; align-items: center; justify-content: space-between; }
         
-        .alert-banner { padding: 0.6rem; border-radius: 0.6rem; font-weight: bold; text-align: center; font-size: 0.85rem; display: none; margin-bottom: 0.5rem; }
-        .alert-warning { background: #ed8936; color: white; display: block; }
-        .alert-danger { background: #e53e3e; color: white; display: block; animation: pulse 1.5s infinite; }
+        .alert-box-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .alert-banner { padding: 0.6rem; border-radius: 0.6rem; font-weight: bold; text-align: center; font-size: 0.85rem; }
+        .alert-warning { background: #ed8936; color: white; }
+        .alert-danger { background: #e53e3e; color: white; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         /* Su Tüketimi */
@@ -181,12 +189,14 @@
         .med-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
         .med-item { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #cbd5e0; padding: 0.6rem 0.8rem; border-radius: 0.6rem; display: flex; justify-content: space-between; align-items: center; }
         .med-item.taken { border-left-color: var(--med-color); background: #f0fff4; }
+        .med-item.warning-item { border-left-color: var(--danger); background: #fff5f5; }
         .med-info { flex: 1; padding-right: 0.4rem; text-align: left; }
         .med-title { font-weight: 700; font-size: 0.85rem; margin: 0; }
         .med-rule { font-size: 0.7rem; color: var(--text-muted); margin: 0; }
         .med-badge { display: inline-block; font-size: 0.65rem; font-weight: bold; padding: 0.1rem 0.3rem; border-radius: 0.3rem; margin-top: 0.2rem; }
         .badge-info { background: #e2e8f0; color: #4a5568; }
         .badge-success { background: #c6f6d5; color: #22543d; }
+        .badge-danger { background: #fed7d7; color: #9b2c2c; }
         .time-logs { margin-top: 0.2rem; font-size: 0.7rem; color: #2b6cb0; font-weight: 500; }
         .med-actions { display: flex; align-items: center; gap: 0.3rem; flex-direction: column; min-width: 90px; }
         .btn-action { border: none; padding: 0.5rem 0.5rem; border-radius: 0.4rem; font-weight: bold; cursor: pointer; font-size: 0.75rem; width: 100%; touch-action: manipulation; }
@@ -207,30 +217,59 @@
         .pagination-btn { background: #e2e8f0; color: var(--text-main); border: none; padding: 0.4rem 0.7rem; border-radius: 0.4rem; font-weight: bold; cursor: pointer; font-size: 0.8rem; touch-action: manipulation; }
         .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        #chart-container { display: none; margin-bottom: 0.8rem; padding: 6px; background: #f7fafc; border-radius: 0.6rem; border: 1px solid #e2e8f0; }
+        #chart-container { display: none; margin-bottom: 0.8rem; padding: 6px; background: #f7fafc; border-radius: 0.6rem; border: 1px solid #e2e8f0; max-height: 250px; }
+
+        .report-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.6rem;
+            padding: 0.6rem;
+            margin-top: 0.6rem;
+        }
+        .report-section h3 {
+            margin: 0 0 0.4rem 0;
+            font-size: 0.85rem;
+            color: #2b6cb0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .report-status {
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.4rem;
+            display: inline-block;
+            margin-top: 0.3rem;
+        }
+        .report-ok { background: #c6f6d5; color: #22543d; }
+        .report-warn { background: #feebc8; color: #9c4221; }
+        .report-expired { background: #fed7d7; color: #9b2c2c; }
+
+        #print-area { display: none; }
 
         @media print {
             body { background: #fff; color: #000; margin: 0; padding: 0; font-family: Arial, sans-serif; }
             .app-container { display: none !important; }
             #print-area { display: block !important; width: 100%; }
             .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
-            .print-header h1 { margin: 0; font-size: 24px; color: #000; }
-            .print-header p { margin: 5px 0; font-size: 14px; color: #333; }
-            .print-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-            .print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: left; }
+            .print-header h1 { margin: 0; font-size: 22px; color: #000; }
+            .print-header p { margin: 5px 0; font-size: 13px; color: #333; }
+            .print-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 6px 8px; text-align: left; }
             .print-table th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; }
-            .print-footer { margin-top: 30px; font-size: 12px; text-align: right; color: #555; }
+            .print-footer { margin-top: 30px; font-size: 11px; text-align: right; color: #555; }
         }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Canlı Uyarı Banner'ı -->
-        <div id="insulin-alert-banner"></div>
+        <!-- Canlı Uyarı Banner'ları -->
+        <div id="alert-box-container" class="alert-box-container"></div>
 
         <!-- Üst Bar -->
         <div class="header-bar">
-            <a href="saglik.html" class="nav-back">⬅️ Menü</a>
+            <a href="index.html" class="nav-back">⬅️ Menü</a>
             <div class="header-title-box">
                 <h1>💊 İlaç ve Su Takibi</h1>
             </div>
@@ -244,7 +283,7 @@
         <!-- 3 SÜTUNLU PANEL DÜZENİ -->
         <div class="dashboard-grid">
             
-            <!-- 1. SÜTUN (EN SOL): SU TÜKETİMİ -->
+            <!-- 1. SÜTUN: SU TÜKETİMİ -->
             <div class="card water-tracker">
                 <h2 style="justify-content: center; text-align: center;">💧 Su Tüketimi</h2>
                 
@@ -289,7 +328,7 @@
                 </div>
             </div>
 
-            <!-- 2. SÜTUN (ORTA): İLAÇ TANIMLAMA & LİSTESİ -->
+            <!-- 2. SÜTUN: İLAÇ TANIMLAMA & LİSTESİ -->
             <div class="card">
                 <h2>⚙️ İlaç Tanımlama & Kurallar</h2>
                 
@@ -301,10 +340,25 @@
 
                     <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                         <input type="text" id="med-name" placeholder="İlaç Adı (Örn: Parasetamol)" style="padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none;">
+                        
+                        <input type="text" id="med-diagnosis" placeholder="Teşhis / İCD Kodu (Örn: E11 - Tip 2 Diyabet)" style="padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; background: white;">
+
                         <div style="display: flex; gap: 0.4rem;">
-                            <input type="number" id="med-max-daily" placeholder="Doz" min="1" value="1" style="width: 70px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
+                            <input type="number" id="med-max-daily" placeholder="G. Doz" min="1" value="1" title="Günlük Kullanılacak Doz Adedi" style="width: 75px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
+                            <input type="number" id="med-stock" placeholder="Eldeki Doz / Adet" min="0" title="Eldeki Kalan Kutudaki Toplam Doz" style="width: 120px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
                             <input type="text" id="med-rule" placeholder="Kurallar / Açıklama" style="flex: 1; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none;">
                         </div>
+
+                        <div style="display: flex; gap: 0.4rem;">
+                            <input type="text" id="med-doctor" placeholder="Yazdıran Doktor" style="flex: 1; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none;">
+                            <input type="date" id="med-prescribed-date" title="Reçete Tarihi" style="flex: 1; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; background: white;">
+                        </div>
+
+                        <div>
+                            <label style="font-size:0.7rem; color:#4a5568; font-weight:bold; display:block;">📅 Doz Bitiş Tarihi:</label>
+                            <input type="date" id="med-end-date" style="width: 100%; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; background: white; font-weight: bold;">
+                        </div>
+
                         <div style="display: flex; gap: 0.4rem; margin-top: 0.1rem;">
                             <button class="btn" style="background: #319795; flex: 1; padding: 0.5rem; font-size: 0.8rem;" id="btn-save-med">💾 Kaydet / Güncelle</button>
                             <button class="btn" style="background: #e53e3e; padding: 0.5rem; font-size: 0.8rem; display: none;" id="btn-delete-master-med">🗑️ Sil</button>
@@ -312,24 +366,52 @@
                     </div>
                 </div>
 
+                <!-- Doktora Gönderim Butonları (15 Gün ve Altı Kalanlar) -->
+                <div style="display: flex; gap: 0.4rem; margin-bottom: 0.6rem;">
+                    <button class="btn" style="background: #e53e3e; flex: 1; padding: 0.45rem; font-size: 0.75rem;" id="btn-doc-pdf">🖨️ Doktora PDF (≤15 Gün)</button>
+                    <button class="btn" style="background: #3182ce; flex: 1; padding: 0.45rem; font-size: 0.75rem;" id="btn-doc-copy">📋 Tabloyu Kopyala (≤15 Gün)</button>
+                </div>
+
                 <ul class="med-list" id="med-list"></ul>
                 <button id="btn-toggle-completed" class="btn-toggle-completed">Tamamlananları Göster</button>
             </div>
 
-            <!-- 3. SÜTUN (EN SAĞ): İNSÜLİN KALEMİ VE İNSÜLİN GEÇMİŞİ -->
+            <!-- 3. SÜTUN: İNSÜLİN KALEMİ & SAĞLIK RAPORLARI TAKİBİ -->
             <div style="display: flex; flex-direction: column; gap: 0.8rem;">
                 
-                <!-- İnsülin Kalem Süresi -->
                 <div class="card" style="border-left: 4px solid #805ad5;">
-                    <h2>💉 İnsülin Kalemi Takibi</h2>
-                    <div id="insulin-pen-info" style="font-size:0.8rem; margin-bottom:0.5rem; line-height: 1.3;">
-                        ⏳ Yükleniyor...
+                    <h2>💉 İnsülin & Sağlık Raporları</h2>
+                    
+                    <!-- İnsülin Kalemi -->
+                    <div style="margin-bottom: 0.8rem; padding-bottom: 0.6rem; border-bottom: 1px dashed #e2e8f0;">
+                        <div style="font-weight: bold; font-size: 0.85rem; color: #4a5568; margin-bottom: 0.3rem;">💉 İnsülin Kalemi Takibi</div>
+                        <div id="insulin-pen-info" style="font-size:0.8rem; margin-bottom:0.4rem; line-height: 1.3;">
+                            ⏳ Yükleniyor...
+                        </div>
+                        <div style="display: flex; gap: 0.4rem; align-items: center;">
+                            <input type="date" id="insulin-pen-date-input" style="flex: 1; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.5rem; font-weight: bold; outline: none;">
+                            <button class="btn" style="background:#805ad5; padding: 0.5rem 0.8rem;" id="btn-change-insulin">💾 Kaydet</button>
+                        </div>
                     </div>
-                    <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
-                        <input type="date" id="insulin-pen-date-input" style="flex: 1; min-width: 110px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.5rem; font-weight: bold; outline: none;">
-                        <button class="btn" style="background:#805ad5; padding: 0.5rem 0.8rem;" id="btn-change-insulin">
-                            💾 Kaydet
-                        </button>
+
+                    <!-- Diyabet Raporu Bitiş Tarihi -->
+                    <div class="report-section">
+                        <h3>📋 Diyabet Rapor Bitiş Tarihi</h3>
+                        <div style="display: flex; gap: 0.4rem; align-items: center;">
+                            <input type="date" id="report-diabetes-date" style="flex: 1; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; font-weight: bold; background: white;">
+                            <button class="btn" style="background:#319795; padding: 0.4rem 0.6rem; font-size:0.75rem;" id="btn-save-diabetes-report">💾 Kaydet</button>
+                        </div>
+                        <div id="diabetes-report-status"></div>
+                    </div>
+
+                    <!-- Tansiyon Raporu Bitiş Tarihi -->
+                    <div class="report-section">
+                        <h3>🩺 Tansiyon Rapor Bitiş Tarihi</h3>
+                        <div style="display: flex; gap: 0.4rem; align-items: center;">
+                            <input type="date" id="report-hypertension-date" style="flex: 1; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; font-weight: bold; background: white;">
+                            <button class="btn" style="background:#319795; padding: 0.4rem 0.6rem; font-size:0.75rem;" id="btn-save-hypertension-report">💾 Kaydet</button>
+                        </div>
+                        <div id="hypertension-report-status"></div>
                     </div>
                 </div>
 
@@ -339,7 +421,7 @@
                     
                     <div style="display: flex; gap: 0.4rem;">
                         <button class="btn btn-chart" id="btn-toggle-chart">📈 Grafik</button>
-                        <button class="btn btn-print" id="btn-print-report">🖨️ PDF / Yazdır</button>
+                        <button class="btn btn-print" id="btn-print-report">🖨️ İnsülin PDF / Yazdır</button>
                     </div>
                     
                     <div id="chart-container">
@@ -374,17 +456,22 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        let insulinChartInstance = null;
+
         const DEFAULT_MASTER_MEDS = [
-            { id: "janumet", name: "JANUMET 50/1000 MG", maxDaily: 2, ruleText: "Günde 2 adet (Sabah/Akşam)." },
-            { id: "delix", name: "DELIX PLUS 5/25 MG", maxDaily: 1, ruleText: "Günde 1 adet." },
-            { id: "toujeo", name: "TOUJEO 300 U/ML İNSÜLİN", maxDaily: 1, ruleText: "Günde 1 kez.", needsDose: true, defaultDose: 16 },
-            { id: "oroferon", name: "OROFERON DEPO 80 MG", maxDaily: 1, foodWarning: true, ruleText: "Günde 1 adet. Çay/Kahve ile 2 saat ara." },
-            { id: "benexol", name: "BENEXOL B12", maxDaily: 1, ruleText: "Günde 1 adet." },
-            { id: "dcolefor", name: "D-COLEFOR 20.000 İU", maxDaily: 1, allowedDays: [1, 4], ruleText: "Pazartesi ve Perşembe." },
-            { id: "voltaren", name: "VOLTAREN SR 75 MG", maxDaily: 1, ruleText: "Ağrı durumunda (Max 1)." }
+            { id: "janumet", name: "JANUMET 50/1000 MG", diagnosis: "E11 - Tip 2 Diyabet", maxDaily: 2, stock: 56, ruleText: "Günde 2 adet (Sabah/Akşam).", doctor: "Dr. Ahmet Yılmaz", prescribedDate: "2026-08-01", endDate: "2026-09-21" },
+            { id: "delix", name: "DELIX PLUS 5/25 MG", diagnosis: "I10 - Esansiyel Hipertansiyon", maxDaily: 1, stock: 28, ruleText: "Günde 1 adet.", doctor: "Dr. Ahmet Yılmaz", prescribedDate: "2026-08-01", endDate: "2026-09-20" },
+            { id: "toujeo", name: "TOUJEO 300 U/ML İNSÜLİN", diagnosis: "E11 - Tip 2 Diyabet", maxDaily: 1, stock: 30, ruleText: "Günde 1 kez.", needsDose: true, defaultDose: 16, doctor: "Dr. Mehmet Kaya", prescribedDate: "2026-08-10", endDate: "2026-09-23" },
+            { id: "oroferon", name: "OROFERON DEPO 80 MG", diagnosis: "D50 - Demir Eksikliği Anemisi", maxDaily: 1, stock: 10, foodWarning: true, ruleText: "Günde 1 adet. Çay/Kahve ile 2 saat ara.", doctor: "Dr. Ayşe Demir", prescribedDate: "2026-08-05", endDate: "2026-09-03" },
+            { id: "benexol", name: "BENEXOL B12", diagnosis: "E53 - Vitamin B Eksikliği", maxDaily: 1, stock: 30, ruleText: "Günde 1 adet.", doctor: "Dr. Ayşe Demir", prescribedDate: "2026-08-05", endDate: "2026-09-23" },
+            { id: "dcolefor", name: "D-COLEFOR 20.000 İU", diagnosis: "E55 - D Vitamini Eksikliği", maxDaily: 1, stock: 4, allowedDays: [1, 4], ruleText: "Pazartesi ve Perşembe.", doctor: "Dr. Ayşe Demir", prescribedDate: "2026-08-05", endDate: "2026-09-10" },
+            { id: "voltaren", name: "VOLTAREN SR 75 MG", diagnosis: "M54 - Sırt/Eklem Ağrısı", maxDaily: 1, stock: 10, ruleText: "Ağrı durumunda (Max 1).", doctor: "", prescribedDate: "", endDate: "" }
         ];
 
         let masterMeds = [];
+
+        let insulinState = { lastChangedDate: "", lastDose: null };
+        let reportsState = { diabetesEndDate: "", hypertensionEndDate: "" };
 
         function getLocalDateString(d = new Date()) {
             const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
@@ -405,6 +492,14 @@
                 return new Date(year, month - 1, day, hour, minute).getTime();
             } catch(e) { return 0; }
         }
+        function calculateDaysRemaining(targetDateStr) {
+            if (!targetDateStr) return null;
+            const parts = targetDateStr.split('-');
+            if (parts.length !== 3) return null;
+            const target = new Date(parts[0], parts[1] - 1, parts[2]);
+            const today = new Date(); today.setHours(0,0,0,0);
+            return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+        }
 
         const todayStr = getLocalDateString();
         let currentDateStr = todayStr;
@@ -414,13 +509,12 @@
         
         let globalInsulinLogs = [];
         let currentInsulinPage = 1;
-        const insulinPerPage = 9; // Sağ taraftaki boşluğu tam kapatmak için satır sayısı 9 yapıldı
+        const insulinPerPage = 9;
 
         let currentWaterPage = 1;
         const waterPerPage = 5;
         
         let waterMinusVal = parseInt(localStorage.getItem('water_minus_val')) || 500;
-
         let showCompletedMeds = false;
 
         const datePicker = document.getElementById('selected-date');
@@ -450,7 +544,7 @@
             const currentValue = select.value;
             select.innerHTML = `<option value="NEW">➕ Yeni İlaç Tanımla...</option>`;
             masterMeds.forEach(med => {
-                select.innerHTML += `<option value="${med.id}">${med.name} (Günde ${med.maxDaily} Doz)</option>`;
+                select.innerHTML += `<option value="${med.id}">${med.name} (Günde ${med.maxDaily} Doz | Kalan: ${med.stock || 0})</option>`;
             });
             if (currentValue && masterMeds.some(m => m.id === currentValue)) {
                 select.value = currentValue;
@@ -468,8 +562,13 @@
                 const med = masterMeds.find(m => m.id === selectedId);
                 if (med) {
                     document.getElementById('med-name').value = med.name || '';
+                    document.getElementById('med-diagnosis').value = med.diagnosis || '';
                     document.getElementById('med-max-daily').value = med.maxDaily || 1;
+                    document.getElementById('med-stock').value = med.stock !== undefined ? med.stock : '';
                     document.getElementById('med-rule').value = med.ruleText || '';
+                    document.getElementById('med-doctor').value = med.doctor || '';
+                    document.getElementById('med-prescribed-date').value = med.prescribedDate || '';
+                    document.getElementById('med-end-date').value = med.endDate || '';
                     document.getElementById('btn-delete-master-med').style.display = 'inline-block';
                 }
             }
@@ -477,8 +576,13 @@
 
         function resetMedForm() {
             document.getElementById('med-name').value = '';
+            document.getElementById('med-diagnosis').value = '';
             document.getElementById('med-max-daily').value = '1';
+            document.getElementById('med-stock').value = '';
             document.getElementById('med-rule').value = '';
+            document.getElementById('med-doctor').value = '';
+            document.getElementById('med-prescribed-date').value = '';
+            document.getElementById('med-end-date').value = '';
             document.getElementById('btn-delete-master-med').style.display = 'none';
             document.getElementById('med-select').value = 'NEW';
         }
@@ -486,21 +590,37 @@
         document.getElementById('btn-save-med').onclick = async () => {
             const selectVal = document.getElementById('med-select').value;
             const name = document.getElementById('med-name').value.trim();
+            const diagnosis = document.getElementById('med-diagnosis').value.trim();
             const maxDaily = parseInt(document.getElementById('med-max-daily').value) || 1;
+            const stock = parseInt(document.getElementById('med-stock').value) || 0;
             const ruleText = document.getElementById('med-rule').value.trim();
+            const doctor = document.getElementById('med-doctor').value.trim();
+            const prescribedDate = document.getElementById('med-prescribed-date').value;
+            const endDate = document.getElementById('med-end-date').value;
 
             if (!name) return alert("Lütfen ilaç adını giriniz!");
 
             let updatedList = [...masterMeds];
 
+            const medDataObj = {
+                name,
+                diagnosis,
+                maxDaily,
+                stock,
+                ruleText,
+                doctor,
+                prescribedDate,
+                endDate
+            };
+
             if (selectVal === "NEW") {
                 const newId = 'med_' + Date.now();
-                updatedList.push({ id: newId, name, maxDaily, ruleText });
+                updatedList.push({ id: newId, ...medDataObj });
                 alert("✅ Yeni ilaç başarıyla kaydedildi!");
             } else {
                 const index = updatedList.findIndex(m => m.id === selectVal);
                 if (index !== -1) {
-                    updatedList[index] = { ...updatedList[index], name, maxDaily, ruleText };
+                    updatedList[index] = { ...updatedList[index], ...medDataObj };
                     alert("✅ İlaç bilgileri güncellendi!");
                 }
             }
@@ -527,20 +647,142 @@
             window.scrollTo({ top: document.getElementById('med-select').offsetTop - 20, behavior: 'smooth' });
         };
 
+        function getRemainingDays(med) {
+            if (med.endDate) {
+                const parts = med.endDate.split('-');
+                if (parts.length === 3) {
+                    const end = new Date(parts[0], parts[1] - 1, parts[2]);
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    return Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+                }
+            }
+            if (med.stock && med.maxDaily) {
+                return Math.floor(med.stock / med.maxDaily);
+            }
+            return 999;
+        }
+
+        // DOKTORA GÖNDERİM: PDF & YAZDIR
+        document.getElementById('btn-doc-pdf').onclick = () => {
+            const urgentMeds = masterMeds.filter(m => getRemainingDays(m) <= 15);
+            if (urgentMeds.length === 0) {
+                return alert("⚠️ Bitişine 15 gün ve daha az kalan ilaç bulunamadı.");
+            }
+            const printArea = document.getElementById('print-area');
+            const todayDate = new Date().toLocaleDateString('tr-TR');
+            
+            let htmlContent = `
+                <div class="print-header">
+                    <h1>Bitişi Yaklaşan İlaçlar Raporu (≤ 15 Gün)</h1>
+                    <p><strong>Rapor Tarihi:</strong> ${todayDate}</p>
+                </div>
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th>İlaç Adı</th>
+                            <th>Teşhis / İCD</th>
+                            <th>Günlük Doz</th>
+                            <th>Kalan Stok</th>
+                            <th>Tahmini Bitiş Tarihi</th>
+                            <th>Açıklama / Kural</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            urgentMeds.forEach(m => {
+                htmlContent += `
+                    <tr>
+                        <td><b>${m.name}</b></td>
+                        <td>${m.diagnosis || '—'}</td>
+                        <td>${m.maxDaily} Doz</td>
+                        <td>${m.stock || 0} Adet</td>
+                        <td>${m.endDate || '—'}</td>
+                        <td>${m.ruleText || '—'}</td>
+                    </tr>
+                `;
+            });
+            htmlContent += `</tbody></table><div class="print-footer">Bu rapor doktora sunulmak üzere sistem tarafından otomatik üretilmiştir.</div>`;
+            printArea.innerHTML = htmlContent;
+            window.print();
+        };
+
+        // DOKTORA GÖNDERİM: TABLO KOPYALAMA
+        document.getElementById('btn-doc-copy').onclick = async () => {
+            const urgentMeds = masterMeds.filter(m => getRemainingDays(m) <= 15);
+            if (urgentMeds.length === 0) {
+                return alert("⚠️ Bitişine 15 gün ve daha az kalan ilaç bulunamadı.");
+            }
+            
+            let htmlTable = `
+                <table border="1" style="border-collapse: collapse; font-family: Arial, sans-serif; width: 100%;">
+                    <thead>
+                        <tr style="background-color: #f2f2f2;">
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">İlaç Adı</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Teşhis / İCD</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Günlük Doz</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Kalan Stok</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Tahmini Bitiş Tarihi</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Açıklama / Kural</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            let plainText = "İlaç Adı\tTeşhis / İCD\tGünlük Doz\tKalan Stok\tTahmini Bitiş Tarihi\tAçıklama / Kural\n";
+
+            urgentMeds.forEach(m => {
+                const name = m.name || '—';
+                const diagnosis = m.diagnosis || '—';
+                const maxDaily = (m.maxDaily || '1') + ' Doz';
+                const stock = (m.stock || 0) + ' Adet';
+                const endDate = m.endDate || '—';
+                const ruleText = m.ruleText || '—';
+
+                htmlTable += `
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><b>${name}</b></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${diagnosis}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${maxDaily}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${stock}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${endDate}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${ruleText}</td>
+                    </tr>
+                `;
+
+                plainText += `${name}\t${diagnosis}\t${maxDaily}\t${stock}\t${endDate}\t${ruleText}\n`;
+            });
+
+            htmlTable += `</tbody></table>`;
+
+            try {
+                const blobHtml = new Blob([htmlTable], { type: 'text/html' });
+                const blobText = new Blob([plainText], { type: 'text/plain' });
+                const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
+                
+                await navigator.clipboard.write(data);
+                alert("✅ Tablo başarıyla kopyalandı!\n\nWord, Excel veya WhatsApp'a yapıştırdığınızda tablo düzeninde görünecektir.");
+            } catch (err) {
+                navigator.clipboard.writeText(plainText).then(() => {
+                    alert("✅ Tablo metin formatında kopyalandı.");
+                });
+            }
+        };
+
+        // İNSÜLİN KALEMİ & SAĞLIK RAPORLARI DOKÜMAN DİNLENMESİ
         const insulinDocRef = doc(db, "sistem_ayarlari", "insulin");
         onSnapshot(insulinDocRef, (snap) => {
             const dateInput = document.getElementById('insulin-pen-date-input');
             if (snap.exists()) {
                 const data = snap.data();
-                if (data.lastChangedDate) {
-                    if (dateInput && !dateInput.value) dateInput.value = data.lastChangedDate;
-                    checkInsulinPenStatus(data.lastChangedDate);
+                insulinState = data;
+                if (data.lastChangedDate && dateInput && !dateInput.value) {
+                    dateInput.value = data.lastChangedDate;
                 }
                 if (data.lastDose) lastSavedInsulinDose = data.lastDose;
             } else {
-                document.getElementById('insulin-pen-info').innerHTML = "⚠️ İnsülin kalemi değişim tarihi henüz girilmemiş!";
                 if (dateInput && !dateInput.value) dateInput.value = todayStr;
             }
+            checkAllGlobalAlerts();
         });
 
         document.getElementById('btn-change-insulin').onclick = async () => {
@@ -552,26 +794,101 @@
             }
         };
 
-        function checkInsulinPenStatus(lastDateStr) {
-            const lastDate = new Date(lastDateStr + "T00:00:00");
-            const today = new Date(); today.setHours(0,0,0,0);
-            const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
-            const remainingDays = 28 - diffDays;
-            
-            const infoEl = document.getElementById('insulin-pen-info');
-            const bannerEl = document.getElementById('insulin-alert-banner');
-            
-            infoEl.innerHTML = `📅 Son Değişim: <b>${lastDateStr}</b> (${diffDays} gün önce)<br>⏳ Kalan Kullanım: <b>${remainingDays > 0 ? remainingDays + " Gün" : "Süre Doldu!"}</b>`;
-
-            if (diffDays === 27) {
-                bannerEl.className = "alert-banner alert-warning";
-                bannerEl.innerHTML = `⚠️ UYARI: İnsülin kaleminizin 28 günlük süresinin bitmesine 1 GÜN kaldı!`;
-            } else if (diffDays >= 28) {
-                bannerEl.className = "alert-banner alert-danger";
-                bannerEl.innerHTML = `🚨 ACİL UYARI: İnsülin kaleminizin 28 günlük kullanım süresi DOLDU!`;
-            } else {
-                bannerEl.className = "alert-banner"; bannerEl.innerHTML = "";
+        // DİYABET VE TANSİYON RAPORLARI FİREBASE DİNLENMESİ
+        const reportsDocRef = doc(db, "sistem_ayarlari", "saglik_raporlari");
+        onSnapshot(reportsDocRef, (snap) => {
+            if (snap.exists()) {
+                reportsState = snap.data();
+                if (reportsState.diabetesEndDate) {
+                    document.getElementById('report-diabetes-date').value = reportsState.diabetesEndDate;
+                }
+                if (reportsState.hypertensionEndDate) {
+                    document.getElementById('report-hypertension-date').value = reportsState.hypertensionEndDate;
+                }
             }
+            checkAllGlobalAlerts();
+        });
+
+        document.getElementById('btn-save-diabetes-report').onclick = async () => {
+            const dDate = document.getElementById('report-diabetes-date').value;
+            if (!dDate) return alert("Lütfen Diyabet Rapor bitiş tarihini seçiniz!");
+            await setDoc(reportsDocRef, { diabetesEndDate: dDate }, { merge: true });
+            alert("✅ Diyabet Raporu Bitiş Tarihi Kaydedildi!");
+        };
+
+        document.getElementById('btn-save-hypertension-report').onclick = async () => {
+            const hDate = document.getElementById('report-hypertension-date').value;
+            if (!hDate) return alert("Lütfen Tansiyon Rapor bitiş tarihini seçiniz!");
+            await setDoc(reportsDocRef, { hypertensionEndDate: hDate }, { merge: true });
+            alert("✅ Tansiyon Raporu Bitiş Tarihi Kaydedildi!");
+        };
+
+        // UYARI SİSTEMİ
+        function checkAllGlobalAlerts() {
+            const container = document.getElementById('alert-box-container');
+            container.innerHTML = "";
+            let alertHTMLs = [];
+
+            // 1. İnsülin Kalemi Süresi
+            if (insulinState && insulinState.lastChangedDate) {
+                const parts = insulinState.lastChangedDate.split('-');
+                if (parts.length === 3) {
+                    const lastDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+                    const remainingDays = 28 - diffDays;
+                    
+                    document.getElementById('insulin-pen-info').innerHTML = `📅 Son Değişim: <b>${insulinState.lastChangedDate}</b> (${diffDays} gün önce)<br>⏳ Kalan Kullanım: <b>${remainingDays > 0 ? remainingDays + " Gün" : "Süre Doldu!"}</b>`;
+
+                    if (diffDays === 27) {
+                        alertHTMLs.push(`<div class="alert-banner alert-warning">⚠️ UYARI: İnsülin kaleminizin 28 günlük süresinin bitmesine 1 GÜN kaldı!</div>`);
+                    } else if (diffDays >= 28) {
+                        alertHTMLs.push(`<div class="alert-banner alert-danger">🚨 ACİL UYARI: İnsülin kaleminizin 28 günlük kullanım süresi DOLDU!</div>`);
+                    }
+                }
+            } else {
+                document.getElementById('insulin-pen-info').innerHTML = "⚠️ İnsülin kalemi değişim tarihi henüz girilmemiş!";
+            }
+
+            // 2. Diyabet Raporu
+            const diabStatusEl = document.getElementById('diabetes-report-status');
+            if (reportsState && reportsState.diabetesEndDate) {
+                const dDays = calculateDaysRemaining(reportsState.diabetesEndDate);
+                if (dDays !== null) {
+                    if (dDays <= 0) {
+                        diabStatusEl.innerHTML = `<span class="report-status report-expired">🚨 Diyabet Rapor Süresi DOLDU! (${reportsState.diabetesEndDate})</span>`;
+                        alertHTMLs.push(`<div class="alert-banner alert-danger">🚨 UYARI: Diyabet Sağlık Raporunuzun süresi DOLDU! Yeniletmeniz gerekmektedir.</div>`);
+                    } else if (dDays <= 30) {
+                        diabStatusEl.innerHTML = `<span class="report-status report-warn">⚠️ Kalan Süre: ${dDays} Gün (${reportsState.diabetesEndDate})</span>`;
+                        alertHTMLs.push(`<div class="alert-banner alert-warning">⚠️ UYARI: Diyabet Sağlık Raporunuzun bitmesine ${dDays} GÜN (1 aydan az) kaldı!</div>`);
+                    } else {
+                        diabStatusEl.innerHTML = `<span class="report-status report-ok">✅ Kalan Süre: ${dDays} Gün (${reportsState.diabetesEndDate})</span>`;
+                    }
+                }
+            } else {
+                diabStatusEl.innerHTML = `<span style="font-size:0.75rem; color:#718096; margin-top:0.2rem; display:block;">Tarih seçilmedi</span>`;
+            }
+
+            // 3. Tansiyon Raporu
+            const hypStatusEl = document.getElementById('hypertension-report-status');
+            if (reportsState && reportsState.hypertensionEndDate) {
+                const hDays = calculateDaysRemaining(reportsState.hypertensionEndDate);
+                if (hDays !== null) {
+                    if (hDays <= 0) {
+                        hypStatusEl.innerHTML = `<span class="report-status report-expired">🚨 Tansiyon Rapor Süresi DOLDU! (${reportsState.hypertensionEndDate})</span>`;
+                        alertHTMLs.push(`<div class="alert-banner alert-danger">🚨 UYARI: Tansiyon Sağlık Raporunuzun süresi DOLDU! Yeniletmeniz gerekmektedir.</div>`);
+                    } else if (hDays <= 30) {
+                        hypStatusEl.innerHTML = `<span class="report-status report-warn">⚠️ Kalan Süre: ${hDays} Gün (${reportsState.hypertensionEndDate})</span>`;
+                        alertHTMLs.push(`<div class="alert-banner alert-warning">⚠️ UYARI: Tansiyon Sağlık Raporunuzun bitmesine ${hDays} GÜN (1 aydan az) kaldı!</div>`);
+                    } else {
+                        hypStatusEl.innerHTML = `<span class="report-status report-ok">✅ Kalan Süre: ${hDays} Gün (${reportsState.hypertensionEndDate})</span>`;
+                    }
+                }
+            } else {
+                hypStatusEl.innerHTML = `<span style="font-size:0.75rem; color:#718096; margin-top:0.2rem; display:block;">Tarih seçilmedi</span>`;
+            }
+
+            container.innerHTML = alertHTMLs.join('');
         }
 
         function getLastInsulinDose() {
@@ -700,7 +1017,8 @@
             
             if (history.length >= medConfig.maxDaily) return alert(`⚠️ HAK DOLDU: Günlük (${medConfig.maxDaily}) sınırına ulaştınız.`);
             
-            if (medConfig.allowedDays && !medConfig.allowedDays.includes(new Date(currentDateStr + "T00:00:00").getDay())) {
+            const selectedDateObj = new Date(currentDateStr + "T00:00:00");
+            if (medConfig.allowedDays && !medConfig.allowedDays.includes(selectedDateObj.getDay())) {
                 if (!confirm(`⚠️ UYARI: Bu ilaç Pzt/Perş içilir. Devam edilsin mi?`)) return;
             }
             if (medConfig.foodWarning && history.length === 0) {
@@ -714,9 +1032,10 @@
                 doseAmount = userDose.trim() !== "" ? userDose.trim() : defaultDoseVal;
                 if (medConfig.id === 'toujeo') updateLastInsulinDose(doseAmount);
             }
+
             history.push({ time: formatDateTime(new Date()), dose: doseAmount });
             appState.medsData[medConfig.id] = history;
-            
+
             await saveData();
             if(medConfig.id === 'toujeo') fetchGlobalInsulinLogs(); 
         }
@@ -789,6 +1108,7 @@
         }
 
         window.changeInsulinPage = function(dir) { currentInsulinPage += dir; renderGlobalInsulinLogs(); };
+        
         window.editGlobalInsulinDose = async function(docId, index) {
             const docRef = doc(db, "takip_verileri", docId);
             const snap = await getDoc(docRef);
@@ -822,7 +1142,9 @@
         };
         
         function renderChart() {
-            const ctx = document.getElementById('insulinChart').getContext('2d');
+            const canvasEl = document.getElementById('insulinChart');
+            if(!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
             if (insulinChartInstance) insulinChartInstance.destroy();
             const sortedLogs = [...globalInsulinLogs].sort((a, b) => a.parsedDate - b.parsedDate);
             const labels = sortedLogs.map(log => log.time.split(' ')[0]); 
@@ -833,7 +1155,7 @@
                     labels: labels,
                     datasets: [{ label: 'İnsülin Dozu (Ünite)', data: dataValues, borderColor: '#3182ce', backgroundColor: 'rgba(49, 130, 206, 0.2)', borderWidth: 2, pointBackgroundColor: '#2b6cb0', pointRadius: 3, fill: true, tension: 0.3 }]
                 },
-                options: { responsive: true, scales: { y: { beginAtZero: false, title: { display: true, text: 'Ünite Miktarı' } } } }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: false, title: { display: true, text: 'Ünite Miktarı' } } } }
             });
         }
 
@@ -891,7 +1213,8 @@
             listEl.innerHTML = "";
             let completedCount = 0;
             
-            const selectedDateObj = new Date(currentDateStr + "T00:00:00");
+            const parts = currentDateStr.split('-');
+            const selectedDateObj = new Date(parts[0], parts[1] - 1, parts[2]);
             const currentDayIndex = selectedDateObj.getDay();
 
             masterMeds.forEach(med => {
@@ -909,8 +1232,27 @@
 
                 let logsHTML = history.map((l,i) => `<div>✔️ ${i+1}. Doz: ${l.time} ${l.dose ? '('+l.dose+' Ünite)' : ''}</div>`).join('');
                 
+                const daysLeft = getRemainingDays(med);
+                let expiryBadgeHTML = '';
+                let isWarning = false;
+
+                if (daysLeft <= 15) {
+                    isWarning = true;
+                    expiryBadgeHTML = `<span class="med-badge badge-danger">⚠️ Bitişe ${daysLeft <= 0 ? 'Süre Doldu!' : daysLeft + ' Gün Kaldı'} (${med.endDate || 'Tarih Yok'})</span>`;
+                } else if (med.endDate) {
+                    expiryBadgeHTML = `<span class="med-badge badge-info">📅 Bitiş: ${med.endDate} (${daysLeft} gün kaldı)</span>`;
+                }
+
+                let doctorDiagnosisHTML = '';
+                if (med.doctor || med.diagnosis || med.prescribedDate) {
+                    doctorDiagnosisHTML = `<div class="med-rule" style="color:#2b6cb0; font-weight:500; margin-top:2px;">
+                        ${med.diagnosis ? '📌 Teşhis: ' + med.diagnosis + ' | ' : ''}
+                        👨‍⚕️ Dr: ${med.doctor || 'Belirtilmedi'} ${med.prescribedDate ? '| Reçete: ' + med.prescribedDate : ''}
+                    </div>`;
+                }
+
                 const li = document.createElement('li');
-                li.className = `med-item ${currentDose > 0 ? 'taken' : ''}`;
+                li.className = `med-item ${currentDose > 0 ? 'taken' : ''} ${isWarning ? 'warning-item' : ''}`;
                 
                 if (isCompleted && !showCompletedMeds) {
                     li.style.display = 'none';
@@ -918,9 +1260,11 @@
 
                 li.innerHTML = `
                     <div class="med-info">
-                        <div class="med-title">${med.name}</div>
+                        <div class="med-title">${med.name} <small style="color:#718096; font-weight:normal;">(Kalan Stok: ${med.stock !== undefined ? med.stock : '—'})</small></div>
                         <div class="med-rule">${med.ruleText || 'Özel kural belirtilmedi.'}</div>
+                        ${doctorDiagnosisHTML}
                         <span class="med-badge ${currentDose > 0 ? 'badge-success' : 'badge-info'}">${currentDose}/${med.maxDaily} İçildi</span>
+                        ${expiryBadgeHTML}
                         ${currentDose > 0 ? `<div class="time-logs">${logsHTML}</div>` : ''}
                     </div>
                     <div class="med-actions">

@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Araç & Fatura Yönetimi</title>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- CryptoJS (Şifreleme Kütüphanesi) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+    <!-- GÜVENLİK VE DİNAMİK YETKİ KONTROLÜ -->
+    <script>
+        const activeUser = (localStorage.getItem('currentUser') || '').toLowerCase();
+        
+        if (!activeUser) {
+            window.location.replace('giris.html');
+        } else if (activeUser !== 'murat' && activeUser !== 'admin') {
+            firebase.database().ref('usersDB/' + activeUser + '/yetki_aracGider').once('value')
+            .then(snapshot => {
+                const yetkisiVarMi = snapshot.val();
+                if (yetkisiVarMi !== true) {
+                    alert("⛔ Bu sayfaya erişim yetkiniz bulunmamaktadır! Yöneticinizden onay isteyin.");
+                    window.location.replace('index.html');
+                }
+            }).catch(error => {
+                console.error("Yetki kontrol hatası:", error);
+                window.location.replace('index.html');
+            });
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --primary-orange: #ed8936;
+            --primary-hover: #dd6b20;
+            --border-color: #e2e8f0;
+            --input-border: #cbd5e0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; }
+        
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            padding: 1.5rem 1rem; 
+            padding-bottom: 80px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+        }
+
+        .container { width: 100%; max-width: 600px; }
+
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        
+        /* Yenilenen Ana Portal Buton Stili */
+        .back-btn { 
+            background: #e2e8f0; 
+            color: #1e3a8a; 
+            border: 1px solid #cbd5e1; 
+            padding: 8px 14px; 
+            border-radius: 12px; 
+            text-decoration: none; 
+            font-weight: 700; 
+            font-size: 0.95rem; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px; 
+            transition: all 0.2s ease; 
+        }
+        .back-btn:hover { 
+            background: #cbd5e1; 
+            color: #0f172a; 
+        }
+
+        .title h1 { font-size: 1.4rem; color: var(--text-main); margin-bottom: 4px; line-height: 1.2; }
+        .title p { color: var(--text-muted); font-size: 0.85rem; }
+
+        /* DB Durum Kartı */
+        .db-status-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+        .db-status-header { display: flex; justify-content: space-between; align-items: center; }
+        .db-badge { padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 5px; }
+        .db-online { background: #c6f6d5; color: #22543d; }
+        .db-offline { background: #fed7d7; color: #9b2c2c; }
+
+        /* Sekmeler (Tabs) */
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; background: #e2e8f0; padding: 5px; border-radius: 10px; }
+        .tab-btn { flex: 1; padding: 10px 6px; background: transparent; border: none; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .tab-btn.active { background: var(--card-bg); color: var(--primary-orange); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+
+        /* Form Elemanları */
+        .form-card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .form-card h3 { margin-bottom: 15px; font-size: 1.1rem; border-bottom: 2px solid var(--primary-orange); padding-bottom: 8px; display: inline-block; color: var(--text-main); }
+        
+        .quick-fill-box { background: #ebf8ff; border: 1px dashed #3182ce; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
+        .quick-fill-box label { color: #2b6cb0; font-weight: bold; font-size: 0.85rem; display: block; margin-bottom: 4px; }
+
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; margin-bottom: 4px; font-size: 0.85rem; font-weight: bold; color: var(--text-muted); }
+        .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 9px; background: #fff; border: 1px solid var(--input-border); border-radius: 6px; color: var(--text-main); font-size: 0.95rem; }
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus { outline: none; border-color: var(--primary-orange); }
+        
+        .row-2 { display: flex; gap: 10px; }
+        .row-2 .input-group { flex: 1; }
+
+        .sub-form { display: none; background: #fdfdfd; padding: 12px; border-radius: 8px; border: 1px dashed var(--border-color); margin-bottom: 15px; }
+        .sub-form.active { display: block; }
+        .sub-form-title { font-size: 0.85rem; font-weight: bold; color: #dd6b20; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .link-btn { display: inline-block; width: 100%; text-align: center; padding: 8px; background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; border-radius: 6px; font-weight: bold; font-size: 0.85rem; text-decoration: none; margin-bottom: 10px; transition: 0.2s; }
+        .link-btn:hover { background: #bbe0ff; }
+
+        .btn-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        button.submit-btn { width: 100%; padding: 12px; background: var(--primary-orange); color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        button.submit-btn:hover { background: var(--primary-hover); }
+        
+        button.cancel-btn { width: 100%; padding: 10px; background: #e2e8f0; color: #4a5568; border: none; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; display: none; transition: 0.2s; }
+        button.cancel-btn:hover { background: #cbd5e0; }
+
+        /* Listeler ve Kartlar */
+        .item-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .item-info h3 { font-size: 1.05rem; color: var(--text-main); }
+        .item-info p { font-size: 0.85rem; color: var(--text-muted); }
+        
+        .action-btns { display: flex; align-items: center; gap: 6px; }
+        .edit-btn { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; padding: 5px 9px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: 0.2s; }
+        .edit-btn:hover { background: #bee3f8; }
+        .delete-btn { background: #fed7d7; color: #e53e3e; border: 1px solid #feb2b2; padding: 5px 9px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+        .delete-btn:hover { background: #feb2b2; }
+
+        .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; background: #f7fafc; padding: 10px; border-radius: 8px; font-size: 0.8rem; border: 1px solid #edf2f7; }
+        .details-grid div b { color: #4a5568; display: block; font-size: 0.72rem; text-transform: uppercase; }
+
+        .item-desc { font-size: 0.8rem; color: #4a5568; background: #fffaf0; padding: 6px 10px; border-radius: 4px; margin-top: 8px; border-left: 3px solid var(--primary-orange); }
+
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-align: center; }
+        .badge-danger { background: #fed7d7; color: #9b2c2c; }
+        .badge-warning { background: #feebc8; color: #c05621; }
+        .badge-success { background: #c6f6d5; color: #22543d; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-btn">⬅️ Ana Portal</a>
+            <div class="title">
+                <h1>Araç & Fatura Yönetimi</h1>
+                <p>Abonelik ve Muayene Takibi <span style="font-size: 0.7rem; color: #38a169;">(🔒 Kriptolu)</span></p>
+            </div>
+        </div>
+
+        <div class="db-status-card">
+            <div class="db-status-header">
+                <span>⚡ <b>Veritabanı Durumu:</b></span>
+                <span id="dbStatusBadge" class="db-badge db-offline">● Kontrol Ediliyor...</span>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('arac')">🚗 Araç Takibi</button>
+            <button class="tab-btn" onclick="switchTab('garaj')">🚘 Araç Garajım</button>
+            <button class="tab-btn" onclick="switchTab('gider')">🧾 Faturalar</button>
+        </div>
+
+        <!-- ARAÇ TAKİBİ SEKMESİ -->
+        <div id="arac-tab" class="tab-content active">
+            <div class="form-card">
+                <h3 id="aracFormBaslik">Yeni Araç Kaydı / Hatırlatıcı</h3>
+                
+                <!-- Hızlı Otomatik Doldurma Kutusu -->
+                <div class="quick-fill-box">
+                    <label>⚡ Garajdan Otomatik Doldur</label>
+                    <select id="garajSecim" onchange="garajVerisiAktar(this.value)">
+                        <option value="">-- Kayıtlı Araç Seçin --</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Kayıt Türü</label>
+                    <select id="aracTuru" onchange="aracFormGuncelle()">
+                        <option value="Trafik Sigortası">Trafik Sigortası (Teklif / Poliçe)</option>
+                        <option value="Kasko">Kasko (Teklif / Poliçe)</option>
+                        <option value="Muayene">Araç Muayenesi</option>
+                        <option value="Yağ/Periyodik Bakım">Yağ / Periyodik Bakım</option>
+                        <option value="MTV">Motorlu Taşıtlar Vergisi (MTV)</option>
+                        <option value="Diğer">Diğer Araç Gideri</option>
+                    </select>
+                </div>
+
+                <div class="row-2">
+                    <div class="input-group">
+                        <label>Plaka</label>
+                        <input type="text" id="aracPlaka" placeholder="Örn: 34 ABC 123" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label id="aracTarihLabel">Poliçe / Vade Tarihi</label>
+                        <input type="date" id="aracTarih">
+                    </div>
+                </div>
+
+                <!-- DİNAMİK FORM 1: SİGORTA & KASKO -->
+                <div id="form-sigorta" class="sub-form active">
+                    <div class="sub-form-title">📋 Sigortacıya Lazım Olan Bilgiler (Kriptolu)</div>
+                    <div class="row-2">
+                        <div class="input-group">
+                            <label>Ruhsat Sahibi T.C. / VKN</label>
+                            <input type="text" id="sigortaTC" placeholder="Teklif için gerekli" autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label>Ruhsat Seri No (Belge No)</label>
+                            <input type="text" id="sigortaRuhsatNo" placeholder="Örn: AB 123456" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row-2">
+                        <div class="input-group">
+                            <label>Marka / Model / Yıl</label>
+                            <input type="text" id="sigortaAracModel" placeholder="Örn: 2020 Megane 1.5dCi" autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label>Kullanım Tarzı</label>
+                            <select id="sigortaKullanim">
+                                <option value="Hususi Otomobil">Hususi Otomobil</option>
+                                <option value="Ticari / Kamyonet">Ticari / Kamyonet</option>
+                                <option value="Motosiklet">Motosiklet</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="sub-form-title" style="margin-top:8px;">💳 Son Satınalma / Poliçe Detayı</div>
+                    <div class="row-2">
+                        <div class="input-group">
+                            <label>Acente / Sigorta Şirketi</label>
+                            <input type="text" id="sigortaAcente" placeholder="Örn: Anadolu Sigorta" autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label>Poliçe No</label>
+                            <input type="text" id="sigortaPoliceNo" placeholder="Örn: 98410293" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Ödenen / Teklif Tutarı (TL)</label>
+                        <input type="number" id="sigortaTutar" placeholder="Örn: 4500">
+                    </div>
+                </div>
+
+                <!-- DİNAMİK FORM 2: MUAYENE -->
+                <div id="form-muayene" class="sub-form">
+                    <a href="https://e-randevu.tuvturk.com.tr/" target="_blank" class="link-btn">🔗 TÜVTÜRK Hızlı Randevu Al (e-Devlet)</a>
+                    <div class="row-2">
+                        <div class="input-group">
+                            <label>Muayene İstasyonu / Randevu Saati</label>
+                            <input type="text" id="muayeneIstasyon" placeholder="Örn: Samandıra İstasyonu - 14:30" autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label>Muayene Ücreti (TL)</label>
+                            <input type="number" id="muayeneTutar" placeholder="Örn: 1820">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DİNAMİK FORM 3: PERİYODİK BAKIM -->
+                <div id="form-bakim" class="sub-form">
+                    <div class="row-2">
+                        <div class="input-group">
+                            <label>Mevcut KM</label>
+                            <input type="number" id="bakimMevcutKm" placeholder="Örn: 120000">
+                        </div>
+                        <div class="input-group">
+                            <label>Gelecek Bakım KM'si</label>
+                            <input type="number" id="bakimGelecekKm" placeholder="Örn: 135000">
+                        </div>
+                    </div>
+                    <div class="row-2">
+                        <div class="input-group">
+                            <label>Servis / Usta Bilgisi</label>
+                            <input type="text" id="bakimServis" placeholder="Örn: Özel Servis Ahmet Usta" autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label>Harcanan Tutar (TL)</label>
+                            <input type="number" id="bakimTutar" placeholder="Örn: 3500">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Yapılan İşlemler & Parçalar</label>
+                        <input type="text" id="bakimIslemler" placeholder="Örn: Yağ, Yağ Filtresi, Hava Filtresi değişti" autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- DİNAMİK FORM 4: MTV & DİĞER -->
+                <div id="form-genel" class="sub-form">
+                    <div class="input-group">
+                        <label>Ödenecek Tutar (TL)</label>
+                        <input type="number" id="genelTutar" placeholder="Örn: 1250">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Açıklama / Ek Notlar</label>
+                    <input type="text" id="aracAciklama" placeholder="İsteğe bağlı not ekleyebilirsiniz..." autocomplete="off">
+                </div>
+
+                <div class="btn-group">
+                    <button id="aracSubmitBtn" class="submit-btn" onclick="aracKaydet()">Güvenli Kaydet</button>
+                    <button id="aracCancelBtn" class="cancel-btn" onclick="aracFormSifirla()">❌ Düzenlemeyi İptal Et</button>
+                </div>
+            </div>
+            <div id="aracListe"></div>
+        </div>
+
+        <!-- ARAÇ GARAJIM (SABİT BİLGİLER) SEKMESİ -->
+        <div id="garaj-tab" class="tab-content">
+            <div class="form-card">
+                <h3 id="garajFormBaslik">🚘 Garaja Sabit Araç Tanımla</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Buraya kaydettiğiniz araç bilgileri formlarda otomatik olarak kullanılabilir.</p>
+                
+                <div class="row-2">
+                    <div class="input-group">
+                        <label>Plaka</label>
+                        <input type="text" id="garajPlaka" placeholder="Örn: 34 ABC 123" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>Ruhsat Sahibi T.C. / VKN</label>
+                        <input type="text" id="garajTC" placeholder="T.C. Kimlik No" autocomplete="off">
+                    </div>
+                </div>
+                
+                <div class="row-2">
+                    <div class="input-group">
+                        <label>Ruhsat Seri No (Belge No)</label>
+                        <input type="text" id="garajRuhsatNo" placeholder="Örn: AB 123456" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>Kullanım Tarzı</label>
+                        <select id="garajKullanim">
+                            <option value="Hususi Otomobil">Hususi Otomobil</option>
+                            <option value="Ticari / Kamyonet">Ticari / Kamyonet</option>
+                            <option value="Motosiklet">Motosiklet</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Marka / Model / Yıl</label>
+                    <input type="text" id="garajModel" placeholder="Örn: 2020 Megane 1.5dCi" autocomplete="off">
+                </div>
+
+                <div class="btn-group">
+                    <button id="garajSubmitBtn" class="submit-btn" onclick="garajKaydet()">🚘 Garaja Kaydet</button>
+                    <button id="garajCancelBtn" class="cancel-btn" onclick="garajFormSifirla()">❌ Düzenlemeyi İptal Et</button>
+                </div>
+            </div>
+            <div id="garajListe"></div>
+        </div>
+
+        <!-- FATURALAR VE ABONELİKLER SEKMESİ -->
+        <div id="gider-tab" class="tab-content">
+            <div class="form-card">
+                <h3 id="giderFormBaslik">Yeni Fatura / Abonelik Ekle</h3>
+                <div class="input-group">
+                    <label>Fatura / Abonelik Adı</label>
+                    <select id="giderAd">
+                        <optgroup label="Ev & Hizmet Faturaları">
+                            <option value="Elektrik Faturası">Elektrik Faturası</option>
+                            <option value="Su Faturası">Su Faturası</option>
+                            <option value="Doğalgaz Faturası">Doğalgaz Faturası</option>
+                            <option value="Ev İnterneti">Ev İnterneti</option>
+                            <option value="Cep Telefonu Faturası">Cep Telefonu Faturası</option>
+                            <option value="Apartman Aidatı">Apartman Aidatı</option>
+                            <option value="TV / Uydu Platformu">TV / Uydu Platformu (Digiturk, D-Smart vb.)</option>
+                        </optgroup>
+                        <optgroup label="Dijital Abonelikler">
+                            <option value="Netflix">Netflix</option>
+                            <option value="Spotify / Apple Music">Spotify / Apple Music</option>
+                            <option value="YouTube Premium">YouTube Premium</option>
+                            <option value="Amazon Prime">Amazon Prime</option>
+                            <option value="Disney+">Disney+</option>
+                            <option value="Exxen / Gain / BluTV">Exxen / Gain / BluTV</option>
+                            <option value="iCloud / Google Storage">iCloud / Google Storage</option>
+                            <option value="ChatGPT / AI Aboneliği">ChatGPT / AI Aboneliği</option>
+                        </optgroup>
+                        <optgroup label="Diğer">
+                            <option value="Spor Salonu Aboneliği">Spor Salonu Aboneliği</option>
+                            <option value="Kredi / Kredi Kartı Ödemesi">Kredi / Kredi Kartı Ödemesi</option>
+                            <option value="Özel Sigorta / BES">Özel Sigorta / BES</option>
+                            <option value="Diğer Sabit Ödeme">Diğer Sabit Ödeme</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Abone / Sözleşme No</label>
+                    <input type="text" id="giderAboneNo" placeholder="Örn: 1004829102" autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <label>Aylık Tutar (TL)</label>
+                    <input type="number" id="giderTutar" placeholder="Örn: 450">
+                </div>
+                <div class="input-group">
+                    <label>Her Ayın Kaçında Ödenecek?</label>
+                    <input type="number" id="giderGun" min="1" max="31" placeholder="Örn: 15">
+                </div>
+                <div class="input-group">
+                    <label>Açıklama / Ek Not</label>
+                    <input type="text" id="giderAciklama" placeholder="Örn: Garanti bankasından otomatik ödeniyor" autocomplete="off">
+                </div>
+
+                <div class="btn-group">
+                    <button id="giderSubmitBtn" class="submit-btn" onclick="giderKaydet()">Güvenli Kaydet</button>
+                    <button id="giderCancelBtn" class="cancel-btn" onclick="giderFormSifirla()">❌ Düzenlemeyi İptal Et</button>
+                </div>
+            </div>
+            <div id="giderListe"></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
+            authDomain: "karaaslanhomebutcetakip.firebaseapp.com",
+            databaseURL: "https://karaaslanhomebutcetakip-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "karaaslanhomebutcetakip",
+            storageBucket: "karaaslanhomebutcetakip.firebasestorage.app",
+            messagingSenderId: "566343253682",
+            appId: "1:566343253682:web:3ab14198fca800d69813ab"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let editingAracKey = null;
+        let editingGiderKey = null;
+        let editingGarajKey = null;
+        
+        let cachedAraclar = {};
+        let cachedGiderler = {};
+        let cachedGaraj = {};
+
+        // --- VERİTABANI CANLI BAĞLANTI DİNLEYİCİSİ ---
+        const dbStatusBadge = document.getElementById('dbStatusBadge');
+        db.ref('.info/connected').on('value', snap => {
+            if (snap.val() === true) {
+                dbStatusBadge.className = "db-badge db-online";
+                dbStatusBadge.innerHTML = "● Bağlantı Var (Canlı)";
+            } else {
+                dbStatusBadge.className = "db-badge db-offline";
+                dbStatusBadge.innerHTML = "○ Bağlantı Kesildi";
+            }
+        });
+
+        // --- GÜVENLİ ŞİFRELEME (AES) ---
+        const GIZLI_ANAHTAR = "KaraaslanEvSistemi2026!*";
+
+        function veriyiSifrele(metin) {
+            if (!metin) return "";
+            return CryptoJS.AES.encrypt(metin.toString(), GIZLI_ANAHTAR).toString();
+        }
+
+        function sifreyiCoz(sifreliMetin) {
+            if (!sifreliMetin) return "";
+            try {
+                const bytes = CryptoJS.AES.decrypt(sifreliMetin, GIZLI_ANAHTAR);
+                const cozulmus = bytes.toString(CryptoJS.enc.Utf8);
+                return cozulmus || sifreliMetin; 
+            } catch (error) {
+                return sifreliMetin; 
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabId + '-tab').classList.add('active');
+        }
+
+        // ================= GARAJDAN OTOMATİK DOLDURMA =================
+        function garajVerisiAktar(key) {
+            if (!key || !cachedGaraj[key]) return;
+            const item = cachedGaraj[key];
+            
+            document.getElementById('aracPlaka').value = sifreyiCoz(item.plaka) || '';
+            document.getElementById('sigortaTC').value = sifreyiCoz(item.tc) || '';
+            document.getElementById('sigortaRuhsatNo').value = sifreyiCoz(item.ruhsatNo) || '';
+            document.getElementById('sigortaAracModel').value = sifreyiCoz(item.model) || '';
+            if (item.kullanim) document.getElementById('sigortaKullanim').value = item.kullanim;
+        }
+
+        // ================= ARAÇ DİNAMİK FORM YÖNETİMİ =================
+        function aracFormGuncelle() {
+            const tur = document.getElementById('aracTuru').value;
+            
+            document.getElementById('form-sigorta').classList.remove('active');
+            document.getElementById('form-muayene').classList.remove('active');
+            document.getElementById('form-bakim').classList.remove('active');
+            document.getElementById('form-genel').classList.remove('active');
+
+            const tarihLabel = document.getElementById('aracTarihLabel');
+
+            if (tur === 'Trafik Sigortası' || tur === 'Kasko') {
+                document.getElementById('form-sigorta').classList.add('active');
+                tarihLabel.innerText = "Poliçe Bitiş Tarihi";
+            } else if (tur === 'Muayene') {
+                document.getElementById('form-muayene').classList.add('active');
+                tarihLabel.innerText = "Muayene Son Geçerlilik Tarihi";
+            } else if (tur === 'Yağ/Periyodik Bakım') {
+                document.getElementById('form-bakim').classList.add('active');
+                tarihLabel.innerText = "Bakım Tarihi";
+            } else {
+                document.getElementById('form-genel').classList.add('active');
+                tarihLabel.innerText = "Son Ödeme / Vade Tarihi";
+            }
+        }
+
+        function aracKaydet() {
+            const tur = document.getElementById('aracTuru').value;
+            const plaka = document.getElementById('aracPlaka').value;
+            const tarih = document.getElementById('aracTarih').value;
+            const aciklama = document.getElementById('aracAciklama').value;
+
+            if (!tarih) return alert("Lütfen tarih seçin!");
+
+            let detayObj = {};
+
+            if (tur === 'Trafik Sigortası' || tur === 'Kasko') {
+                detayObj = {
+                    tc: document.getElementById('sigortaTC').value,
+                    ruhsatNo: document.getElementById('sigortaRuhsatNo').value,
+                    aracModel: document.getElementById('sigortaAracModel').value,
+                    kullanim: document.getElementById('sigortaKullanim').value,
+                    acente: document.getElementById('sigortaAcente').value,
+                    policeNo: document.getElementById('sigortaPoliceNo').value,
+                    tutar: document.getElementById('sigortaTutar').value
+                };
+            } else if (tur === 'Muayene') {
+                detayObj = {
+                    istasyon: document.getElementById('muayeneIstasyon').value,
+                    tutar: document.getElementById('muayeneTutar').value
+                };
+            } else if (tur === 'Yağ/Periyodik Bakım') {
+                detayObj = {
+                    mevcutKm: document.getElementById('bakimMevcutKm').value,
+                    gelecekKm: document.getElementById('bakimGelecekKm').value,
+                    servis: document.getElementById('bakimServis').value,
+                    tutar: document.getElementById('bakimTutar').value,
+                    islemler: document.getElementById('bakimIslemler').value
+                };
+            } else {
+                detayObj = {
+                    tutar: document.getElementById('genelTutar').value
+                };
+            }
+
+            const kayitVerisi = {
+                tur: tur,
+                plaka: veriyiSifrele(plaka),
+                tarih: tarih,
+                detay: veriyiSifrele(JSON.stringify(detayObj)),
+                aciklama: veriyiSifrele(aciklama),
+                ekleyen: activeUser,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            if (editingAracKey) {
+                db.ref(`yonetimDB/araclar/${editingAracKey}`).update(kayitVerisi)
+                .then(() => {
+                    alert("Kayıt başarıyla güncellendi!");
+                    aracFormSifirla();
+                });
+            } else {
+                db.ref('yonetimDB/araclar').push(kayitVerisi)
+                .then(() => {
+                    alert("Kayıt başarıyla ve şifrelenerek eklendi!");
+                    aracFormSifirla();
+                });
+            }
+        }
+
+        function aracDuzenle(key) {
+            const item = cachedAraclar[key];
+            if (!item) return;
+
+            editingAracKey = key;
+            document.getElementById('aracFormBaslik').innerText = "✏️ Araç Kaydını Düzenle";
+            document.getElementById('aracTuru').value = item.tur;
+            aracFormGuncelle();
+
+            document.getElementById('aracPlaka').value = sifreyiCoz(item.plaka) || '';
+            document.getElementById('aracTarih').value = item.tarih || '';
+            document.getElementById('aracAciklama').value = sifreyiCoz(item.aciklama) || '';
+
+            let detay = {};
+            try {
+                const decodedJson = sifreyiCoz(item.detay);
+                if (decodedJson) detay = JSON.parse(decodedJson);
+            } catch(e){}
+
+            if (item.tur === 'Trafik Sigortası' || item.tur === 'Kasko') {
+                document.getElementById('sigortaTC').value = detay.tc || '';
+                document.getElementById('sigortaRuhsatNo').value = detay.ruhsatNo || '';
+                document.getElementById('sigortaAracModel').value = detay.aracModel || '';
+                document.getElementById('sigortaKullanim').value = detay.kullanim || 'Hususi Otomobil';
+                document.getElementById('sigortaAcente').value = detay.acente || '';
+                document.getElementById('sigortaPoliceNo').value = detay.policeNo || '';
+                document.getElementById('sigortaTutar').value = detay.tutar || '';
+            } else if (item.tur === 'Muayene') {
+                document.getElementById('muayeneIstasyon').value = detay.istasyon || '';
+                document.getElementById('muayeneTutar').value = detay.tutar || '';
+            } else if (item.tur === 'Yağ/Periyodik Bakım') {
+                document.getElementById('bakimMevcutKm').value = detay.mevcutKm || '';
+                document.getElementById('bakimGelecekKm').value = detay.gelecekKm || '';
+                document.getElementById('bakimServis').value = detay.servis || '';
+                document.getElementById('bakimTutar').value = detay.tutar || '';
+                document.getElementById('bakimIslemler').value = detay.islemler || '';
+            } else {
+                document.getElementById('genelTutar').value = detay.tutar || '';
+            }
+
+            const btn = document.getElementById('aracSubmitBtn');
+            btn.innerText = "✏️ Değişiklikleri Güncelle";
+            btn.style.background = "#3182ce";
+            document.getElementById('aracCancelBtn').style.display = "block";
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function aracFormSifirla() {
+            editingAracKey = null;
+            document.getElementById('aracFormBaslik').innerText = "Yeni Araç Kaydı / Hatırlatıcı";
+            document.getElementById('garajSecim').value = '';
+            document.getElementById('aracPlaka').value = '';
+            document.getElementById('aracTarih').value = '';
+            document.getElementById('aracAciklama').value = '';
+            document.querySelectorAll('.sub-form input').forEach(input => input.value = '');
+            
+            const btn = document.getElementById('aracSubmitBtn');
+            btn.innerText = "Güvenli Kaydet";
+            btn.style.background = "var(--primary-orange)";
+            document.getElementById('aracCancelBtn').style.display = "none";
+        }
+
+        db.ref('yonetimDB/araclar').on('value', snapshot => {
+            const liste = document.getElementById('aracListe');
+            liste.innerHTML = '';
+            cachedAraclar = snapshot.val() || {};
+            if(!snapshot.val()) return;
+
+            Object.keys(cachedAraclar).forEach(key => {
+                const item = cachedAraclar[key];
+                
+                const itemDate = new Date(item.tarih);
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const diffTime = itemDate - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                let badgeClass = 'badge-success';
+                let badgeText = `${diffDays} Gün Kaldı`;
+
+                if (diffDays < 0) {
+                    badgeClass = 'badge-danger';
+                    badgeText = `Süresi Geçti!`;
+                } else if (diffDays <= 30) {
+                    badgeClass = 'badge-warning';
+                }
+
+                const cozulmusPlaka = sifreyiCoz(item.plaka) || 'Plakasız';
+                const cozulmusAciklama = sifreyiCoz(item.aciklama);
+                
+                let detay = {};
+                try {
+                    const decodedJson = sifreyiCoz(item.detay);
+                    if(decodedJson) detay = JSON.parse(decodedJson);
+                } catch(e){}
+
+                let detayHTML = '';
+
+                if (item.tur === 'Trafik Sigortası' || item.tur === 'Kasko') {
+                    detayHTML = `
+                        <div class="details-grid">
+                            ${detay.tc ? `<div><b>T.C. / VKN:</b> ${detay.tc}</div>` : ''}
+                            ${detay.ruhsatNo ? `<div><b>Ruhsat Seri:</b> ${detay.ruhsatNo}</div>` : ''}
+                            ${detay.aracModel ? `<div><b>Araç:</b> ${detay.aracModel}</div>` : ''}
+                            ${detay.acente ? `<div><b>Acente:</b> ${detay.acente}</div>` : ''}
+                            ${detay.policeNo ? `<div><b>Poliçe No:</b> ${detay.policeNo}</div>` : ''}
+                            ${detay.tutar ? `<div><b>Tutar:</b> ${detay.tutar} TL</div>` : ''}
+                        </div>
+                    `;
+                } else if (item.tur === 'Muayene') {
+                    detayHTML = `
+                        <div class="details-grid">
+                            ${detay.istasyon ? `<div><b>İstasyon/Saat:</b> ${detay.istasyon}</div>` : ''}
+                            ${detay.tutar ? `<div><b>Ücret:</b> ${detay.tutar} TL</div>` : ''}
+                            <div><b>Randevu:</b> <a href="https://e-randevu.tuvturk.com.tr/" target="_blank" style="color:#2b6cb0;">TÜVTÜRK Git</a></div>
+                        </div>
+                    `;
+                } else if (item.tur === 'Yağ/Periyodik Bakım') {
+                    detayHTML = `
+                        <div class="details-grid">
+                            ${detay.mevcutKm ? `<div><b>Mevcut KM:</b> ${detay.mevcutKm}</div>` : ''}
+                            ${detay.gelecekKm ? `<div><b>Gelecek Bakım:</b> ${detay.gelecekKm} KM</div>` : ''}
+                            ${detay.servis ? `<div><b>Servis:</b> ${detay.servis}</div>` : ''}
+                            ${detay.tutar ? `<div><b>Maliyet:</b> ${detay.tutar} TL</div>` : ''}
+                        </div>
+                        ${detay.islemler ? `<div style="font-size:0.78rem; margin-top:5px; color:#4a5568;"><b>Yapılanlar:</b> ${detay.islemler}</div>` : ''}
+                    `;
+                } else {
+                    if(detay.tutar) {
+                        detayHTML = `<div class="details-grid"><div><b>Ödenen / Tutar:</b> ${detay.tutar} TL</div></div>`;
+                    }
+                }
+
+                liste.innerHTML += `
+                    <div class="item-card">
+                        <div class="item-header">
+                            <div class="item-info">
+                                <h3>${item.tur} - <span style="color:#ed8936;">${cozulmusPlaka}</span></h3>
+                                <p> Tarih: <b>${item.tarih}</b></p>
+                            </div>
+                            <div class="action-btns">
+                                <div class="status-badge ${badgeClass}">${badgeText}</div>
+                                <button class="edit-btn" onclick="aracDuzenle('${key}')">✏️</button>
+                                <button class="delete-btn" onclick="sil('araclar', '${key}')">🗑️</button>
+                            </div>
+                        </div>
+                        ${detayHTML}
+                        ${cozulmusAciklama ? `<div class="item-desc">📝 ${cozulmusAciklama}</div>` : ''}
+                    </div>
+                `;
+            });
+        });
+
+        // ================= GARAJ İŞLEMLERİ (SABİT ARAÇLAR) =================
+        function garajKaydet() {
+            const plaka = document.getElementById('garajPlaka').value;
+            const tc = document.getElementById('garajTC').value;
+            const ruhsatNo = document.getElementById('garajRuhsatNo').value;
+            const kullanim = document.getElementById('garajKullanim').value;
+            const model = document.getElementById('garajModel').value;
+
+            if (!plaka) return alert("Lütfen en az plaka bilgisini girin!");
+
+            const garajVerisi = {
+                plaka: veriyiSifrele(plaka),
+                tc: veriyiSifrele(tc),
+                ruhsatNo: veriyiSifrele(ruhsatNo),
+                kullanim: kullanim,
+                model: veriyiSifrele(model),
+                ekleyen: activeUser
+            };
+
+            if (editingGarajKey) {
+                db.ref(`yonetimDB/garaj/${editingGarajKey}`).update(garajVerisi)
+                .then(() => {
+                    alert("Garajdaki araç güncellendi!");
+                    garajFormSifirla();
+                });
+            } else {
+                db.ref('yonetimDB/garaj').push(garajVerisi)
+                .then(() => {
+                    alert("Araç garaja başarıyla kaydedildi!");
+                    garajFormSifirla();
+                });
+            }
+        }
+
+        function garajDuzenle(key) {
+            const item = cachedGaraj[key];
+            if (!item) return;
+
+            editingGarajKey = key;
+            document.getElementById('garajFormBaslik').innerText = "✏️ Garajdaki Aracı Düzenle";
+            document.getElementById('garajPlaka').value = sifreyiCoz(item.plaka) || '';
+            document.getElementById('garajTC').value = sifreyiCoz(item.tc) || '';
+            document.getElementById('garajRuhsatNo').value = sifreyiCoz(item.ruhsatNo) || '';
+            document.getElementById('garajKullanim').value = item.kullanim || 'Hususi Otomobil';
+            document.getElementById('garajModel').value = sifreyiCoz(item.model) || '';
+
+            const btn = document.getElementById('garajSubmitBtn');
+            btn.innerText = "✏️ Değişiklikleri Güncelle";
+            btn.style.background = "#3182ce";
+            document.getElementById('garajCancelBtn').style.display = "block";
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function garajFormSifirla() {
+            editingGarajKey = null;
+            document.getElementById('garajFormBaslik').innerText = "🚘 Garaja Sabit Araç Tanımla";
+            document.getElementById('garajPlaka').value = '';
+            document.getElementById('garajTC').value = '';
+            document.getElementById('garajRuhsatNo').value = '';
+            document.getElementById('garajModel').value = '';
+            
+            const btn = document.getElementById('garajSubmitBtn');
+            btn.innerText = "🚘 Garaja Kaydet";
+            btn.style.background = "var(--primary-orange)";
+            document.getElementById('garajCancelBtn').style.display = "none";
+        }
+
+        db.ref('yonetimDB/garaj').on('value', snapshot => {
+            const garajListe = document.getElementById('garajListe');
+            const garajSecim = document.getElementById('garajSecim');
+            
+            garajListe.innerHTML = '';
+            garajSecim.innerHTML = '<option value="">-- Kayıtlı Araç Seçin (Formu Doldurur) --</option>';
+            
+            cachedGaraj = snapshot.val() || {};
+            if(!snapshot.val()) return;
+
+            Object.keys(cachedGaraj).forEach(key => {
+                const item = cachedGaraj[key];
+                
+                const plaka = sifreyiCoz(item.plaka) || 'Plakasız';
+                const tc = sifreyiCoz(item.tc);
+                const ruhsatNo = sifreyiCoz(item.ruhsatNo);
+                const model = sifreyiCoz(item.model);
+
+                // Seçim kutusunu doldur
+                garajSecim.innerHTML += `<option value="${key}">${plaka} - ${model || 'Araç'}</option>`;
+
+                // Liste kartını doldur
+                garajListe.innerHTML += `
+                    <div class="item-card">
+                        <div class="item-header">
+                            <div class="item-info">
+                                <h3>🚗 ${plaka}</h3>
+                                <p>${model ? `<b>Model:</b> ${model}` : ''}</p>
+                            </div>
+                            <div class="action-btns">
+                                <button class="edit-btn" onclick="garajDuzenle('${key}')">✏️</button>
+                                <button class="delete-btn" onclick="sil('garaj', '${key}')">🗑️</button>
+                            </div>
+                        </div>
+                        <div class="details-grid">
+                            ${tc ? `<div><b>T.C. / VKN:</b> ${tc}</div>` : ''}
+                            ${ruhsatNo ? `<div><b>Ruhsat No:</b> ${ruhsatNo}</div>` : ''}
+                            ${item.kullanim ? `<div><b>Tarz:</b> ${item.kullanim}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        });
+
+        // ================= FATURA & ABONELİK İŞLEMLERİ =================
+        function giderKaydet() {
+            const ad = document.getElementById('giderAd').value;
+            const aboneNo = document.getElementById('giderAboneNo').value;
+            const tutar = document.getElementById('giderTutar').value;
+            const gun = document.getElementById('giderGun').value;
+            const aciklama = document.getElementById('giderAciklama').value;
+
+            if (!ad || !tutar || !gun) return alert("Lütfen gerekli alanları doldurun!");
+
+            const giderVerisi = {
+                ad: veriyiSifrele(ad),
+                aboneNo: veriyiSifrele(aboneNo),
+                tutar: veriyiSifrele(tutar),
+                gun: gun,
+                aciklama: veriyiSifrele(aciklama),
+                ekleyen: activeUser
+            };
+
+            if (editingGiderKey) {
+                db.ref(`yonetimDB/giderler/${editingGiderKey}`).update(giderVerisi)
+                .then(() => {
+                    alert("Abonelik/Fatura kaydı güncellendi!");
+                    giderFormSifirla();
+                });
+            } else {
+                db.ref('yonetimDB/giderler').push(giderVerisi)
+                .then(() => {
+                    alert("Abonelik/Fatura kaydı başarıyla eklendi!");
+                    giderFormSifirla();
+                });
+            }
+        }
+
+        function giderDuzenle(key) {
+            const item = cachedGiderler[key];
+            if (!item) return;
+
+            editingGiderKey = key;
+            document.getElementById('giderFormBaslik').innerText = "✏️ Fatura / Abonelik Düzenle";
+            document.getElementById('giderAd').value = sifreyiCoz(item.ad) || '';
+            document.getElementById('giderAboneNo').value = sifreyiCoz(item.aboneNo) || '';
+            document.getElementById('giderTutar').value = sifreyiCoz(item.tutar) || '';
+            document.getElementById('giderGun').value = item.gun || '';
+            document.getElementById('giderAciklama').value = sifreyiCoz(item.aciklama) || '';
+
+            const btn = document.getElementById('giderSubmitBtn');
+            btn.innerText = "✏️ Değişiklikleri Güncelle";
+            btn.style.background = "#3182ce";
+            document.getElementById('giderCancelBtn').style.display = "block";
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function giderFormSifirla() {
+            editingGiderKey = null;
+            document.getElementById('giderFormBaslik').innerText = "Yeni Fatura / Abonelik Ekle";
+            document.getElementById('giderAboneNo').value = '';
+            document.getElementById('giderTutar').value = '';
+            document.getElementById('giderGun').value = '';
+            document.getElementById('giderAciklama').value = '';
+            
+            const btn = document.getElementById('giderSubmitBtn');
+            btn.innerText = "Güvenli Kaydet";
+            btn.style.background = "var(--primary-orange)";
+            document.getElementById('giderCancelBtn').style.display = "none";
+        }
+
+        db.ref('yonetimDB/giderler').on('value', snapshot => {
+            const liste = document.getElementById('giderListe');
+            liste.innerHTML = '';
+            cachedGiderler = snapshot.val() || {};
+            if(!snapshot.val()) return;
+
+            Object.keys(cachedGiderler).forEach(key => {
+                const item = cachedGiderler[key];
+                
+                const cozulmusAd = sifreyiCoz(item.ad);
+                const cozulmusAboneNo = sifreyiCoz(item.aboneNo);
+                const cozulmusTutar = sifreyiCoz(item.tutar);
+                const cozulmusAciklama = sifreyiCoz(item.aciklama);
+
+                liste.innerHTML += `
+                    <div class="item-card">
+                        <div class="item-header">
+                            <div class="item-info">
+                                <h3>${cozulmusAd}</h3>
+                                ${cozulmusAboneNo ? `<p><b>Abone/Sözleşme No:</b> ${cozulmusAboneNo}</p>` : ''}
+                                <p><b>Aylık Tutar:</b> ${cozulmusTutar} TL | Her ayın <b>${item.gun}.</b> günü</p>
+                            </div>
+                            <div class="action-btns">
+                                <button class="edit-btn" onclick="giderDuzenle('${key}')">✏️</button>
+                                <button class="delete-btn" onclick="sil('giderler', '${key}')">🗑️</button>
+                            </div>
+                        </div>
+                        ${cozulmusAciklama ? `<div class="item-desc">📝 ${cozulmusAciklama}</div>` : ''}
+                    </div>
+                `;
+            });
+        });
+
+        // ================= GÜVENLİ SİLME İŞLEMİ =================
+        function sil(tablo, key) {
+            if(confirm("Bu kaydı kalıcı olarak silmek istediğinize emin misiniz?")) {
+                db.ref(`yonetimDB/${tablo}/${key}`).remove()
+                .then(() => {
+                    if (editingAracKey === key) aracFormSifirla();
+                    if (editingGiderKey === key) giderFormSifirla();
+                    if (editingGarajKey === key) garajFormSifirla();
+                });
+            }
+        }
+    </script>
+</body>
+</html>

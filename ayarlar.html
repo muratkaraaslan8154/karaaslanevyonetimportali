@@ -49,31 +49,43 @@
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
         
         body { font-family: 'Roboto', sans-serif; background-color: #f4f6f9; padding: 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 950px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .container { width: 100%; max-width: 1000px; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { border-bottom: 2px solid #805ad5; padding-bottom: 10px; color: #2d3748; margin-top: 0; display: flex; justify-content: space-between; align-items: center;}
         
         .form-group { margin-bottom: 15px; }
         label { display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
-        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box;}
+        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box;}
         .btn-save { background: #805ad5; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
-        th { background-color: #f7fafc; color: #4a5568; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; vertical-align: top; }
+        th { background-color: #f7fafc; color: #4a5568; white-space: nowrap; }
         
-        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; display: inline-block; }
         .badge-blocked { background: #fed7d7; color: #9b2c2c; }
         .badge-active { background: #c6f6d5; color: #22543d; }
 
-        .btn-unblock { background: #38a169; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-block { background: #e53e3e; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-        .btn-delete { background: #718096; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .btn-unblock { background: #38a169; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 4px;}
+        .btn-block { background: #e53e3e; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-bottom: 4px;}
+        .btn-delete { background: #718096; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-bottom: 4px;}
         
         .btn-back { display: block; text-align: center; margin-top: 25px; color: #718096; text-decoration: none; font-weight: 500;}
-        .log-box { max-height: 350px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; }
+        .log-box { max-height: 400px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; }
         
         .gps-link { color: #3182ce; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
         .gps-link:hover { text-decoration: underline; }
+
+        /* Yetki Checkbox Listesi Stilleri */
+        .permission-list { display: flex; flex-direction: column; gap: 6px; }
+        .permission-list label { font-size: 0.8rem; font-weight: 500; display: flex; align-items: center; gap: 6px; margin: 0; cursor: pointer; color: #2d3748; }
+        .permission-list input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #3182ce; }
+
+        /* Mobil Uyumlu Log Tablosu */
+        @media screen and (max-width: 768px) {
+            .log-box table { font-size: 0.75rem; }
+            .log-box th, .log-box td { padding: 6px 4px; }
+            .hide-mobile { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -94,10 +106,9 @@
                 <input type="text" id="newPin" placeholder="Örn: 1234" autocomplete="off">
             </div>
             <button class="btn-save" id="saveBtn" onclick="kullaniciKaydet()">Kullanıcıyı Kaydet</button>
-            <button class="btn-save" id="cancelBtn" onclick="formuTemizle()" style="display:none; background: #a0aec0;">İptal Et</button>
         </div>
 
-        <h3 style="font-size: 1.1rem; color: #2d3748; margin-bottom: 10px;">👥 Kullanıcılar & Cihaz Güvenliği</h3>
+        <h3 style="font-size: 1.1rem; color: #2d3748; margin-bottom: 10px;">👥 Kullanıcılar & İzinler</h3>
         <div style="overflow-x:auto;">
             <table>
                 <thead>
@@ -105,7 +116,7 @@
                         <th>Kullanıcı</th>
                         <th>PIN</th>
                         <th>Cihaz Bilgileri</th>
-                        <th>Birikim Modülü</th>
+                        <th>Sayfa Yetkileri</th>
                         <th>Durum</th>
                         <th>İşlemler</th>
                     </tr>
@@ -114,17 +125,17 @@
             </table>
         </div>
 
-        <h3 style="font-size: 1.1rem; color: #2d3748; margin-top: 30px; margin-bottom: 10px;">📋 Giriş / Çıkış, IP & Lokasyon Logları</h3>
+        <h3 style="font-size: 1.1rem; color: #2d3748; margin-top: 30px; margin-bottom: 10px;">📋 Sistem Logları</h3>
         <div class="log-box" style="overflow-x:auto;">
             <table>
                 <thead>
                     <tr>
-                        <th>Tarih / Saat</th>
+                        <th>Saat / Tarih</th>
                         <th>Kullanıcı</th>
                         <th>İşlem</th>
-                        <th>IP / Şehir</th>
-                        <th>GPS Konumu</th>
-                        <th>Cihaz <span style="font-size: 0.7rem; font-weight:normal;">(Kopyalamak için tıkla)</span></th>
+                        <th class="hide-mobile">IP / Konum</th>
+                        <th>GPS</th>
+                        <th class="hide-mobile">Cihaz</th>
                     </tr>
                 </thead>
                 <tbody id="logTableBody"></tbody>
@@ -140,7 +151,7 @@
         let usersDB = {};
         let savingsVis = {};
 
-        // Kullanıcılar ve Birikim Görünürlük Verisini Çek
+        // Verileri Çek
         db.ref('usersDB').on('value', (snapshot) => {
             usersDB = snapshot.val() || {};
             db.ref('savingsVisibility').on('value', (visSnap) => {
@@ -149,14 +160,22 @@
             });
         });
 
-        db.ref('systemLogs').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
+        db.ref('systemLogs').orderByChild('timestamp').limitToLast(60).on('value', (snapshot) => {
             const logsObj = snapshot.val() || {};
             const logArray = Object.values(logsObj).reverse();
             logListesiniGuncelle(logArray);
         });
 
+        // GENEL YETKİ DEĞİŞTİRME FONKSİYONU
+        async function yetkiDegistir(user, yetkiTuru, durum) {
+            await db.ref('usersDB/' + user + '/yetki_' + yetkiTuru).set(durum);
+            await sistemLogYaz(activeUser, `Yetki Ayarı: ${user} -> ${yetkiTuru}: ${durum ? 'AÇIK' : 'KAPALI'}`);
+        }
+
+        // BİRİKİM YETKİSİ (Eski sistemle uyumlu tutuldu)
         async function toggleSavingsVis(user, state) {
             await db.ref('savingsVisibility/' + user).set(state);
+            await sistemLogYaz(activeUser, `Yetki Ayarı: ${user} -> Finans (Özel): ${state ? 'AÇIK' : 'KAPALI'}`);
         }
 
         function kullaniciListesiniGuncelle() {
@@ -167,7 +186,7 @@
                 const isBlocked = details.isBlocked || false;
                 const isExempt = (username === 'murat' || username === 'admin');
 
-                // Ana Cihaz ve Ek İzinli Cihazları Listeleyen Bölüm
+                // Cihaz Bilgileri
                 let regDeviceTxt = details.registeredDevice ? details.registeredDevice.substring(0, 15) + "..." : "Henüz Yok";
                 let deviceCellHTML = `<div><strong style="color: #4a5568;">Ana:</strong> ${regDeviceTxt}</div>`;
                 
@@ -178,10 +197,33 @@
                     for (const [devId, not] of Object.entries(details.safeDevices)) {
                         deviceCellHTML += `<li style="margin-bottom:3px;" title="${devId}">
                                               ${not} 
-                                              <span style="color:#e53e3e; cursor:pointer; font-weight:bold; margin-left: 5px; background:#fed7d7; padding:0 4px; border-radius:3px;" onclick="cihazSil('${username}', '${devId}')" title="Bu cihazı sil">✖</span>
+                                              <span style="color:#e53e3e; cursor:pointer; font-weight:bold; margin-left: 5px; background:#fed7d7; padding:0 4px; border-radius:3px;" onclick="cihazSil('${username}', '${devId}')">✖</span>
                                            </li>`;
                     }
                     deviceCellHTML += `</ul></div>`;
+                }
+
+                // Sayfa Yetkileri (Checkboxes)
+                let yetkilerHTML = '';
+                if (isExempt) {
+                    yetkilerHTML = `<span style="color: #a0aec0; font-style: italic;">Yönetici (Tam Yetki)</span>`;
+                } else {
+                    // Geçmişe dönük uyumluluk için, veri yoksa Fatura ve Market varsayılan olarak "true" kabul edilir.
+                    const yFatura = details.yetki_fatura !== false; 
+                    const yMarket = details.yetki_market !== false;
+                    const ySaglik = details.yetki_saglik || false;
+                    const yArac = details.yetki_aracGider || false;
+                    const yFinans = savingsVis[username] || false;
+
+                    yetkilerHTML = `
+                        <div class="permission-list">
+                            <label><input type="checkbox" onchange="yetkiDegistir('${username}', 'fatura', this.checked)" ${yFatura ? 'checked' : ''}> 👥 Fatura</label>
+                            <label><input type="checkbox" onchange="yetkiDegistir('${username}', 'market', this.checked)" ${yMarket ? 'checked' : ''}> 🛒 Market</label>
+                            <label><input type="checkbox" onchange="yetkiDegistir('${username}', 'saglik', this.checked)" ${ySaglik ? 'checked' : ''}> 🏥 Sağlık</label>
+                            <label><input type="checkbox" onchange="yetkiDegistir('${username}', 'aracGider', this.checked)" ${yArac ? 'checked' : ''}> 🚗 Araç & Gider</label>
+                            <label><input type="checkbox" onchange="toggleSavingsVis('${username}', this.checked)" ${yFinans ? 'checked' : ''}> 💰 Finans</label>
+                        </div>
+                    `;
                 }
 
                 let statusBadge = isBlocked 
@@ -191,23 +233,14 @@
                 let actionBtns = '';
                 
                 if (isBlocked) {
-                    actionBtns += `<button class="btn-unblock" onclick="blokeKaldir('${username}')">Bloke Kaldır</button> `;
+                    actionBtns += `<button class="btn-unblock" onclick="blokeKaldir('${username}')">Bloke Kaldır</button><br>`;
                 } else if (!isExempt) {
-                    actionBtns += `<button class="btn-block" onclick="blokeEt('${username}')">Bloke Et</button> `;
+                    actionBtns += `<button class="btn-block" onclick="blokeEt('${username}')">Bloke Et</button><br>`;
                 }
 
                 if (!isExempt) {
-                    actionBtns += `<button class="btn-delete" onclick="kullaniciSil('${username}')">Sil</button>`;
-                    actionBtns += `<br><button class="btn-save" style="padding: 5px 10px; margin-top: 8px; width: auto; background: #3182ce; font-size:0.8rem;" onclick="cihazEkle('${username}')">📱 Ek Cihaz İzni Ver</button>`;
-                }
-
-                // Birikim görünürlük kontrolü
-                let birikimErisimi = '';
-                if (username !== 'admin') {
-                    const isChecked = savingsVis[username] ? 'checked' : '';
-                    birikimErisimi = `<input type="checkbox" onchange="toggleSavingsVis('${username}', this.checked)" ${isChecked} style="width:auto; cursor:pointer;"> Aktif`;
-                } else {
-                    birikimErisimi = `<span style="color: #a0aec0; font-size: 0.8rem;">Yönetici</span>`;
+                    actionBtns += `<button class="btn-delete" onclick="kullaniciSil('${username}')">Sil</button><br>`;
+                    actionBtns += `<button class="btn-save" style="padding: 5px; margin-top: 5px; width: 100%; background: #3182ce; font-size:0.75rem;" onclick="cihazEkle('${username}')">📱 Ek Cihaz Ver</button>`;
                 }
 
                 tbody.innerHTML += `
@@ -215,7 +248,7 @@
                         <td style="font-weight:bold;">${username} ${isExempt ? '🛡️' : ''}</td>
                         <td>${details.pin}</td>
                         <td>${deviceCellHTML}</td>
-                        <td>${birikimErisimi}</td>
+                        <td>${yetkilerHTML}</td>
                         <td>${statusBadge}</td>
                         <td>${actionBtns}</td>
                     </tr>
@@ -223,33 +256,25 @@
             }
         }
 
-        // YENİ: Cihaz Ekleme Fonksiyonu
+        // --- Cihaz, Log ve Kullanıcı Yönetim Fonksiyonları ---
         async function cihazEkle(username) {
-            const cihazId = prompt(`${username} kullanıcısı için Güvenli Cihaz Kimliğini (ID) girin:\n\n(İpucu: Sayfanın altındaki loglarda cihaz isimlerine tıklayarak kopyalayabilirsiniz.)`);
-            if (!cihazId || cihazId.trim() === "") return;
-            
-            // Firebase anahtarlarında nokta veya köşeli parantez kullanılamayacağı için temizliyoruz
+            const cihazId = prompt(`${username} kullanıcısı için Cihaz Kimliğini (ID) girin:`);
+            if (!cihazId) return;
             const cleanId = cihazId.trim().replace(/[.#$\[\]]/g, '_'); 
-            
-            const cihazNotu = prompt("Bu cihazı sonradan hatırlamak için bir not girin:\nÖrn: Eşimin Tableti, Salondaki PC, Mert'in Telefonu");
-            if (!cihazNotu || cihazNotu.trim() === "") return;
-
+            const cihazNotu = prompt("Bu cihaz için bir isim girin (Örn: Eşimin Tableti):");
+            if (!cihazNotu) return;
             await db.ref(`usersDB/${username}/safeDevices/${cleanId}`).set(cihazNotu.trim());
-            await sistemLogYaz(activeUser, `Ek Cihaz İzni Eklendi (${username}): ${cihazNotu}`);
+            await sistemLogYaz(activeUser, `Ek Cihaz: ${username} -> ${cihazNotu}`);
         }
 
-        // YENİ: Cihaz Silme Fonksiyonu
         async function cihazSil(username, devId) {
-            if(confirm("Bu cihazın sisteme giriş iznini iptal etmek istediğinize emin misiniz?")) {
+            if(confirm("Cihaz iznini iptal etmek istiyor musunuz?")) {
                 await db.ref(`usersDB/${username}/safeDevices/${devId}`).remove();
-                await sistemLogYaz(activeUser, `Cihaz İzni Kaldırıldı (${username})`);
             }
         }
 
         function kopyala(metin) {
-            navigator.clipboard.writeText(metin).then(() => {
-                alert("Cihaz ID kopyalandı:\n" + metin);
-            });
+            navigator.clipboard.writeText(metin).then(() => alert("Kopyalandı:\n" + metin));
         }
 
         function logListesiniGuncelle(logs) {
@@ -257,25 +282,19 @@
             tbody.innerHTML = "";
 
             logs.forEach(log => {
-                let rowColor = (log.action && (log.action.includes('🚫') || log.action.includes('Blokeli'))) ? 'background:#fff5f5;' : '';
-                const ipLocation = (log.ip ? log.ip : 'Bilinmiyor') + (log.location ? ` (${log.location})` : '');
-                let gpsDisplay = '<span style="color:#a0aec0;">Yok</span>';
-                if (log.gpsLat && log.gpsLng) {
-                    gpsDisplay = `<a href="https://maps.google.com/?q=${log.gpsLat},${log.gpsLng}" target="_blank" class="gps-link">📍 Haritada Gör</a>`;
-                }
-
-                // Cihaz metnine tıklandığında kopyalama eklendi
-                let deviceText = log.device || '-';
-                let shortDeviceText = log.device ? log.device.substring(0, 20) + '...' : '-';
+                let rowColor = (log.action && log.action.includes('🚫')) ? 'background:#fff5f5;' : '';
+                const ipLoc = (log.ip || '-') + (log.location ? ` (${log.location})` : '');
+                let gpsHtml = log.gpsLat ? `<a href="https://maps.google.com/?q=${log.gpsLat},${log.gpsLng}" target="_blank" class="gps-link">📍 Gör</a>` : '-';
+                let devTxt = log.device ? log.device.substring(0, 15) + '...' : '-';
 
                 tbody.innerHTML += `
                     <tr style="${rowColor}">
-                        <td>${log.time || '-'}</td>
+                        <td style="font-size:0.75rem;">${log.time || '-'}</td>
                         <td style="font-weight:bold;">${log.user || '-'}</td>
-                        <td>${log.action || '-'}</td>
-                        <td style="font-size:0.8rem; color:#2d3748;">${ipLocation}</td>
-                        <td>${gpsDisplay}</td>
-                        <td style="font-size:0.75rem; color:#3182ce; cursor:pointer; text-decoration:underline;" onclick="kopyala('${deviceText}')" title="Kopyalamak için tıkla">${shortDeviceText}</td>
+                        <td style="font-size:0.8rem;">${log.action || '-'}</td>
+                        <td class="hide-mobile" style="font-size:0.75rem;">${ipLoc}</td>
+                        <td>${gpsHtml}</td>
+                        <td class="hide-mobile" style="font-size:0.75rem; color:#3182ce; cursor:pointer;" onclick="kopyala('${log.device}')" title="Kopyala">${devTxt}</td>
                     </tr>
                 `;
             });
@@ -283,13 +302,10 @@
 
         async function getIpAndLocation() {
             try {
-                const response = await fetch('https://ipapi.co/json/');
-                const data = await response.json();
-                return {
-                    ip: data.ip || 'Bilinmiyor',
-                    location: (data.city && data.country_name) ? `${data.city}, ${data.country_name}` : 'Bilinmiyor'
-                };
-            } catch (err) { return { ip: 'Bilinmiyor', location: 'Bilinmiyor' }; }
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                return { ip: data.ip, location: (data.city && data.country_name) ? `${data.city}, ${data.country_name}` : null };
+            } catch (err) { return {}; }
         }
 
         function getGPSCoordinates() {
@@ -319,38 +335,40 @@
         async function kullaniciKaydet() {
             const user = document.getElementById('newUsername').value.toLowerCase().trim();
             const pin = document.getElementById('newPin').value.trim();
-            if(!user || !pin) return alert("Lütfen kullanıcı adı ve PIN girin!");
+            if(!user || !pin) return alert("Bilgileri eksiksiz girin!");
 
-            await db.ref('usersDB/' + user).update({ pin: pin, isBlocked: false });
-            await db.ref('savingsVisibility/' + user).set(true); // Eklendiğinde varsayılan birikim modülü aktif
+            // Yeni kullanıcı eklendiğinde Fatura ve Market varsayılan olarak açık olsun
+            await db.ref('usersDB/' + user).update({ 
+                pin: pin, 
+                isBlocked: false,
+                yetki_fatura: true,
+                yetki_market: true,
+                yetki_saglik: false,
+                yetki_aracGider: false
+            });
+            await db.ref('savingsVisibility/' + user).set(false); 
 
-            await sistemLogYaz(activeUser, `Yeni Kullanıcı Eklendi: ${user}`);
-            alert("Kullanıcı başarıyla kaydedildi!");
-            formuTemizle();
+            await sistemLogYaz(activeUser, `Yeni Kullanıcı: ${user}`);
+            alert("Kaydedildi!");
+            document.getElementById('newUsername').value = ""; 
+            document.getElementById('newPin').value = "";
         }
 
         async function blokeKaldir(username) {
-            if(confirm(username + " kullanıcısının blokesini kaldırmak ve ana cihazını sıfırlamak istiyor musunuz?")) {
+            if(confirm("Blokeyi kaldır ve ana cihazı sıfırla?")) {
                 await db.ref('usersDB/' + username).update({ isBlocked: false, registeredDevice: null });
-                await sistemLogYaz(activeUser, `Bloke Kaldırıldı & Cihaz Sıfırlandı: ${username}`);
             }
         }
         async function blokeEt(username) {
-            if(confirm(username + " kullanıcısını bloke etmek istediğinizden emin misiniz?")) {
+            if(confirm("Bloke etmek istiyor musunuz?")) {
                 await db.ref('usersDB/' + username).update({ isBlocked: true });
-                await sistemLogYaz(activeUser, `🚫 Kullanıcı Bloke Edildi: ${username}`);
             }
         }
         async function kullaniciSil(username) {
-            if(confirm(username + " adlı kullanıcıyı silmek istediğinize emin misiniz?")) {
+            if(confirm("Silmek istiyor musunuz?")) {
                 await db.ref('usersDB/' + username).remove();
                 await db.ref('savingsVisibility/' + username).remove();
-                await sistemLogYaz(activeUser, `Kullanıcı Silindi: ${username}`);
             }
-        }
-
-        function formuTemizle() {
-            document.getElementById('newUsername').value = ""; document.getElementById('newPin').value = "";
         }
     </script>
 </body>

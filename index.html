@@ -37,6 +37,7 @@
             --primary-purple: #805ad5;
             --primary-gold: #d69e2e;
             --primary-teal: #319795;
+            --primary-orange: #ed8936;
             --text-main: #2d3748;
             --text-muted: #718096;
         }
@@ -46,8 +47,8 @@
         .container { width: 100%; max-width: 450px; text-align: center; }
 
         .alert-banner { padding: 1rem; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 1.2rem; display: none; }
-        .alert-warning { background: #ed8936; color: white; display: block; }
-        .alert-danger { background: #e53e3e; color: white; display: block; animation: pulse 1.5s infinite; }
+        .alert-warning { background: var(--primary-orange); color: white; display: block; }
+        .alert-danger { background: var(--primary-red); color: white; display: block; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         .header-icon { font-size: 3.5rem; margin-bottom: 0.5rem; }
@@ -62,15 +63,16 @@
         .link-ayarlar { border-left-color: var(--primary-purple); }
         .link-birikim { border-left-color: var(--primary-gold); }
         .link-portal { border-left-color: var(--primary-teal); }
+        .link-arac { border-left-color: var(--primary-orange); }
 
-        .icon-box { font-size: 2rem; margin-right: 1rem; background: #f7fafc; padding: 0.8rem; border-radius: 50%; min-width: 65px; text-align: center; }
+        .icon-box { font-size: 2rem; margin-right: 1rem; background: #f7fafc; padding: 0.8rem; border-radius: 50%; min-width: 65px; text-align: center; flex-shrink: 0; }
         .text-box { display: flex; flex-direction: column; }
         .title { font-size: 1.15rem; font-weight: bold; margin-bottom: 0.3rem; }
         .desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.3; }
         .section-title { text-align: left; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: #a0aec0; margin: 1.5rem 0 0.8rem 5px; font-weight: bold; }
         .footer-note { margin-top: 2rem; font-size: 0.8rem; color: #a0aec0; }
         
-        .logout-btn { background: var(--primary-red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; float: right; margin-bottom: 1rem; font-weight: bold; }
+        .logout-btn { background: var(--primary-red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; float: right; margin-bottom: 1rem; font-weight: bold; transition: background 0.2s; }
         .logout-btn:hover { background: #c53030; }
     </style>
 </head>
@@ -102,6 +104,15 @@
             <div class="text-box">
                 <span class="title">Pazar & Market Girişi</span>
                 <span class="desc">Günlük market, pazar ve karma alışveriş fişlerini sisteme ekleyin.</span>
+            </div>
+        </a>
+
+        <!-- Araç ve Sabit Giderler Butonu -->
+        <a href="arac_ve_gider.html" id="btnAracGider" class="menu-link link-arac" style="display: none;">
+            <div class="icon-box">🚗</div>
+            <div class="text-box">
+                <span class="title">Araç & Sabit Giderler</span>
+                <span class="desc">Araç muayene, sigorta, vergi ve aylık sabit abonelikleri takip edin.</span>
             </div>
         </a>
 
@@ -181,26 +192,37 @@
             document.getElementById('uygulama-portali-section').style.display = 'block';
         }
 
+        // Araç Paneli Butonu Görünürlük Kontrolü
+        const aracButonu = document.getElementById('btnAracGider');
+        if (aracButonu) {
+            if (activeUser === 'murat' || activeUser === 'admin') {
+                aracButonu.style.display = 'flex';
+            } else if (activeUser) {
+                db.ref('usersDB/' + activeUser + '/yetki_aracGider').once('value').then(snapshot => {
+                    if (snapshot.val() === true) {
+                        aracButonu.style.display = 'flex';
+                    }
+                }).catch(error => {
+                    console.error("Yetki kontrol hatası:", error);
+                });
+            }
+        }
+
         // Anlık Bloklanma VE Cihaz Silinme Kontrolü
         if (activeUser) {
             db.ref('usersDB/' + activeUser).on('value', (snapshot) => {
                 const userData = snapshot.val();
                 if (!userData) return;
 
-                // 1. Genel Bloke Kontrolü
                 if (userData.isBlocked === true) {
                     alert("🚫 Hesabınız yönetici tarafından bloke edilmiştir! Oturum kapatılıyor.");
-                    
-                    // YENİ: Sadece oturumu kapat, Cihaz ID'yi silme!
                     localStorage.removeItem('isLoggedIn');
                     localStorage.removeItem('currentUser');
                     sessionStorage.clear();
-                    
                     window.location.replace('giris.html');
                     return;
                 }
 
-                // 2. Anlık Cihaz İzni Kontrolü
                 const isExempt = (activeUser === 'murat' || activeUser === 'admin');
                 if (!isExempt) {
                     const currentDeviceId = localStorage.getItem('app_device_id');
@@ -209,12 +231,9 @@
                     
                     if (userData.registeredDevice && !isMainDevice && !isSafeDevice) {
                         alert("📱 Bu cihazın sisteme erişim izni yönetici tarafından iptal edilmiştir! Güvenlik sebebiyle oturum kapatılıyor.");
-                        
-                        // YENİ: Sadece oturumu kapat, Cihaz ID'yi silme!
                         localStorage.removeItem('isLoggedIn');
                         localStorage.removeItem('currentUser');
                         sessionStorage.clear();
-                        
                         window.location.replace('giris.html');
                     }
                 }
@@ -236,14 +255,10 @@
                 });
             } catch(e) {}
 
-            // YENİ: Sadece oturumu kapat, Cihaz ID'yi silme!
             localStorage.removeItem('isLoggedIn');
             localStorage.removeItem('currentUser');
             sessionStorage.clear();
-            
-            // Cookie'yi temizle
             document.cookie = "currentUser=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
             window.location.href = 'giris.html';
         }
     </script>
@@ -263,7 +278,10 @@
         onSnapshot(doc(healthDb, "sistem_ayarlari", "insulin"), (snap) => {
             if (!snap.exists() || !snap.data().lastChangedDate) return;
             const lastDateStr = snap.data().lastChangedDate;
-            const lastDate = new Date(lastDateStr + "T00:00:00");
+            const parts = lastDateStr.split('-');
+            if (parts.length !== 3) return;
+            
+            const lastDate = new Date(parts[0], parts[1] - 1, parts[2]);
             const today = new Date();
             today.setHours(0,0,0,0);
             

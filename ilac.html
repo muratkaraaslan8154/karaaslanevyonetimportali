@@ -813,10 +813,9 @@
         }
 
         function generateFullPdf() {
-            const threshold = getDocThreshold();
-            const filteredMeds = masterMeds.filter(m => getRemainingDays(m) <= threshold);
+            const filteredMeds = masterMeds; // Sınır yok, tam liste
             if (filteredMeds.length === 0) {
-                return alert(`⚠️ Bitişine ${threshold} gün ve daha az kalan ilaç bulunamadı.`);
+                return alert(`⚠️ Kayıtlı ilaç bulunamadı.`);
             }
             setPrintOrientation(true);
             const printArea = document.getElementById('print-area');
@@ -824,7 +823,7 @@
 
             let htmlContent = `
                 <div class="print-header">
-                    <h1>Tüm İlaçlar Tam Detaylı Rapor Liste (≤ ${threshold} Gün)</h1>
+                    <h1>Tüm İlaçlar Tam Detaylı Rapor Listesi</h1>
                     <p><strong>Rapor Tarihi:</strong> ${todayDate}</p>
                 </div>
                 <table class="print-table">
@@ -861,16 +860,15 @@
                 `;
             });
 
-            htmlContent += `</tbody></table><div class="print-footer">Sistemde kayıtlı, filtreye uyan bütün ilaç ve kural verilerini içerir.</div>`;
+            htmlContent += `</tbody></table><div class="print-footer">Sistemde kayıtlı bütün ilaç ve kural verilerini içerir.</div>`;
             printArea.innerHTML = htmlContent;
             window.print();
         }
 
         async function copyFullTable() {
-            const threshold = getDocThreshold();
-            const filteredMeds = masterMeds.filter(m => getRemainingDays(m) <= threshold);
+            const filteredMeds = masterMeds; // Sınır yok, tam liste
             if (filteredMeds.length === 0) {
-                return alert(`⚠️ Bitişine ${threshold} gün ve daha az kalan ilaç bulunamadı.`);
+                return alert(`⚠️ Kayıtlı ilaç bulunamadı.`);
             }
 
             let htmlTable = `
@@ -930,7 +928,7 @@
                 const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
                 
                 await navigator.clipboard.write(data);
-                alert(`✅ Bitişine ≤ ${threshold} gün kalan tüm ilaçların tam tablosu kopyalandı!\n\nWord veya Excel'e doğrudan yapıştırabilirsiniz.`);
+                alert(`✅ Sistemdeki tüm ilaçların tam tablosu kopyalandı!\n\nWord veya Excel'e doğrudan yapıştırabilirsiniz.`);
             } catch (err) {
                 navigator.clipboard.writeText(plainText).then(() => {
                     alert("✅ Tam tablo metin formatında kopyalandı.");
@@ -944,8 +942,8 @@
                 "Lütfen yapmak istediğiniz işlemi seçin (1-4):\n\n" +
                 "1 - 🖨️ Doktor PDF (≤15 Gün)\n" +
                 "2 - 📋 Doktor Tablo Kopyala (≤15 Gün)\n" +
-                "3 - 🖼️ Tam Liste PDF (≤15 Gün)\n" +
-                "4 - 📋 Tam Liste Kopyala (≤15 Gün)"
+                "3 - 🖼️ Tam Liste PDF (Tüm İlaçlar)\n" +
+                "4 - 📋 Tam Liste Kopyala (Tüm İlaçlar)"
             );
 
             if (choice === null) return; // Kullanıcı iptal etti

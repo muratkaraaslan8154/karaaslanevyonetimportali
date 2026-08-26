@@ -54,8 +54,9 @@
         
         .form-group { margin-bottom: 15px; }
         label { display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; color: #4a5568;}
-        input[type="text"] { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box;}
+        input[type="text"], input[type="datetime-local"], input[type="number"], select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box;}
         .btn-save { background: #805ad5; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-cancel { background: #718096; color: white; width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; display: none; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; vertical-align: top; }
@@ -67,6 +68,7 @@
 
         .btn-unblock { background: #38a169; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 4px;}
         .btn-block { background: #e53e3e; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-bottom: 4px;}
+        .btn-edit { background: #3182ce; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-bottom: 4px; font-weight: bold; }
         .btn-delete { background: #718096; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-bottom: 4px;}
         
         .btn-back { display: block; text-align: center; margin-top: 25px; color: #718096; text-decoration: none; font-weight: 500;}
@@ -75,16 +77,18 @@
         .gps-link { color: #3182ce; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
         .gps-link:hover { text-decoration: underline; }
 
-        /* Yetki Checkbox Listesi Stilleri */
         .permission-list { display: flex; flex-direction: column; gap: 6px; }
         .permission-list label { font-size: 0.8rem; font-weight: 500; display: flex; align-items: center; gap: 6px; margin: 0; cursor: pointer; color: #2d3748; }
         .permission-list input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #3182ce; }
 
-        /* Mobil Uyumlu Log Tablosu */
+        .time-inputs { display: flex; gap: 10px; }
+        .time-inputs div { flex: 1; }
+
         @media screen and (max-width: 768px) {
             .log-box table { font-size: 0.75rem; }
             .log-box th, .log-box td { padding: 6px 4px; }
             .hide-mobile { display: none; }
+            .time-inputs { flex-direction: column; gap: 5px; }
         }
     </style>
 </head>
@@ -95,6 +99,7 @@
             <span style="font-size: 0.9rem; font-weight: normal; color: #805ad5;" id="adminLabel"></span>
         </h2>
         
+        <!-- YENİ KULLANICI EKLEME -->
         <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
             <h3 style="margin-top: 0; font-size: 1.1rem; color: #2d3748;" id="formTitle">Yeni Kullanıcı Ekle</h3>
             <div class="form-group">
@@ -106,6 +111,68 @@
                 <input type="text" id="newPin" placeholder="Örn: 1234" autocomplete="off">
             </div>
             <button class="btn-save" id="saveBtn" onclick="kullaniciKaydet()">Kullanıcıyı Kaydet</button>
+        </div>
+
+        <!-- 📢 ÖZEL DUYURU VE UYARI YÖNETİMİ -->
+        <div style="background: #fffaf0; border: 1px solid #feebc8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="margin-top: 0; font-size: 1.1rem; color: #dd6b20;" id="alertFormTitle">📢 Ana Sayfa Özel Duyuru / Uyarı Ekle</h3>
+            
+            <div class="form-group">
+                <label>Uyarı Mesajı:</label>
+                <textarea id="customAlertMsg" rows="2" placeholder="Örn: Bu akşam saat 20:00'de su kesintisi yaşanacaktır!"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Gösterim Başlangıç Zamanı (Boş bırakılırsa hemen yayınlanır):</label>
+                <input type="datetime-local" id="customAlertStartTime">
+            </div>
+
+            <div class="form-group">
+                <label>Uyarı Rengi:</label>
+                <select id="customAlertColor">
+                    <option value="danger">🔴 Kırmızı (Acil / Tehlike)</option>
+                    <option value="warning">🟡 Sarı (Uyarı / Hatırlatma)</option>
+                    <option value="success">🟢 Yeşil (Bilgilendirme / Başarılı)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Yayın Süresi (Dolduğunda otomatik kapanır - Hepsini 0 yaparsanız sadece manuel kapanır):</label>
+                <div class="time-inputs">
+                    <div>
+                        <label style="font-size:0.75rem; color:#718096;">Gün</label>
+                        <input type="number" id="alertDays" min="0" value="0">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; color:#718096;">Saat</label>
+                        <input type="number" id="alertHours" min="0" value="0">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; color:#718096;">Saniye</label>
+                        <input type="number" id="alertSeconds" min="0" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-save" id="btnSaveAlert" style="background: #dd6b20;" onclick="duyuruKaydet()">📢 Uyarı Oluştur & Yayınla</button>
+            <button class="btn-cancel" id="btnCancelAlert" onclick="duyuruFormuSifirla()">✖ Düzenlemeyi İptal Et</button>
+
+            <!-- AKTİF DUYURULAR TABLOSU -->
+            <h4 style="margin-top:20px; margin-bottom:8px; color:#2d3748;">📋 Kayıtlı Özel Uyaralar</h4>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Uyarı Mesajı</th>
+                            <th>Renk</th>
+                            <th>Başlangıç</th>
+                            <th>Bitiş / Süre</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customAlertsTableBody"></tbody>
+                </table>
+            </div>
         </div>
 
         <h3 style="font-size: 1.1rem; color: #2d3748; margin-bottom: 10px;">👥 Kullanıcılar & İzinler</h3>
@@ -150,6 +217,8 @@
 
         let usersDB = {};
         let savingsVis = {};
+        let customAlertsDB = {};
+        let editingAlertKey = null; // Düzenleme durumunu tutar
 
         // Verileri Çek
         db.ref('usersDB').on('value', (snapshot) => {
@@ -166,13 +235,162 @@
             logListesiniGuncelle(logArray);
         });
 
-        // GENEL YETKİ DEĞİŞTİRME FONKSİYONU
+        // CANLI ÖZEL DUYURU DİNLEYİCİSİ
+        db.ref('customAlertsDB').on('value', (snapshot) => {
+            customAlertsDB = snapshot.val() || {};
+            duyuruListesiniGuncelle(customAlertsDB);
+        });
+
+        // ÖZEL DUYURU KAYDETME & GÜNCELLEME
+        async function duyuruKaydet() {
+            const msg = document.getElementById('customAlertMsg').value.trim();
+            const startVal = document.getElementById('customAlertStartTime').value;
+            const color = document.getElementById('customAlertColor').value;
+            
+            const days = parseInt(document.getElementById('alertDays').value) || 0;
+            const hours = parseInt(document.getElementById('alertHours').value) || 0;
+            const seconds = parseInt(document.getElementById('alertSeconds').value) || 0;
+
+            if (!msg) return alert("Lütfen duyuru mesajını giriniz!");
+
+            const startTime = startVal ? new Date(startVal).getTime() : Date.now();
+            const totalDurationSec = (days * 86400) + (hours * 3600) + seconds;
+            const expireTime = totalDurationSec > 0 ? (startTime + (totalDurationSec * 1000)) : 0;
+
+            const payload = {
+                message: msg,
+                color: color,
+                startTime: startTime,
+                expireTime: expireTime,
+                updatedBy: activeUser,
+                updatedAt: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            if (editingAlertKey) {
+                // Güncelleme Modu
+                await db.ref('customAlertsDB/' + editingAlertKey).update(payload);
+                await sistemLogYaz(activeUser, `Özel Duyuruyu Düzenledi: "${msg.substring(0, 20)}..."`);
+                alert("Duyuru başarıyla güncellendi!");
+            } else {
+                // Yeni Ekleme Modu
+                payload.createdBy = activeUser;
+                payload.createdAt = firebase.database.ServerValue.TIMESTAMP;
+                await db.ref('customAlertsDB').push(payload);
+                await sistemLogYaz(activeUser, `Yeni Özel Duyuru Ekledi: "${msg.substring(0, 20)}..."`);
+                alert("Duyuru başarıyla eklendi!");
+            }
+
+            duyuruFormuSifirla();
+        }
+
+        // DUYURU DÜZENLEME FORMUNU DOLDURMA
+        function duyuruDuzenle(key) {
+            const item = customAlertsDB[key];
+            if (!item) return;
+
+            editingAlertKey = key;
+
+            document.getElementById('alertFormTitle').innerText = "✏️ Özel Duyuruyu Düzenle";
+            document.getElementById('customAlertMsg').value = item.message || "";
+            document.getElementById('customAlertColor').value = item.color || "danger";
+
+            // Başlangıç zamanı doldurma
+            if (item.startTime) {
+                const dt = new Date(item.startTime);
+                const year = dt.getFullYear();
+                const month = String(dt.getMonth() + 1).padStart(2, '0');
+                const day = String(dt.getDate()).padStart(2, '0');
+                const hours = String(dt.getHours()).padStart(2, '0');
+                const minutes = String(dt.getMinutes()).padStart(2, '0');
+                document.getElementById('customAlertStartTime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            } else {
+                document.getElementById('customAlertStartTime').value = "";
+            }
+
+            // Süre hesaplama (Bitiş zamanı varsa)
+            if (item.expireTime && item.expireTime > item.startTime) {
+                let diffSec = Math.floor((item.expireTime - item.startTime) / 1000);
+                const d = Math.floor(diffSec / 86400);
+                diffSec %= 86400;
+                const h = Math.floor(diffSec / 3600);
+                diffSec %= 3600;
+                const s = diffSec;
+
+                document.getElementById('alertDays').value = d;
+                document.getElementById('alertHours').value = h;
+                document.getElementById('alertSeconds').value = s;
+            } else {
+                document.getElementById('alertDays').value = 0;
+                document.getElementById('alertHours').value = 0;
+                document.getElementById('alertSeconds').value = 0;
+            }
+
+            const btnSave = document.getElementById('btnSaveAlert');
+            btnSave.innerText = "💾 Değişiklikleri Güncelle";
+            btnSave.style.background = "#3182ce";
+
+            document.getElementById('btnCancelAlert').style.display = "block";
+            window.scrollTo({ top: 200, behavior: 'smooth' });
+        }
+
+        // FORMU SIFIRLAMA / DÜZENLEME İPTAL
+        function duyuruFormuSifirla() {
+            editingAlertKey = null;
+            document.getElementById('alertFormTitle').innerText = "📢 Ana Sayfa Özel Duyuru / Uyarı Ekle";
+            document.getElementById('customAlertMsg').value = "";
+            document.getElementById('customAlertStartTime').value = "";
+            document.getElementById('customAlertColor').value = "danger";
+            document.getElementById('alertDays').value = "0";
+            document.getElementById('alertHours').value = "0";
+            document.getElementById('alertSeconds').value = "0";
+
+            const btnSave = document.getElementById('btnSaveAlert');
+            btnSave.innerText = "📢 Uyarı Oluştur & Yayınla";
+            btnSave.style.background = "#dd6b20";
+
+            document.getElementById('btnCancelAlert').style.display = "none";
+        }
+
+        function duyuruListesiniGuncelle(alerts) {
+            const tbody = document.getElementById('customAlertsTableBody');
+            tbody.innerHTML = "";
+
+            for (const [key, alertData] of Object.entries(alerts)) {
+                const startTxt = alertData.startTime ? new Date(alertData.startTime).toLocaleString('tr-TR') : 'Hemen';
+                const expireTxt = alertData.expireTime > 0 ? new Date(alertData.expireTime).toLocaleString('tr-TR') : 'Süresiz (Manuel)';
+                
+                let colorBadge = '<span class="badge" style="background:#fed7d7; color:#9b2c2c;">Kırmızı</span>';
+                if (alertData.color === 'warning') colorBadge = '<span class="badge" style="background:#feebc8; color:#744210;">Sarı</span>';
+                if (alertData.color === 'success') colorBadge = '<span class="badge" style="background:#c6f6d5; color:#22543d;">Yeşil</span>';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight:bold;">${alertData.message}</td>
+                        <td>${colorBadge}</td>
+                        <td style="font-size:0.75rem;">${startTxt}</td>
+                        <td style="font-size:0.75rem;">${expireTxt}</td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-edit" onclick="duyuruDuzenle('${key}')">✏️ Düzenle</button>
+                            <button class="btn-delete" onclick="duyuruSil('${key}')">🗑️ Sil</button>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        async function duyuruSil(key) {
+            if (confirm("Bu duyuruyu kaldırmak istediğinize emin misiniz?")) {
+                if (editingAlertKey === key) duyuruFormuSifirla();
+                await db.ref('customAlertsDB/' + key).remove();
+                await sistemLogYaz(activeUser, "Özel Duyuruyu Sildi");
+            }
+        }
+
         async function yetkiDegistir(user, yetkiTuru, durum) {
             await db.ref('usersDB/' + user + '/yetki_' + yetkiTuru).set(durum);
             await sistemLogYaz(activeUser, `Yetki Ayarı: ${user} -> ${yetkiTuru}: ${durum ? 'AÇIK' : 'KAPALI'}`);
         }
 
-        // BİRİKİM YETKİSİ (Eski sistemle uyumlu tutuldu)
         async function toggleSavingsVis(user, state) {
             await db.ref('savingsVisibility/' + user).set(state);
             await sistemLogYaz(activeUser, `Yetki Ayarı: ${user} -> Finans (Özel): ${state ? 'AÇIK' : 'KAPALI'}`);
@@ -186,7 +404,6 @@
                 const isBlocked = details.isBlocked || false;
                 const isExempt = (username === 'murat' || username === 'admin');
 
-                // Cihaz Bilgileri
                 let regDeviceTxt = details.registeredDevice ? details.registeredDevice.substring(0, 15) + "..." : "Henüz Yok";
                 let deviceCellHTML = `<div><strong style="color: #4a5568;">Ana:</strong> ${regDeviceTxt}</div>`;
                 
@@ -203,12 +420,10 @@
                     deviceCellHTML += `</ul></div>`;
                 }
 
-                // Sayfa Yetkileri (Checkboxes)
                 let yetkilerHTML = '';
                 if (isExempt) {
                     yetkilerHTML = `<span style="color: #a0aec0; font-style: italic;">Yönetici (Tam Yetki)</span>`;
                 } else {
-                    // Geçmişe dönük uyumluluk için, veri yoksa Fatura ve Market varsayılan olarak "true" kabul edilir.
                     const yFatura = details.yetki_fatura !== false; 
                     const yMarket = details.yetki_market !== false;
                     const ySaglik = details.yetki_saglik || false;
@@ -231,7 +446,6 @@
                     : `<span class="badge badge-active">AKTİF</span>`;
 
                 let actionBtns = '';
-                
                 if (isBlocked) {
                     actionBtns += `<button class="btn-unblock" onclick="blokeKaldir('${username}')">Bloke Kaldır</button><br>`;
                 } else if (!isExempt) {
@@ -256,7 +470,6 @@
             }
         }
 
-        // --- Cihaz, Log ve Kullanıcı Yönetim Fonksiyonları ---
         async function cihazEkle(username) {
             const cihazId = prompt(`${username} kullanıcısı için Cihaz Kimliğini (ID) girin:`);
             if (!cihazId) return;
@@ -337,7 +550,6 @@
             const pin = document.getElementById('newPin').value.trim();
             if(!user || !pin) return alert("Bilgileri eksiksiz girin!");
 
-            // Yeni kullanıcı eklendiğinde Fatura ve Market varsayılan olarak açık olsun
             await db.ref('usersDB/' + user).update({ 
                 pin: pin, 
                 isBlocked: false,

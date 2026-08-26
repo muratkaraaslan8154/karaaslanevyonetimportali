@@ -48,9 +48,14 @@
 
         /* Uyarı Kutu Tasarımları */
         .alert-box-container { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.2rem; width: 100%; }
-        .alert-banner { padding: 1rem; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 0.9rem; line-height: 1.4; }
+        .alert-banner { position: relative; padding: 1rem 2.2rem 1rem 1rem; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 0.9rem; line-height: 1.4; }
         .alert-warning { background: var(--primary-orange); color: white; display: block; }
         .alert-danger { background: var(--primary-red); color: white; display: block; animation: pulse 1.5s infinite; }
+        .alert-success { background: var(--primary-green); color: white; display: block; }
+        
+        .alert-close-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.25); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; transition: background 0.2s; }
+        .alert-close-btn:hover { background: rgba(0,0,0,0.5); }
+
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
         .header-icon { font-size: 3.5rem; margin-bottom: 0.5rem; }
@@ -242,6 +247,21 @@
             });
         }
 
+        // --- YENİ EKLENEN CANLI ÖZEL UYARILAR MANTIĞI ---
+        let liveCustomAlerts = {};
+
+        db.ref('customAlertsDB').on('value', (snapshot) => {
+            liveCustomAlerts = snapshot.val() || {};
+            checkAllGlobalAlerts();
+        });
+
+        // Murat veya Admin için Kapatma (✖) İletişim Fonksiyonu
+        window.customAlertSil = function(alertKey) {
+            if (confirm("Bu duyuruyu kaldırmak istediğinize emin misiniz?")) {
+                db.ref('customAlertsDB/' + alertKey).remove();
+            }
+        };
+
         async function cikisYap() {
             const devId = localStorage.getItem('app_device_id') || 'Bilinmeyen Cihaz';
             const now = new Date();
@@ -278,12 +298,10 @@
         const healthApp = initializeApp(healthConfig, "healthApp");
         const healthDb = getFirestore(healthApp);
 
-        // Veri Durumları
         let masterMeds = [];
         let insulinState = { lastChangedDate: "" };
         let reportsState = { diabetesEndDate: "", hypertensionEndDate: "" };
 
-        // Yardımcı Tarih Fonksiyonları (İlaç Sayfasından Alındı)
         function getRemainingDays(med) {
             if (med.endDate) {
                 const parts = med.endDate.split('-');
@@ -308,11 +326,41 @@
             return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
         }
 
-        // Ana Uyarı Gösterim Fonksiyonu
-        function checkAllGlobalAlerts() {
+        // Ana Uyarı Gösterim Fonksiyonu (Sağlık Uvarıları + Özel Duyurular)
+        window.checkAllGlobalAlerts = function() {
             const container = document.getElementById('alert-box-container');
             if(!container) return;
             let alertHTMLs = [];
+            const now = Date.now();
+            const isAdminOrMurat = (activeUser === 'murat' || activeUser === 'admin');
+
+            // 0. YÖNETİCİ ÖZEL DUYURULARI (Zaman Kontrollü & Renkli)
+            if (typeof liveCustomAlerts === 'object' && liveCustomAlerts !== null) {
+                for (const [key, item] of Object.entries(liveCustomAlerts)) {
+                    // Gösterim zamanı gelmiş mi?
+                    const isStarted = !item.startTime || now >= item.startTime;
+                    // Süresi dolmuş mu?
+                    const isExpired = item.expireTime && item.expireTime > 0 && now >= item.expireTime;
+
+                    if (isStarted && !isExpired) {
+                        let colorClass = "alert-danger";
+                        if (item.color === 'warning') colorClass = "alert-warning";
+                        if (item.color === 'success') colorClass = "alert-success";
+
+                        let closeBtnHtml = "";
+                        if (isAdminOrMurat) {
+                            closeBtnHtml = `<button class="alert-close-btn" onclick="customAlertSil('${key}')" title="Kapat">✖</button>`;
+                        }
+
+                        alertHTMLs.push(`
+                            <div class="alert-banner ${colorClass}">
+                                📢 ${item.message}
+                                ${closeBtnHtml}
+                            </div>
+                        `);
+                    }
+                }
+            }
 
             // 1. İlaç Bitiş & Stok Uyarısı
             if (masterMeds && masterMeds.length > 0) {
@@ -368,32 +416,35 @@
                 }
             }
 
-            // Tüm uyarıları ekrana yazdır (Yoksa boş kalır)
             container.innerHTML = alertHTMLs.join('');
-        }
+        };
 
-        // Veri Dinleyicileri (Firestore Listeners)
+        // Süreli duyuruların zamanı geldiğinde güncellenmesi için 5 saniyede bir kontrol et
+        setInterval(() => {
+            if (window.checkAllGlobalAlerts) window.checkAllGlobalAlerts();
+        }, 5000);
+
+        // Firestore Listeners
         onSnapshot(doc(healthDb, "sistem_ayarlari", "ilac_tanimlari"), (snap) => {
             if (snap.exists() && snap.data().list) {
                 masterMeds = snap.data().list;
             }
-            checkAllGlobalAlerts();
+            window.checkAllGlobalAlerts();
         });
 
         onSnapshot(doc(healthDb, "sistem_ayarlari", "insulin"), (snap) => {
             if (snap.exists()) {
                 insulinState = snap.data();
             }
-            checkAllGlobalAlerts();
+            window.checkAllGlobalAlerts();
         });
 
         onSnapshot(doc(healthDb, "sistem_ayarlari", "saglik_raporlari"), (snap) => {
             if (snap.exists()) {
                 reportsState = snap.data();
             }
-            checkAllGlobalAlerts();
+            window.checkAllGlobalAlerts();
         });
-
     </script>
 </body>
 </html>

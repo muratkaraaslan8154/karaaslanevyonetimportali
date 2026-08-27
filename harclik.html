@@ -3,7 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harçlık Yönetim & Arşivlenen Dönemler Düzenleme Sistemi</title>
+    <title>Harçlık Yönetim & 12 Aylık Ortalama Takip Sistemi</title>
+
+    <!-- OTURUM KONTROLÜ -->
+    <script>
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.replace('giris.html');
+        }
+    </script>
+
+    <!-- FIREBASE KÜTÜPHANELERİ -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <style>
         :root {
             --primary: #2563eb;
@@ -33,6 +45,26 @@
             flex-direction: column;
             gap: 24px;
         }
+
+        .header-status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .db-status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s;
+        }
+        .db-online { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .db-offline { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
         .card {
             background: var(--card-bg);
@@ -129,7 +161,7 @@
         }
 
         .btn-primary { background: var(--primary); color: white; }
-        .btn-secondary { background: #64748b; color: white; }
+        .btn-secondary { background: #64748b; color: white; text-decoration: none; }
         .btn-pay { background: var(--primary); color: white; padding: 6px 10px; font-size: 0.8rem; }
         .btn-paid-cancel { background: #fee2e2; color: #b91c1c; padding: 6px 10px; font-size: 0.8rem; }
         .btn-wa { background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 6px 10px; font-size: 0.8rem; }
@@ -190,22 +222,18 @@
         }
         .modal-content h3 { margin: 0; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
         .modal-btn-group { display: flex; flex-direction: column; gap: 8px; }
-
-        .badge-adj {
-            font-size: 0.75rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: bold;
-            display: inline-block;
-            margin-left: 4px;
-        }
-        .badge-pos { background: #dcfce7; color: #166534; }
-        .badge-neg { background: #fee2e2; color: #991b1b; }
     </style>
 </head>
 <body>
 
 <div class="main-container">
+
+    <div class="header-status-bar">
+        <a href="index.html" class="btn-secondary" style="font-size: 0.85rem; padding: 6px 12px;">← Ana Menüye Dön</a>
+        <div id="dbStatusBadge" class="db-status-badge db-offline">
+            🔴 DB Bağlantısı Kesildi
+        </div>
+    </div>
 
     <!-- FORM ALANI -->
     <div class="card">
@@ -215,11 +243,9 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="userName">Kişi Seçin</label>
+                    <label for="userName">Kişi Seçin (Ayarlar DB)</label>
                     <select id="userName" required onchange="calculatePreviewDaily()">
-                        <option value="Kişi 1">Kişi 1</option>
-                        <option value="Kişi 2">Kişi 2</option>
-                        <option value="Kişi 3">Kişi 3</option>
+                        <!-- Dinamik Yüklenecek -->
                     </select>
                 </div>
 
@@ -248,11 +274,6 @@
                     <input type="number" id="avg12MonthDaily" readonly style="background-color: #ecfdf5; font-weight: bold; color: #059669; border: 1px solid #a7f3d0;">
                 </div>
 
-                <div class="form-group" id="dayAdjustmentGroup">
-                    <label for="dayAdjustment">Gün Azaltma / Çoğaltma (Düzeltme)</label>
-                    <input type="number" id="dayAdjustment" step="1" value="0" placeholder="Örn: +2 veya -1" oninput="calculatePreviewDaily()">
-                </div>
-
                 <div class="form-group" style="grid-column: 1 / -1;">
                     <label>Haftalık Tatil Günleri</label>
                     <div class="checkbox-group">
@@ -279,17 +300,14 @@
         </form>
     </div>
 
-    <!-- ARŞİVLENEN DÖNEMLER TABLOSU -->
+    <!-- KAYITLI VERİLER TABLOSU -->
     <div class="card">
-        <h2>📁 Arşivlenen Dönemler & Ödeme Takip Listesi</h2>
+        <h2>Harçlık Planı ve Ödeme Takip Listesi</h2>
         
         <div class="filter-bar">
             <label><strong>Filtrele (Kişi):</strong></label>
             <select id="filterUser" onchange="handleFilterChange()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);">
                 <option value="ALL">Tümü</option>
-                <option value="Kişi 1">Kişi 1</option>
-                <option value="Kişi 2">Kişi 2</option>
-                <option value="Kişi 3">Kişi 3</option>
             </select>
 
             <button type="button" class="btn-delete" id="btnDeleteSelectedUser" onclick="deleteEntireUserFromFilter()" style="display: none; margin-left: auto;">
@@ -370,9 +388,89 @@
 </div>
 
 <script>
-    let records = JSON.parse(localStorage.getItem('harclik_kayitlar_v8')) || [];
+    const firebaseConfig = {
+        apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
+        authDomain: "karaaslanhomebutcetakip.firebaseapp.com",
+        databaseURL: "https://karaaslanhomebutcetakip-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "karaaslanhomebutcetakip",
+        storageBucket: "karaaslanhomebutcetakip.firebasestorage.app",
+        messagingSenderId: "566343253682",
+        appId: "1:566343253682:web:3ab14198fca800d69813ab"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let records = [];
     let activePayIndex = null;
     let activeDeleteIndex = null;
+
+    // --- DB BAĞLANTI DURUMU TAKİBİ ---
+    const dbStatusBadge = document.getElementById('dbStatusBadge');
+    db.ref('.info/connected').on('value', (snap) => {
+        if (snap.val() === true) {
+            dbStatusBadge.className = "db-status-badge db-online";
+            dbStatusBadge.innerHTML = "🟢 DB Bağlantısı Aktif";
+        } else {
+            dbStatusBadge.className = "db-status-badge db-offline";
+            dbStatusBadge.innerHTML = "🔴 DB Bağlantısı Kesildi";
+        }
+    });
+
+    // --- AYARLAR.HTML KULLANICILARINI CANLI ÇEKME ---
+    db.ref('usersDB').on('value', (snapshot) => {
+        const users = snapshot.val() || {};
+        const userNameSelect = document.getElementById('userName');
+        const filterUserSelect = document.getElementById('filterUser');
+
+        const currentVal = userNameSelect.value;
+        const currentFilter = filterUserSelect.value;
+
+        userNameSelect.innerHTML = '';
+        filterUserSelect.innerHTML = '<option value="ALL">Tümü</option>';
+
+        Object.keys(users).forEach(u => {
+            const opt1 = document.createElement('option');
+            opt1.value = u;
+            opt1.textContent = u;
+            userNameSelect.appendChild(opt1);
+
+            const opt2 = document.createElement('option');
+            opt2.value = u;
+            opt2.textContent = u;
+            filterUserSelect.appendChild(opt2);
+        });
+
+        if (currentVal && users[currentVal]) userNameSelect.value = currentVal;
+        if (currentFilter) filterUserSelect.value = currentFilter;
+
+        calculatePreviewDaily();
+    });
+
+    // --- HARÇLIK KAYITLARINI FIREBASE'DEN CANLI DİNLEME ---
+    db.ref('harclikDB').on('value', (snapshot) => {
+        records = snapshot.val() || [];
+        calculatePreviewDaily();
+        renderTable();
+    });
+
+    // --- YÖNETİCİ ŞİFRE KONTROLÜ (DÜZENLE / SİL İÇİN) ---
+    async function verifyAdminPin() {
+        const pin = prompt("🔒 Lütfen işlemi onaylamak için Yönetici PIN Kodunu giriniz:");
+        if (!pin) return false;
+
+        const snapshot = await db.ref('usersDB').once('value');
+        const users = snapshot.val() || {};
+        
+        const isMuratValid = users['murat'] && users['murat'].pin === pin.trim();
+        const isAdminValid = users['admin'] && users['admin'].pin === pin.trim();
+
+        if (isMuratValid || isAdminValid) {
+            return true;
+        } else {
+            alert("❌ Hatalı Yönetici PIN Kodu! İşlem reddedildi.");
+            return false;
+        }
+    }
 
     function calculatePreviewDaily() {
         const base = parseFloat(document.getElementById('baseDaily').value) || 0;
@@ -382,8 +480,7 @@
 
         const userName = document.getElementById('userName').value;
         const startPeriod = document.getElementById('period').value;
-
-        if (!startPeriod) return;
+        if (!startPeriod || !userName) return;
 
         let totalDailySum = 0;
         for (let i = 0; i < 12; i++) {
@@ -425,18 +522,21 @@
     window.onload = function() {
         document.getElementById('period').value = "2026-08";
         calculatePreviewDaily();
-        renderTable();
     };
 
-    function handleFormSubmit(event) {
+    async function handleFormSubmit(event) {
         event.preventDefault();
 
         const editIndex = parseInt(document.getElementById('editIndex').value);
+        if (editIndex !== -1) {
+            const authorized = await verifyAdminPin();
+            if (!authorized) return;
+        }
+
         const userName = document.getElementById('userName').value;
         const startPeriod = document.getElementById('period').value;
         const baseDaily = parseFloat(document.getElementById('baseDaily').value) || 0;
         const raisePercent = parseFloat(document.getElementById('raisePercent').value) || 0;
-        const dayAdjustment = parseInt(document.getElementById('dayAdjustment').value) || 0;
         const targetDailyRate = baseDaily * (1 + (raisePercent / 100));
         const weeklyOff = Array.from(document.querySelectorAll('input[name="weeklyOff"]:checked')).map(cb => parseInt(cb.value));
         const updateFuture = document.getElementById('updateFutureMonths').checked;
@@ -444,48 +544,24 @@
         if (editIndex === -1) {
             for (let i = 0; i < 12; i++) {
                 const currentPeriod = addMonthsToPeriod(startPeriod, i);
-                const adj = (i === 0) ? dayAdjustment : 0;
-                const record = calculateMonthData(userName, currentPeriod, targetDailyRate, weeklyOff, false, null, null, adj);
+                const record = calculateMonthData(userName, currentPeriod, targetDailyRate, weeklyOff, false);
                 
                 const existingIdx = records.findIndex(r => r.userName === userName && r.period === currentPeriod);
                 if (existingIdx > -1) {
-                    records[existingIdx] = { 
-                        ...record, 
-                        isPaid: records[existingIdx].isPaid, 
-                        paymentMethod: records[existingIdx].paymentMethod, 
-                        paymentDate: records[existingIdx].paymentDate 
-                    };
+                    records[existingIdx] = { ...record, isPaid: records[existingIdx].isPaid, paymentMethod: records[existingIdx].paymentMethod, paymentDate: records[existingIdx].paymentDate };
                 } else {
                     records.push(record);
                 }
             }
         } else {
             const targetRecord = records[editIndex];
-            const updatedRecord = calculateMonthData(
-                userName, 
-                startPeriod, 
-                targetDailyRate, 
-                weeklyOff, 
-                targetRecord.isPaid, 
-                targetRecord.paymentMethod, 
-                targetRecord.paymentDate,
-                dayAdjustment
-            );
+            const updatedRecord = calculateMonthData(userName, startPeriod, targetDailyRate, weeklyOff, targetRecord.isPaid, targetRecord.paymentMethod, targetRecord.paymentDate);
             records[editIndex] = updatedRecord;
 
             if (updateFuture) {
                 records.forEach((rec, idx) => {
                     if (rec.userName === userName && rec.period > startPeriod) {
-                        records[idx] = calculateMonthData(
-                            userName, 
-                            rec.period, 
-                            targetDailyRate, 
-                            weeklyOff, 
-                            rec.isPaid, 
-                            rec.paymentMethod, 
-                            rec.paymentDate,
-                            rec.dayAdjustment || 0
-                        );
+                        records[idx] = calculateMonthData(userName, rec.period, targetDailyRate, weeklyOff, rec.isPaid, rec.paymentMethod, rec.paymentDate);
                     }
                 });
             }
@@ -495,7 +571,7 @@
         resetForm();
     }
 
-    function calculateMonthData(userName, period, dailyRate, weeklyOff, isPaid, paymentMethod = null, paymentDate = null, dayAdjustment = 0) {
+    function calculateMonthData(userName, period, dailyRate, weeklyOff, isPaid, paymentMethod = null, paymentDate = null) {
         const [year, month] = period.split('-').map(Number);
         const totalDays = new Date(year, month, 0).getDate();
         const officialHolidays = getOfficialHolidayCount(year, month);
@@ -508,14 +584,12 @@
             }
         }
 
-        const basePayableDays = Math.max(0, totalDays - weeklyOffCount - officialHolidays);
-        const finalPayableDays = Math.max(0, basePayableDays + dayAdjustment);
-        const totalAmount = finalPayableDays * dailyRate;
+        const payableDays = Math.max(0, totalDays - weeklyOffCount - officialHolidays);
+        const totalAmount = payableDays * dailyRate;
 
         return {
             userName, period, dailyRate, weeklyOff,
-            totalDays, payableDays: finalPayableDays, basePayableDays, dayAdjustment,
-            officialHolidays, totalAmount,
+            totalDays, payableDays, officialHolidays, totalAmount,
             isPaid: isPaid || false,
             paymentMethod: paymentMethod || null,
             paymentDate: paymentDate || null
@@ -568,51 +642,22 @@
                 payButton = `<button class="btn-pay" onclick="openPayModal(${actualIndex})">Öde</button>`;
             }
 
-            let adjBadge = '';
-            if (rec.dayAdjustment > 0) {
-                adjBadge = `<span class="badge-adj badge-pos">+${rec.dayAdjustment} Gün Düzeltme</span>`;
-            } else if (rec.dayAdjustment < 0) {
-                adjBadge = `<span class="badge-adj badge-neg">${rec.dayAdjustment} Gün Düzeltme</span>`;
-            }
-
             tr.innerHTML = `
                 <td><strong>${rec.userName}</strong></td>
                 <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:600;">${rec.period}</span></td>
                 <td><strong>${rec.dailyRate.toFixed(2)} ₺</strong></td>
-                <td><strong>${rec.payableDays}</strong> / ${rec.totalDays} Gün ${adjBadge}</td>
+                <td><strong>${rec.payableDays}</strong> / ${rec.totalDays} Gün</td>
                 <td style="font-weight:bold; color:#059669;">${rec.totalAmount.toFixed(2)} ₺</td>
                 <td>${statusHtml}</td>
                 <td style="display:flex; gap:4px; flex-wrap:wrap;">
                     ${payButton}
                     <button class="btn-wa" onclick="sendWhatsApp(${actualIndex})" title="WhatsApp ile Gönder">💬 WA</button>
-                    <button class="btn-edit" onclick="editRecord(${actualIndex})">✏️ Düzenle</button>
+                    <button class="btn-edit" onclick="editRecord(${actualIndex})">Düzenle</button>
                     <button class="btn-delete" onclick="openDeleteModal(${actualIndex})">Sil</button>
                 </td>
             `;
             tbody.appendChild(tr);
         });
-    }
-
-    function editRecord(index) {
-        const rec = records[index];
-        
-        document.getElementById('editIndex').value = index;
-        document.getElementById('userName').value = rec.userName;
-        document.getElementById('period').value = rec.period;
-        document.getElementById('baseDaily').value = rec.dailyRate;
-        document.getElementById('raisePercent').value = 0;
-        document.getElementById('dayAdjustment').value = rec.dayAdjustment || 0;
-
-        document.querySelectorAll('input[name="weeklyOff"]').forEach(cb => {
-            cb.checked = rec.weeklyOff.includes(parseInt(cb.value));
-        });
-
-        document.getElementById('formTitle').innerText = `${rec.userName} - ${rec.period} Dönemi Düzenleme & Gün/Ücret Düzeltme`;
-        document.getElementById('submitBtn').innerText = "✏️ Değişiklikleri Entegre Et ve Kaydet";
-        document.getElementById('futureUpdateBox').style.display = "flex";
-
-        calculatePreviewDaily();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function openDeleteModal(index) {
@@ -629,8 +674,12 @@
         activeDeleteIndex = null;
     }
 
-    function executeDelete(type) {
+    async function executeDelete(type) {
         if (activeDeleteIndex === null) return;
+
+        const authorized = await verifyAdminPin();
+        if (!authorized) return;
+
         const targetRec = records[activeDeleteIndex];
 
         if (type === 'single') {
@@ -638,27 +687,24 @@
         } else if (type === 'future') {
             records = records.filter(r => !(r.userName === targetRec.userName && r.period >= targetRec.period));
         } else if (type === 'allUser') {
-            if (confirm(`${targetRec.userName} kişisine ait TÜM geçmiş ve gelecek kayıtlar silinsin mi?`)) {
-                records = records.filter(r => r.userName !== targetRec.userName);
-            } else {
-                return;
-            }
+            records = records.filter(r => r.userName !== targetRec.userName);
         }
 
         closeDeleteModal();
         saveAndRefresh();
     }
 
-    function deleteEntireUserFromFilter() {
+    async function deleteEntireUserFromFilter() {
         const selectedUser = document.getElementById('filterUser').value;
         if (selectedUser === 'ALL') return;
 
-        if (confirm(`${selectedUser} kişisine ait TÜM kayıtlar kalıcı olarak silinecek. Emin misiniz?`)) {
-            records = records.filter(r => r.userName !== selectedUser);
-            document.getElementById('filterUser').value = 'ALL';
-            handleFilterChange();
-            saveAndRefresh();
-        }
+        const authorized = await verifyAdminPin();
+        if (!authorized) return;
+
+        records = records.filter(r => r.userName !== selectedUser);
+        document.getElementById('filterUser').value = 'ALL';
+        handleFilterChange();
+        saveAndRefresh();
     }
 
     function openPayModal(index) {
@@ -724,13 +770,33 @@
         window.open(waUrl, '_blank');
     }
 
+    function editRecord(index) {
+        const rec = records[index];
+        
+        document.getElementById('editIndex').value = index;
+        document.getElementById('userName').value = rec.userName;
+        document.getElementById('period').value = rec.period;
+        document.getElementById('baseDaily').value = rec.dailyRate;
+        document.getElementById('raisePercent').value = 0;
+
+        document.querySelectorAll('input[name="weeklyOff"]').forEach(cb => {
+            cb.checked = rec.weeklyOff.includes(parseInt(cb.value));
+        });
+
+        document.getElementById('formTitle').innerText = `${rec.userName} - ${rec.period} Ayı Zam / Güncelleme`;
+        document.getElementById('submitBtn').innerText = "Değişiklikleri Kaydet";
+        document.getElementById('futureUpdateBox').style.display = "flex";
+
+        calculatePreviewDaily();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     function resetForm() {
         document.getElementById('harclikForm').reset();
         document.getElementById('editIndex').value = "-1";
         document.getElementById('formTitle').innerText = "12 Aylık Harçlık Planı Oluştur / Düzenle";
         document.getElementById('submitBtn').innerText = "12 Aylık Plan Oluştur / Güncelle";
         document.getElementById('futureUpdateBox').style.display = "none";
-        document.getElementById('dayAdjustment').value = "0";
         
         document.querySelectorAll('input[name="weeklyOff"]').forEach(cb => {
             cb.checked = (cb.value === "0" || cb.value === "6");
@@ -740,9 +806,7 @@
     }
 
     function saveAndRefresh() {
-        localStorage.setItem('harclik_kayitlar_v8', JSON.stringify(records));
-        calculatePreviewDaily();
-        renderTable();
+        db.ref('harclikDB').set(records);
     }
 </script>
 

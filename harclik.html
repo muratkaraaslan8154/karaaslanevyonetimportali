@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harçlık Yönetim & 12 Aylık Ortalama Takip Sistemi</title>
+    <title>Harçlık Yönetim & Okul Yılı Takip Sistemi</title>
 
     <!-- OTURUM KONTROLÜ -->
     <script>
@@ -26,31 +26,33 @@
             --whatsapp: #25d366;
             --bg: #f8fafc;
             --card-bg: #ffffff;
-            --border: #e2e8f0;
+            --border: #cbd5e1;
             --text: #0f172a;
+            --holiday-bg: #fef2f2;
+            --holiday-border: #fca5a5;
+            --holiday-text: #991b1b;
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 24px;
+            padding: 20px;
         }
 
         .main-container {
-            max-width: 1300px;
+            max-width: 1350px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 20px;
         }
 
         .header-status-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
         }
 
         .db-status-badge {
@@ -61,7 +63,6 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            transition: all 0.3s;
         }
         .db-online { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; }
         .db-offline { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
@@ -70,23 +71,112 @@
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        /* AÇILIR COLLAPSIBLE KART YAPISI */
+        details.card {
+            padding: 0;
+            overflow: hidden;
+        }
+        details.card summary {
+            padding: 16px 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            border-radius: 12px;
+            user-select: none;
+        }
+        details.card[open] summary {
+            border-bottom: 2px solid #f1f5f9;
+            border-radius: 12px 12px 0 0;
+        }
+        details.card summary::-webkit-details-marker {
+            display: none;
+        }
+        .details-content {
+            padding: 20px;
         }
 
         h2 {
             margin-top: 0;
-            font-size: 1.25rem;
+            font-size: 1.15rem;
             color: var(--text);
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 12px;
-            margin-bottom: 20px;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 10px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* FINANSAL ÖZET KARTLARI */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 14px;
+        }
+        .stat-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        .stat-card-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-card-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+        .stat-card-sub {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .user-debt-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+            margin-top: 14px;
+        }
+        .user-debt-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .user-debt-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #1e293b;
+        }
+        .user-debt-details {
+            text-align: right;
+            font-size: 0.82rem;
         }
 
         .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
+            gap: 14px;
         }
 
         .form-group {
@@ -96,17 +186,41 @@
         }
 
         .form-group label {
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-weight: 600;
             color: #475569;
         }
 
         .form-group input, .form-group select {
-            padding: 10px 12px;
+            padding: 8px 10px;
             border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 0.95rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
             outline: none;
+            transition: all 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* YAN YANA DÜZEN: HAFTALIK TATİL VE COMPACT TAKVİM */
+        .weekly-and-calendar-row {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            align-items: start;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        @media (max-width: 768px) {
+            .weekly-and-calendar-row {
+                grid-template-columns: 1fr;
+            }
         }
 
         .checkbox-group {
@@ -116,26 +230,135 @@
         }
 
         .checkbox-group label {
-            font-size: 0.8rem;
-            background: #f1f5f9;
-            padding: 6px 8px;
-            border-radius: 4px;
+            font-size: 0.78rem;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            padding: 5px 9px;
+            border-radius: 6px;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 4px;
         }
 
+        /* %50 KÜÇÜLTÜLMÜŞ & AÇILIR SEÇİLİR TAKVİM */
+        .mini-calendar-details {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .mini-calendar-details summary {
+            padding: 6px 10px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--primary);
+            cursor: pointer;
+            background: #eff6ff;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .calendar-section {
+            padding: 6px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .calendar-title {
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: #1e293b;
+        }
+        .holiday-badge-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            margin-bottom: 4px;
+        }
+        .holiday-badge {
+            font-size: 0.62rem;
+            background: var(--holiday-bg);
+            border: 1px solid var(--holiday-border);
+            color: var(--holiday-text);
+            padding: 1px 4px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            text-align: center;
+        }
+        .cal-day-header {
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: #64748b;
+            padding: 1px 0;
+        }
+        .cal-day {
+            min-height: 22px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: #ffffff;
+            padding: 1px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.65rem;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+        .cal-day:hover {
+            border-color: var(--primary);
+            background: #f0f6ff;
+        }
+        .cal-day.selected {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #ffffff;
+        }
+        .cal-day.disabled-day {
+            background: #f1f5f9;
+            color: #cbd5e1;
+            opacity: 0.7;
+        }
+        .cal-day.holiday {
+            background: #fef2f2;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+        .cal-day.selected.holiday {
+            background: #dc2626;
+            color: #ffffff;
+            border-color: #dc2626;
+        }
+        .cal-day .holiday-tag {
+            font-size: 0.55rem;
+            line-height: 1;
+        }
+
         .update-option {
             grid-column: 1 / -1;
             background-color: #f0fdf4;
             border: 1px solid #bbf7d0;
-            padding: 10px 14px;
-            border-radius: 6px;
+            padding: 8px 12px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.9rem;
+            font-size: 0.82rem;
             font-weight: 600;
             color: #166534;
         }
@@ -144,41 +367,48 @@
             grid-column: 1 / -1;
             display: flex;
             gap: 10px;
-            margin-top: 10px;
+            margin-top: 6px;
         }
 
         button {
-            padding: 10px 16px;
+            padding: 8px 14px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
+            font-size: 0.84rem;
+        }
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed !important;
+            filter: grayscale(1);
         }
 
         .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
         .btn-secondary { background: #64748b; color: white; text-decoration: none; }
-        .btn-pay { background: var(--primary); color: white; padding: 6px 10px; font-size: 0.8rem; }
-        .btn-paid-cancel { background: #fee2e2; color: #b91c1c; padding: 6px 10px; font-size: 0.8rem; }
-        .btn-wa { background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 6px 10px; font-size: 0.8rem; }
-        .btn-wa:hover { background: var(--whatsapp); color: white; }
-        .btn-edit { background: var(--warning); color: white; padding: 6px 10px; font-size: 0.8rem; }
-        .btn-delete { background: var(--danger); color: white; padding: 6px 10px; font-size: 0.8rem; }
-        .btn-danger-dark { background: #991b1b; color: white; padding: 10px 14px; font-size: 0.85rem; }
+        .btn-pay { background: var(--primary); color: white; padding: 5px 10px; font-size: 0.78rem; }
+        .btn-paid-cancel { background: #fee2e2; color: #b91c1c; padding: 5px 10px; font-size: 0.78rem; }
+        .btn-wa { background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 5px 10px; font-size: 0.78rem; }
+        .btn-wa:hover:not(:disabled) { background: var(--whatsapp); color: white; }
+        .btn-edit { background: var(--warning); color: white; padding: 5px 8px; font-size: 0.78rem; }
+        .btn-delete { background: var(--danger); color: white; padding: 5px 8px; font-size: 0.78rem; }
+        .btn-danger-dark { background: #991b1b; color: white; padding: 8px 12px; font-size: 0.82rem; }
 
         .table-responsive { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
-        th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+        th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); }
         th { background-color: #f8fafc; color: #475569; font-weight: 600; }
         
         .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.72rem;
             font-weight: 700;
             display: inline-block;
         }
@@ -186,9 +416,9 @@
         .status-unpaid { background: #fee2e2; color: #b91c1c; }
         
         .pay-detail-info {
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             color: #64748b;
-            margin-top: 4px;
+            margin-top: 3px;
             display: block;
         }
 
@@ -197,7 +427,72 @@
             gap: 12px;
             margin-bottom: 15px;
             align-items: center;
+            justify-content: space-between;
             flex-wrap: wrap;
+        }
+
+        .nav-pills {
+            display: flex;
+            gap: 6px;
+            background: #f1f5f9;
+            padding: 3px;
+            border-radius: 8px;
+        }
+        .nav-pill {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: transparent;
+            color: #64748b;
+            border: none;
+        }
+        .nav-pill.active {
+            background: #ffffff;
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* RESMİ VE DİNİ BAYRAMLAR LISTESI */
+        .holiday-list-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .holiday-item-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .holiday-item-card.religious {
+            border-left-color: #f59e0b;
+        }
+        .holiday-item-title {
+            font-weight: 700;
+            font-size: 0.82rem;
+            color: #1e293b;
+        }
+        .holiday-item-date {
+            font-size: 0.78rem;
+            color: #64748b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .holiday-day-tag {
+            background: #e2e8f0;
+            color: #334155;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.7rem;
         }
 
         .modal {
@@ -211,16 +506,16 @@
         }
         .modal-content {
             background: #fff;
-            padding: 24px;
+            padding: 20px;
             border-radius: 12px;
             width: 90%;
-            max-width: 440px;
+            max-width: 420px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 14px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.15);
         }
-        .modal-content h3 { margin: 0; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .modal-content h3 { margin: 0; font-size: 1.05rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
         .modal-btn-group { display: flex; flex-direction: column; gap: 8px; }
     </style>
 </head>
@@ -229,39 +524,71 @@
 <div class="main-container">
 
     <div class="header-status-bar">
-        <a href="index.html" class="btn-secondary" style="font-size: 0.85rem; padding: 6px 12px;">← Ana Menüye Dön</a>
+        <a href="index.html" class="btn-secondary" style="font-size: 0.82rem; padding: 5px 12px;">← Ana Menüye Dön</a>
         <div id="dbStatusBadge" class="db-status-badge db-offline">
             🔴 DB Bağlantısı Kesildi
         </div>
     </div>
 
-    <!-- FORM ALANI -->
+    <!-- FİNANSAL ÖZET VE KİŞİ BAZLI BORÇ KARTLARI -->
     <div class="card">
-        <h2 id="formTitle">12 Aylık Harçlık Planı Oluştur / Düzenle</h2>
+        <h2>
+            <span>💰 Ödenen Harçlıklar & Vadesi Gelmemiş Borçlar Özeti</span>
+        </h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-card-title">🟢 Toplam Ödenen Harçlık</span>
+                <span class="stat-card-value" id="statTotalPaid" style="color: #10b981;">0.00 ₺</span>
+                <span class="stat-card-sub">Tamamlanan tüm ödemeler</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card-title">⏳ Bekleyen / Vadesi Gelmemiş Borç</span>
+                <span class="stat-card-value" id="statTotalPending" style="color: #ef4444;">0.00 ₺</span>
+                <span class="stat-card-sub">Gelecek ve henüz ödenmeyen bakiyeler</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-card-title">📊 Toplam Planlanan Harçlık</span>
+                <span class="stat-card-value" id="statTotalPlanned" style="color: #2563eb;">0.00 ₺</span>
+                <span class="stat-card-sub">Dönem geneli toplam bütçe</span>
+            </div>
+        </div>
+
+        <h3 style="font-size:0.92rem; color:#475569; margin-top:16px; margin-bottom:6px;">Kişi Bazlı Ödeme ve Borç Dağılımı:</h3>
+        <div class="user-debt-grid" id="userDebtGrid">
+            <!-- Dinamik -->
+        </div>
+    </div>
+
+    <!-- FORM VE YAN YANA COMPACT TAKVİM ALANI -->
+    <div class="card">
+        <h2 id="formTitle">
+            <span>🎓 Okul Yılı Harçlık Planı Oluştur / Düzenle</span>
+            <span style="font-size: 0.8rem; font-weight: normal; color: #64748b;">(Eyl - Haz Dönemi)</span>
+        </h2>
         <form id="harclikForm" onsubmit="handleFormSubmit(event)">
             <input type="hidden" id="editIndex" value="-1">
 
             <div class="form-grid">
                 <div class="form-group">
                     <label for="userName">Kişi Seçin (Ayarlar DB)</label>
-                    <select id="userName" required onchange="calculatePreviewDaily()">
-                        <!-- Dinamik Yüklenecek -->
+                    <select id="userName" required onchange="onPeriodOrUserChange()">
+                        <!-- Dinamik -->
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="period">Başlangıç / İşlem Ayı</label>
-                    <input type="month" id="period" required onchange="calculatePreviewDaily()">
+                    <label for="period">İşlem Yapılacak Ay</label>
+                    <input type="month" id="period" required onchange="onPeriodOrUserChange()">
                 </div>
 
                 <div class="form-group">
                     <label for="baseDaily">Mevcut / Yeni Günlük Ücret (₺)</label>
-                    <input type="number" id="baseDaily" min="0" step="0.5" value="100" required oninput="calculatePreviewDaily()">
+                    <input type="number" id="baseDaily" min="0" step="0.5" value="100" required oninput="calculatePreviewDaily(); saveDefaultsToDB();">
                 </div>
 
                 <div class="form-group">
                     <label for="raisePercent">Uygulanacak Zam Oranı (%)</label>
-                    <input type="number" id="raisePercent" min="0" step="0.1" value="0" placeholder="Örn: 10" oninput="calculatePreviewDaily()">
+                    <input type="number" id="raisePercent" min="0" step="0.1" value="0" placeholder="Örn: 10" oninput="calculatePreviewDaily(); saveDefaultsToDB();">
                 </div>
 
                 <div class="form-group">
@@ -270,47 +597,107 @@
                 </div>
 
                 <div class="form-group">
-                    <label>📊 12 Aylık Ortalama Günlük Ücret (₺)</label>
-                    <input type="number" id="avg12MonthDaily" readonly style="background-color: #ecfdf5; font-weight: bold; color: #059669; border: 1px solid #a7f3d0;">
+                    <label>📊 Seçilen Gün Sayısı & Toplam Tutar</label>
+                    <input type="text" id="monthSummaryCalc" readonly style="background-color: #ecfdf5; font-weight: bold; color: #059669; border: 1px solid #a7f3d0;">
                 </div>
 
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label>Haftalık Tatil Günleri</label>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" name="weeklyOff" value="1" onchange="calculatePreviewDaily()"> Pzt</label>
-                        <label><input type="checkbox" name="weeklyOff" value="2" onchange="calculatePreviewDaily()"> Sal</label>
-                        <label><input type="checkbox" name="weeklyOff" value="3" onchange="calculatePreviewDaily()"> Çar</label>
-                        <label><input type="checkbox" name="weeklyOff" value="4" onchange="calculatePreviewDaily()"> Per</label>
-                        <label><input type="checkbox" name="weeklyOff" value="5" onchange="calculatePreviewDaily()"> Cum</label>
-                        <label><input type="checkbox" name="weeklyOff" value="6" checked onchange="calculatePreviewDaily()"> Cmt</label>
-                        <label><input type="checkbox" name="weeklyOff" value="0" checked onchange="calculatePreviewDaily()"> Paz</label>
+                <!-- HAFTALIK OTOMATİK TATİL GÜNLERİ VE COMPACT TAKVİM YAN YANA -->
+                <div class="weekly-and-calendar-row">
+                    <div class="form-group">
+                        <label>Haftalık Otomatik Tatil Günleri</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="weeklyOff" value="1" onchange="renderCalendar(); saveDefaultsToDB();"> Pzt</label>
+                            <label><input type="checkbox" name="weeklyOff" value="2" onchange="renderCalendar(); saveDefaultsToDB();"> Sal</label>
+                            <label><input type="checkbox" name="weeklyOff" value="3" onchange="renderCalendar(); saveDefaultsToDB();"> Çar</label>
+                            <label><input type="checkbox" name="weeklyOff" value="4" onchange="renderCalendar(); saveDefaultsToDB();"> Per</label>
+                            <label><input type="checkbox" name="weeklyOff" value="5" onchange="renderCalendar(); saveDefaultsToDB();"> Cum</label>
+                            <label><input type="checkbox" name="weeklyOff" value="6" checked onchange="renderCalendar(); saveDefaultsToDB();"> Cmt</label>
+                            <label><input type="checkbox" name="weeklyOff" value="0" checked onchange="renderCalendar(); saveDefaultsToDB();"> Paz</label>
+                        </div>
+                    </div>
+
+                    <!-- %50 KÜÇÜLTÜLMÜŞ VE AÇILIR KAPANIR TAKVİM -->
+                    <div class="mini-calendar-container">
+                        <details class="mini-calendar-details">
+                            <summary>
+                                <span>📅 Özel Gün Takvimi (Küçültülmüş & Seçilebilir)</span>
+                                <span style="font-size:0.68rem; opacity:0.8;">Göster/Gizle ▼</span>
+                            </summary>
+                            <div class="calendar-section">
+                                <div class="calendar-header">
+                                    <div class="calendar-title" id="calendarTitle">📅 Ay Seçiniz</div>
+                                    <span style="font-size:0.62rem; color:#64748b;">(Tıkla Seç/Çıkar)</span>
+                                </div>
+                                <div class="holiday-badge-list" id="holidayBadgeList"></div>
+                                <div class="calendar-grid">
+                                    <div class="cal-day-header">Pz</div>
+                                    <div class="cal-day-header">Sa</div>
+                                    <div class="cal-day-header">Çr</div>
+                                    <div class="cal-day-header">Pr</div>
+                                    <div class="cal-day-header">Cm</div>
+                                    <div class="cal-day-header">Ct</div>
+                                    <div class="cal-day-header">Pz</div>
+                                </div>
+                                <div class="calendar-grid" id="calendarGridBody" style="margin-top:2px;"></div>
+                            </div>
+                        </details>
                     </div>
                 </div>
 
                 <div class="update-option" id="futureUpdateBox" style="display: none;">
                     <input type="checkbox" id="updateFutureMonths" checked>
-                    <label for="updateFutureMonths">Bu ay yapılan zamlı ücreti bu ay ve SONRAKİ TÜM AYLARA sabit olarak yansıt</label>
+                    <label for="updateFutureMonths">Bu ayki güncellenmiş günlük ücreti sonraki tüm aylara uygula (Seçilen özel gün sayıları sıfırlanmaz)</label>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn-primary" id="submitBtn">12 Aylık Plan Oluştur / Güncelle</button>
+                    <button type="submit" class="btn-primary" id="submitBtn">🎒 Okullara Göre 1 Okul Yılı Planla (Eyl - Haz)</button>
                     <button type="button" class="btn-secondary" onclick="resetForm()">Temizle / İptal</button>
                 </div>
             </div>
         </form>
     </div>
 
+    <!-- AÇILIR/KAPANIR TÜRKİYE RESMİ VE DİNİ BAYRAMLAR LISTESİ (2050'YE KADAR) -->
+    <details class="card">
+        <summary>
+            <span>🎉 Türkiye Dini ve Resmi Bayramlar / Tatiller Listesi (2025 - 2050)</span>
+            <span style="font-size:0.85rem; font-weight:normal; color:#2563eb;">Tıklayıp Genişlet ▼</span>
+        </summary>
+        <div class="details-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                <span style="font-size:0.85rem; color:#64748b;">Aşağıdan listelemek istediğiniz yılı seçiniz:</span>
+                <div>
+                    <label style="font-size:0.85rem; font-weight:600; color:#475569; margin-right:6px;">Yıl Seçin:</label>
+                    <select id="holidayYearSelect" onchange="renderHolidayList()" style="padding:4px 10px; border-radius:6px; border:1px solid var(--border); font-weight:bold; color:var(--primary);">
+                        <!-- 2025 - 2050 dinamik oluşturulacak -->
+                    </select>
+                </div>
+            </div>
+            <div class="holiday-list-grid" id="holidayListGrid">
+                <!-- Dinamik Doldurulacak -->
+            </div>
+        </div>
+    </details>
+
     <!-- KAYITLI VERİLER TABLOSU -->
     <div class="card">
-        <h2>Harçlık Planı ve Ödeme Takip Listesi</h2>
+        <h2>
+            <span>Harçlık Planı ve Ödeme Takip Listesi</span>
+            <div class="nav-pills">
+                <button class="nav-pill active" id="pillActive" onclick="setViewMode('ACTIVE')">📍 Aktif Takip (Bu Ay & Sonraki Ay)</button>
+                <button class="nav-pill" id="pillAll" onclick="setViewMode('ALL')">📅 Tüm Dönemler</button>
+            </div>
+        </h2>
         
         <div class="filter-bar">
-            <label><strong>Filtrele (Kişi):</strong></label>
-            <select id="filterUser" onchange="handleFilterChange()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);">
-                <option value="ALL">Tümü</option>
-            </select>
+            <div>
+                <label><strong>Kişi Filtresi:</strong></label>
+                <select id="filterUser" onchange="handleFilterChange()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);">
+                    <option value="ALL">Tümü</option>
+                </select>
+            </div>
 
-            <button type="button" class="btn-delete" id="btnDeleteSelectedUser" onclick="deleteEntireUserFromFilter()" style="display: none; margin-left: auto;">
+            <button type="button" class="btn-delete" id="btnDeleteSelectedUser" onclick="deleteEntireUserFromFilter()" style="display: none;">
                 🗑️ Seçili Kişinin TÜM Kayıtlarını Sil
             </button>
         </div>
@@ -329,7 +716,7 @@
                     </tr>
                 </thead>
                 <tbody id="recordsTableBody">
-                    <!-- Dinamik Veriler -->
+                    <!-- Dinamik -->
                 </tbody>
             </table>
         </div>
@@ -367,7 +754,7 @@
 <div class="modal" id="deleteModal">
     <div class="modal-content">
         <h3>Silme İşlemi Seçenekleri</h3>
-        <p id="deleteModalText" style="font-size:0.9rem; color:#475569; margin:0;">Silmek istediğiniz kapsamı seçin:</p>
+        <p id="deleteModalText" style="font-size:0.88rem; color:#475569; margin:0;">Silmek istediğiniz kapsamı seçin:</p>
         
         <div class="modal-btn-group">
             <button class="btn-delete" onclick="executeDelete('single')">
@@ -388,6 +775,7 @@
 </div>
 
 <script>
+    // FIREBASE YAPILANDIRMASI
     const firebaseConfig = {
         apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
         authDomain: "karaaslanhomebutcetakip.firebaseapp.com",
@@ -400,11 +788,91 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // 2025 - 2050 DİNİ BAYRAM TABLOSU
+    const RELIGIOUS_HOLIDAYS_MAP = {
+        2025: { ramazan: "2025-03-29", kurban: "2025-06-05" },
+        2026: { ramazan: "2026-03-19", kurban: "2026-05-26" },
+        2027: { ramazan: "2027-03-08", kurban: "2027-05-15" },
+        2028: { ramazan: "2028-02-25", kurban: "2028-05-04" },
+        2029: { ramazan: "2029-02-14", kurban: "2029-04-23" },
+        2030: { ramazan: "2030-02-03", kurban: "2030-04-12" },
+        2031: { ramazan: "2031-01-24", kurban: "2031-04-01" },
+        2032: { ramazan: "2032-01-13", kurban: "2032-03-20" },
+        2033: { ramazan: "2033-01-02", kurban: "2033-03-10" },
+        2034: { ramazan: "2034-12-12", kurban: "2034-02-27" },
+        2035: { ramazan: "2035-12-01", kurban: "2035-02-16" },
+        2036: { ramazan: "2036-11-19", kurban: "2036-02-06" },
+        2037: { ramazan: "2037-11-08", kurban: "2037-01-25" },
+        2038: { ramazan: "2038-10-29", kurban: "2038-01-15" },
+        2039: { ramazan: "2039-10-18", kurban: "2039-01-04" },
+        2040: { ramazan: "2040-10-07", kurban: "2040-12-24" },
+        2041: { ramazan: "2041-09-26", kurban: "2041-12-13" },
+        2042: { ramazan: "2042-09-15", kurban: "2042-12-02" },
+        2043: { ramazan: "2043-09-05", kurban: "2043-11-21" },
+        2044: { ramazan: "2044-08-24", kurban: "2044-11-09" },
+        2045: { ramazan: "2045-08-13", kurban: "2045-10-29" },
+        2046: { ramazan: "2046-08-02", kurban: "2046-10-19" },
+        2047: { ramazan: "2047-07-23", kurban: "2047-10-08" },
+        2048: { ramazan: "2048-07-11", kurban: "2048-09-26" },
+        2049: { ramazan: "2049-06-30", kurban: "2049-09-15" },
+        2050: { ramazan: "2050-06-19", kurban: "2050-09-05" }
+    };
+
+    // 2025 - 2050 TÜM BAYRAMLARI HESAPLAYAN MOTOR
+    function getHolidaysForYear(year) {
+        const holidays = {};
+        
+        // Sabit Resmi Bayramlar
+        holidays[`${year}-01-01`] = "Yılbaşı";
+        holidays[`${year}-04-23`] = "23 Nisan Ulusal Egemenlik B.";
+        holidays[`${year}-05-01`] = "1 Mayıs Emek ve Dayanışma G.";
+        holidays[`${year}-05-19`] = "19 Mayıs Atatürk'ü Anma B.";
+        holidays[`${year}-07-15`] = "15 Temmuz Demokrasi B.";
+        holidays[`${year}-08-30`] = "30 Ağustos Zafer Bayramı";
+        holidays[`${year}-10-28`] = "29 Ekim Arife";
+        holidays[`${year}-10-29`] = "29 Ekim Cumhuriyet Bayramı";
+
+        // Dini Bayramlar
+        const rel = RELIGIOUS_HOLIDAYS_MAP[year];
+        if (rel) {
+            // Ramazan
+            const ramArife = new Date(rel.ramazan);
+            holidays[formatDateISO(ramArife)] = "Ramazan Arife";
+            holidays[formatDateISO(addDays(ramArife, 1))] = "Ramazan B. 1.Gün";
+            holidays[formatDateISO(addDays(ramArife, 2))] = "Ramazan B. 2.Gün";
+            holidays[formatDateISO(addDays(ramArife, 3))] = "Ramazan B. 3.Gün";
+
+            // Kurban
+            const kurArife = new Date(rel.kurban);
+            holidays[formatDateISO(kurArife)] = "Kurban Arife";
+            holidays[formatDateISO(addDays(kurArife, 1))] = "Kurban B. 1.Gün";
+            holidays[formatDateISO(addDays(kurArife, 2))] = "Kurban B. 2.Gün";
+            holidays[formatDateISO(addDays(kurArife, 3))] = "Kurban B. 3.Gün";
+            holidays[formatDateISO(addDays(kurArife, 4))] = "Kurban B. 4.Gün";
+        }
+        return holidays;
+    }
+
+    function addDays(date, days) {
+        const res = new Date(date);
+        res.setDate(res.getDate() + days);
+        return res;
+    }
+
+    function formatDateISO(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
     let records = [];
     let activePayIndex = null;
     let activeDeleteIndex = null;
+    let selectedActiveDays = new Set();
+    let currentViewMode = 'ACTIVE';
 
-    // --- DB BAĞLANTI DURUMU TAKİBİ ---
+    // DB BAĞLANTI TAKİBİ
     const dbStatusBadge = document.getElementById('dbStatusBadge');
     db.ref('.info/connected').on('value', (snap) => {
         if (snap.val() === true) {
@@ -416,7 +884,32 @@
         }
     });
 
-    // --- AYARLAR.HTML KULLANICILARINI CANLI ÇEKME ---
+    // SON GİRDİĞİM DEFAULT DEĞERLERİ LOKALE DEĞİL FIREBASE DB'YE KAYDETME/DİNLEME (settingsDB)
+    function saveDefaultsToDB() {
+        const defaults = {
+            baseDaily: parseFloat(document.getElementById('baseDaily').value) || 0,
+            raisePercent: parseFloat(document.getElementById('raisePercent').value) || 0,
+            weeklyOff: Array.from(document.querySelectorAll('input[name="weeklyOff"]:checked')).map(cb => cb.value)
+        };
+        db.ref('settingsDB/harclikDefaults').set(defaults);
+    }
+
+    db.ref('settingsDB/harclikDefaults').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && document.getElementById('editIndex').value === "-1") {
+            if (data.baseDaily !== undefined) document.getElementById('baseDaily').value = data.baseDaily;
+            if (data.raisePercent !== undefined) document.getElementById('raisePercent').value = data.raisePercent;
+            if (data.weeklyOff) {
+                document.querySelectorAll('input[name="weeklyOff"]').forEach(cb => {
+                    cb.checked = data.weeklyOff.includes(cb.value);
+                });
+            }
+            calculatePreviewDaily();
+            renderCalendar();
+        }
+    });
+
+    // KULLANICI LISTESI DINLEME
     db.ref('usersDB').on('value', (snapshot) => {
         const users = snapshot.val() || {};
         const userNameSelect = document.getElementById('userName');
@@ -430,46 +923,278 @@
 
         Object.keys(users).forEach(u => {
             const opt1 = document.createElement('option');
-            opt1.value = u;
-            opt1.textContent = u;
+            opt1.value = u; opt1.textContent = u;
             userNameSelect.appendChild(opt1);
 
             const opt2 = document.createElement('option');
-            opt2.value = u;
-            opt2.textContent = u;
+            opt2.value = u; opt2.textContent = u;
             filterUserSelect.appendChild(opt2);
         });
 
         if (currentVal && users[currentVal]) userNameSelect.value = currentVal;
         if (currentFilter) filterUserSelect.value = currentFilter;
 
-        calculatePreviewDaily();
+        onPeriodOrUserChange();
     });
 
-    // --- HARÇLIK KAYITLARINI FIREBASE'DEN CANLI DİNLEME ---
+    // VERİLERİ CANLI DİNLEME
     db.ref('harclikDB').on('value', (snapshot) => {
         records = snapshot.val() || [];
-        calculatePreviewDaily();
+        onPeriodOrUserChange();
         renderTable();
+        calculateFinancialStats();
     });
 
-    // --- YÖNETİCİ ŞİFRE KONTROLÜ (DÜZENLE / SİL İÇİN) ---
-    async function verifyAdminPin() {
-        const pin = prompt("🔒 Lütfen işlemi onaylamak için Yönetici PIN Kodunu giriniz:");
-        if (!pin) return false;
-
-        const snapshot = await db.ref('usersDB').once('value');
-        const users = snapshot.val() || {};
+    window.onload = function() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        document.getElementById('period').value = `${yyyy}-${mm}`;
         
-        const isMuratValid = users['murat'] && users['murat'].pin === pin.trim();
-        const isAdminValid = users['admin'] && users['admin'].pin === pin.trim();
-
-        if (isMuratValid || isAdminValid) {
-            return true;
-        } else {
-            alert("❌ Hatalı Yönetici PIN Kodu! İşlem reddedildi.");
-            return false;
+        // 2025'ten 2050'ye kadar Yıl Seçeneklerini Doldur
+        const yearSelect = document.getElementById('holidayYearSelect');
+        yearSelect.innerHTML = '';
+        for (let y = 2025; y <= 2050; y++) {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            if (y === yyyy) opt.selected = true;
+            yearSelect.appendChild(opt);
         }
+
+        onPeriodOrUserChange();
+        renderHolidayList();
+    };
+
+    function isActionAllowed(targetPeriod) {
+        const today = new Date();
+        const currentYYYY = today.getFullYear();
+        const currentMM = String(today.getMonth() + 1).padStart(2, '0');
+        const currentPeriod = `${currentYYYY}-${currentMM}`;
+
+        if (targetPeriod === currentPeriod) return true;
+
+        const nextMonthDate = new Date(currentYYYY, today.getMonth() + 1, 1);
+        const nextYYYY = nextMonthDate.getFullYear();
+        const nextMM = String(nextMonthDate.getMonth() + 1).padStart(2, '0');
+        const nextPeriod = `${nextYYYY}-${nextMM}`;
+
+        if (targetPeriod === nextPeriod) {
+            const totalDaysInCurrentMonth = new Date(currentYYYY, today.getMonth() + 1, 0).getDate();
+            let workDaysLeft = 0;
+            for (let d = today.getDate(); d <= totalDaysInCurrentMonth; d++) {
+                const dayOfWeek = new Date(currentYYYY, today.getMonth(), d).getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    workDaysLeft++;
+                }
+            }
+            if (workDaysLeft <= 2) return true;
+        }
+
+        return false;
+    }
+
+    function calculateFinancialStats() {
+        let totalPaid = 0;
+        let totalPending = 0;
+        let totalPlanned = 0;
+        const userStats = {};
+
+        records.forEach(r => {
+            const amount = r.totalAmount || 0;
+            totalPlanned += amount;
+
+            if (!userStats[r.userName]) {
+                userStats[r.userName] = { paid: 0, pending: 0, total: 0 };
+            }
+
+            userStats[r.userName].total += amount;
+
+            if (r.isPaid) {
+                totalPaid += amount;
+                userStats[r.userName].paid += amount;
+            } else {
+                totalPending += amount;
+                userStats[r.userName].pending += amount;
+            }
+        });
+
+        document.getElementById('statTotalPaid').innerText = totalPaid.toFixed(2) + ' ₺';
+        document.getElementById('statTotalPending').innerText = totalPending.toFixed(2) + ' ₺';
+        document.getElementById('statTotalPlanned').innerText = totalPlanned.toFixed(2) + ' ₺';
+
+        const debtGrid = document.getElementById('userDebtGrid');
+        debtGrid.innerHTML = '';
+
+        const userNames = Object.keys(userStats);
+        if (userNames.length === 0) {
+            debtGrid.innerHTML = `<div style="font-size:0.85rem; color:#94a3b8; grid-column:1/-1;">Henüz kayıtlı harçlık borç verisi bulunmuyor.</div>`;
+            return;
+        }
+
+        userNames.forEach(u => {
+            const stat = userStats[u];
+            const card = document.createElement('div');
+            card.className = 'user-debt-card';
+            card.innerHTML = `
+                <div>
+                    <div class="user-debt-name">👤 ${u}</div>
+                    <span style="font-size:0.75rem; color:#64748b;">Toplam: ${stat.total.toFixed(2)} ₺</span>
+                </div>
+                <div class="user-debt-details">
+                    <div style="color:#10b981; font-weight:700;">Ödenen: ${stat.paid.toFixed(2)} ₺</div>
+                    <div style="color:#ef4444; font-weight:700;">Vadesi Gelmemiş Borç: ${stat.pending.toFixed(2)} ₺</div>
+                </div>
+            `;
+            debtGrid.appendChild(card);
+        });
+    }
+
+    // 2050'YE KADAR SEÇİLİ YILA GÖRE RESMİ VE DİNİ BAYRAMLAR LISTESİ RENDER
+    function renderHolidayList() {
+        const selectedYear = parseInt(document.getElementById('holidayYearSelect').value);
+        const container = document.getElementById('holidayListGrid');
+        container.innerHTML = '';
+
+        const yearHolidaysObj = getHolidaysForYear(selectedYear);
+        const yearHolidays = [];
+        const turkishDays = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+        const turkishMonths = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+
+        Object.keys(yearHolidaysObj).forEach(dateStr => {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            const dayName = turkishDays[dateObj.getDay()];
+            const monthName = turkishMonths[m - 1];
+
+            yearHolidays.push({
+                rawDate: dateStr,
+                formattedDate: `${d} ${monthName} ${y}`,
+                dayName: dayName,
+                name: yearHolidaysObj[dateStr],
+                isReligious: yearHolidaysObj[dateStr].includes("Ramazan") || yearHolidaysObj[dateStr].includes("Kurban")
+            });
+        });
+
+        yearHolidays.sort((a, b) => a.rawDate.localeCompare(b.rawDate));
+
+        yearHolidays.forEach(item => {
+            const card = document.createElement('div');
+            card.className = `holiday-item-card ${item.isReligious ? 'religious' : ''}`;
+            card.innerHTML = `
+                <div class="holiday-item-title">${item.isReligious ? '🌙' : '🇹🇷'} ${item.name}</div>
+                <div class="holiday-item-date">
+                    <span>📅 ${item.formattedDate}</span>
+                    <span class="holiday-day-tag">${item.dayName}</span>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function onPeriodOrUserChange() {
+        const userName = document.getElementById('userName').value;
+        const period = document.getElementById('period').value;
+        const editIndex = parseInt(document.getElementById('editIndex').value);
+
+        if (userName && period && editIndex === -1) {
+            const rec = records.find(r => r.userName === userName && r.period === period);
+            if (rec) {
+                document.getElementById('baseDaily').value = rec.dailyRate;
+                if (rec.selectedDays) {
+                    selectedActiveDays = new Set(rec.selectedDays);
+                }
+            } else {
+                selectedActiveDays.clear();
+            }
+        }
+
+        renderCalendar();
+    }
+
+    // %50 KÜÇÜLTÜLMÜŞ VE AÇILIR/SEÇİLİR TAKVİMİ RENDER ETME
+    function renderCalendar() {
+        const period = document.getElementById('period').value;
+        if (!period) return;
+
+        const [year, month] = period.split('-').map(Number);
+        const totalDays = new Date(year, month, 0).getDate();
+        const firstDayIndex = (new Date(year, month - 1, 1).getDay() + 6) % 7;
+
+        const weeklyOff = Array.from(document.querySelectorAll('input[name="weeklyOff"]:checked')).map(cb => parseInt(cb.value));
+        const holidaysOfYear = getHolidaysForYear(year);
+
+        const gridBody = document.getElementById('calendarGridBody');
+        const badgeList = document.getElementById('holidayBadgeList');
+        gridBody.innerHTML = '';
+        badgeList.innerHTML = '';
+
+        document.getElementById('calendarTitle').innerText = `📅 ${year} ${getMonthName(month)}`;
+
+        const isNewMonthSetup = (selectedActiveDays.size === 0);
+        let foundHolidays = [];
+
+        for (let i = 0; i < firstDayIndex; i++) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.style.visibility = 'hidden';
+            gridBody.appendChild(emptyDiv);
+        }
+
+        for (let day = 1; day <= totalDays; day++) {
+            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayOfWeek = new Date(year, month - 1, day).getDay();
+            const isWeekend = weeklyOff.includes(dayOfWeek);
+            const holidayName = holidaysOfYear[dateStr] || null;
+
+            if (holidayName) {
+                if (!foundHolidays.includes(holidayName)) foundHolidays.push(`${day} ${getMonthName(month)}: ${holidayName}`);
+            }
+
+            if (isNewMonthSetup) {
+                if (!isWeekend && !holidayName) {
+                    selectedActiveDays.add(day);
+                }
+            }
+
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'cal-day';
+
+            if (holidayName) dayDiv.classList.add('holiday');
+            if (isWeekend) dayDiv.classList.add('disabled-day');
+
+            const isSelected = selectedActiveDays.has(day);
+            if (isSelected) dayDiv.classList.add('selected');
+
+            dayDiv.innerHTML = `
+                <span>${day}</span>
+                ${holidayName ? `<span class="holiday-tag" title="${holidayName}">★</span>` : ''}
+            `;
+
+            dayDiv.onclick = () => {
+                if (selectedActiveDays.has(day)) {
+                    selectedActiveDays.delete(day);
+                } else {
+                    selectedActiveDays.add(day);
+                }
+                renderCalendar();
+            };
+
+            gridBody.appendChild(dayDiv);
+        }
+
+        foundHolidays.forEach(h => {
+            const span = document.createElement('span');
+            span.className = 'holiday-badge';
+            span.innerText = `🎉 ${h}`;
+            badgeList.appendChild(span);
+        });
+
+        calculatePreviewDaily();
+    }
+
+    function getMonthName(monthNum) {
+        const names = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+        return names[monthNum - 1];
     }
 
     function calculatePreviewDaily() {
@@ -478,51 +1203,10 @@
         const finalRate = base * (1 + (raise / 100));
         document.getElementById('previewDaily').value = finalRate.toFixed(2);
 
-        const userName = document.getElementById('userName').value;
-        const startPeriod = document.getElementById('period').value;
-        if (!startPeriod || !userName) return;
-
-        let totalDailySum = 0;
-        for (let i = 0; i < 12; i++) {
-            const currentPeriod = addMonthsToPeriod(startPeriod, i);
-            const existingRec = records.find(r => r.userName === userName && r.period === currentPeriod);
-            const dailyForThisMonth = existingRec ? existingRec.dailyRate : finalRate;
-            totalDailySum += dailyForThisMonth;
-        }
-
-        const avgDailyRate = totalDailySum / 12;
-        document.getElementById('avg12MonthDaily').value = avgDailyRate.toFixed(2);
+        const activeDaysCount = selectedActiveDays.size;
+        const totalAmount = activeDaysCount * finalRate;
+        document.getElementById('monthSummaryCalc').value = `${activeDaysCount} Gün = ${totalAmount.toFixed(2)} ₺`;
     }
-
-    function getOfficialHolidayCount(year, month) {
-        let count = 0;
-        if (month === 1) count += 1;
-        if (month === 4) count += 1;
-        if (month === 5) count += 2;
-        if (month === 7) count += 1;
-        if (month === 8) count += 1;
-        if (month === 10) count += 1;
-
-        if (year === 2026 && month === 3) count += 3.5;
-        if (year === 2026 && month === 5) count += 4.5;
-        if (year === 2027 && month === 3) count += 3.5;
-        if (year === 2027 && month === 5) count += 4.5;
-
-        return count;
-    }
-
-    function addMonthsToPeriod(periodStr, monthsToAdd) {
-        const [y, m] = periodStr.split('-').map(Number);
-        const date = new Date(y, m - 1 + monthsToAdd, 1);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        return `${year}-${month}`;
-    }
-
-    window.onload = function() {
-        document.getElementById('period').value = "2026-08";
-        calculatePreviewDaily();
-    };
 
     async function handleFormSubmit(event) {
         event.preventDefault();
@@ -541,27 +1225,67 @@
         const weeklyOff = Array.from(document.querySelectorAll('input[name="weeklyOff"]:checked')).map(cb => parseInt(cb.value));
         const updateFuture = document.getElementById('updateFutureMonths').checked;
 
+        saveDefaultsToDB();
+
         if (editIndex === -1) {
-            for (let i = 0; i < 12; i++) {
+            for (let i = 0; i < 10; i++) {
                 const currentPeriod = addMonthsToPeriod(startPeriod, i);
-                const record = calculateMonthData(userName, currentPeriod, targetDailyRate, weeklyOff, false);
+                const [curY, curM] = currentPeriod.split('-').map(Number);
                 
+                const existingRec = records.find(r => r.userName === userName && r.period === currentPeriod);
+
+                let daySelection = null;
+                if (i === 0) {
+                    daySelection = Array.from(selectedActiveDays);
+                } else if (existingRec && existingRec.selectedDays) {
+                    daySelection = existingRec.selectedDays;
+                } else {
+                    daySelection = calculateDefaultWorkDays(curY, curM, weeklyOff);
+                }
+
+                const newRec = {
+                    userName,
+                    period: currentPeriod,
+                    dailyRate: targetDailyRate,
+                    weeklyOff,
+                    totalDays: new Date(curY, curM, 0).getDate(),
+                    payableDays: daySelection.length,
+                    selectedDays: daySelection,
+                    totalAmount: daySelection.length * targetDailyRate,
+                    isPaid: existingRec ? existingRec.isPaid : false,
+                    paymentMethod: existingRec ? existingRec.paymentMethod : null,
+                    paymentDate: existingRec ? existingRec.paymentDate : null
+                };
+
                 const existingIdx = records.findIndex(r => r.userName === userName && r.period === currentPeriod);
                 if (existingIdx > -1) {
-                    records[existingIdx] = { ...record, isPaid: records[existingIdx].isPaid, paymentMethod: records[existingIdx].paymentMethod, paymentDate: records[existingIdx].paymentDate };
+                    records[existingIdx] = newRec;
                 } else {
-                    records.push(record);
+                    records.push(newRec);
                 }
             }
         } else {
-            const targetRecord = records[editIndex];
-            const updatedRecord = calculateMonthData(userName, startPeriod, targetDailyRate, weeklyOff, targetRecord.isPaid, targetRecord.paymentMethod, targetRecord.paymentDate);
-            records[editIndex] = updatedRecord;
+            const targetRec = records[editIndex];
+            const [curY, curM] = startPeriod.split('-').map(Number);
+            const daySelection = Array.from(selectedActiveDays);
+
+            records[editIndex] = {
+                ...targetRec,
+                dailyRate: targetDailyRate,
+                weeklyOff,
+                payableDays: daySelection.length,
+                selectedDays: daySelection,
+                totalAmount: daySelection.length * targetDailyRate
+            };
 
             if (updateFuture) {
                 records.forEach((rec, idx) => {
                     if (rec.userName === userName && rec.period > startPeriod) {
-                        records[idx] = calculateMonthData(userName, rec.period, targetDailyRate, weeklyOff, rec.isPaid, rec.paymentMethod, rec.paymentDate);
+                        const recDays = rec.selectedDays || calculateDefaultWorkDays(...rec.period.split('-').map(Number), weeklyOff);
+                        records[idx].dailyRate = targetDailyRate;
+                        records[idx].payableDays = recDays.length;
+                        records[idx].selectedDays = recDays;
+                        records[idx].totalAmount = recDays.length * targetDailyRate;
                     }
                 });
             }
@@ -571,41 +1295,32 @@
         resetForm();
     }
 
-    function calculateMonthData(userName, period, dailyRate, weeklyOff, isPaid, paymentMethod = null, paymentDate = null) {
-        const [year, month] = period.split('-').map(Number);
+    function calculateDefaultWorkDays(year, month, weeklyOff) {
         const totalDays = new Date(year, month, 0).getDate();
-        const officialHolidays = getOfficialHolidayCount(year, month);
-
-        let weeklyOffCount = 0;
-        for (let day = 1; day <= totalDays; day++) {
-            const dayOfWeek = new Date(year, month - 1, day).getDay();
-            if (weeklyOff.includes(dayOfWeek)) {
-                weeklyOffCount++;
+        const holidaysOfYear = getHolidaysForYear(year);
+        const days = [];
+        for (let d = 1; d <= totalDays; d++) {
+            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dayOfWeek = new Date(year, month - 1, d).getDay();
+            if (!weeklyOff.includes(dayOfWeek) && !holidaysOfYear[dateStr]) {
+                days.push(d);
             }
         }
-
-        const payableDays = Math.max(0, totalDays - weeklyOffCount - officialHolidays);
-        const totalAmount = payableDays * dailyRate;
-
-        return {
-            userName, period, dailyRate, weeklyOff,
-            totalDays, payableDays, officialHolidays, totalAmount,
-            isPaid: isPaid || false,
-            paymentMethod: paymentMethod || null,
-            paymentDate: paymentDate || null
-        };
+        return days;
     }
 
-    function handleFilterChange() {
-        const filterUser = document.getElementById('filterUser').value;
-        const deleteBtn = document.getElementById('btnDeleteSelectedUser');
-        
-        if (filterUser !== 'ALL') {
-            deleteBtn.style.display = 'inline-flex';
-            deleteBtn.innerText = `🗑️ ${filterUser} - Tüm Kayıtlarını Sil`;
-        } else {
-            deleteBtn.style.display = 'none';
-        }
+    function addMonthsToPeriod(periodStr, monthsToAdd) {
+        const [y, m] = periodStr.split('-').map(Number);
+        const date = new Date(y, m - 1 + monthsToAdd, 1);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}`;
+    }
+
+    function setViewMode(mode) {
+        currentViewMode = mode;
+        document.getElementById('pillActive').className = mode === 'ACTIVE' ? 'nav-pill active' : 'nav-pill';
+        document.getElementById('pillAll').className = mode === 'ALL' ? 'nav-pill active' : 'nav-pill';
         renderTable();
     }
 
@@ -615,17 +1330,28 @@
         tbody.innerHTML = '';
 
         records.sort((a, b) => a.period.localeCompare(b.period));
-        const filteredRecords = records.filter(r => filterUser === 'ALL' || r.userName === filterUser);
+        
+        const today = new Date();
+        const curPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        const nextPeriodDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        const nextPeriod = `${nextPeriodDate.getFullYear()}-${String(nextPeriodDate.getMonth() + 1).padStart(2, '0')}`;
+
+        let filteredRecords = records.filter(r => filterUser === 'ALL' || r.userName === filterUser);
+
+        if (currentViewMode === 'ACTIVE') {
+            filteredRecords = filteredRecords.filter(r => r.period === curPeriod || r.period === nextPeriod);
+        }
 
         if (filteredRecords.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">Henüz kaydedilmiş veri bulunmuyor.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">Gösterilebilecek harçlık kaydı bulunmuyor.</td></tr>`;
             return;
         }
 
         filteredRecords.forEach((rec) => {
             const actualIndex = records.indexOf(rec);
             const tr = document.createElement('tr');
-            
+            const isAllowed = isActionAllowed(rec.period);
+
             let statusHtml = '';
             let payButton = '';
 
@@ -636,22 +1362,24 @@
                     <span class="pay-detail-info">💳 ${rec.paymentMethod || 'Belirtilmedi'}</span>
                     <span class="pay-detail-info">🕒 ${formattedDate}</span>
                 `;
-                payButton = `<button class="btn-paid-cancel" onclick="cancelPayment(${actualIndex})" title="Ödendi durumunu iptal et">İptal Et</button>`;
+                payButton = `<button class="btn-paid-cancel" ${!isAllowed ? 'disabled title="Sadece aktif dönemde kullanılabilir"' : ''} onclick="cancelPayment(${actualIndex})">İptal Et</button>`;
             } else {
                 statusHtml = `<span class="status-badge status-unpaid">ÖDENMEDİ</span>`;
-                payButton = `<button class="btn-pay" onclick="openPayModal(${actualIndex})">Öde</button>`;
+                payButton = `<button class="btn-pay" ${!isAllowed ? 'disabled title="Sadece aktif dönemde veya ay sonu aktifleșir"' : ''} onclick="openPayModal(${actualIndex})">Öde</button>`;
             }
+
+            const waButton = `<button class="btn-wa" ${!isAllowed ? 'disabled title="Sadece aktif dönemde kullanılabilir"' : ''} onclick="sendWhatsApp(${actualIndex})">💬 WA</button>`;
 
             tr.innerHTML = `
                 <td><strong>${rec.userName}</strong></td>
-                <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:600;">${rec.period}</span></td>
+                <td><span style="background:#e2e8f0; padding:3px 8px; border-radius:6px; font-weight:700;">${rec.period}</span></td>
                 <td><strong>${rec.dailyRate.toFixed(2)} ₺</strong></td>
                 <td><strong>${rec.payableDays}</strong> / ${rec.totalDays} Gün</td>
                 <td style="font-weight:bold; color:#059669;">${rec.totalAmount.toFixed(2)} ₺</td>
                 <td>${statusHtml}</td>
                 <td style="display:flex; gap:4px; flex-wrap:wrap;">
                     ${payButton}
-                    <button class="btn-wa" onclick="sendWhatsApp(${actualIndex})" title="WhatsApp ile Gönder">💬 WA</button>
+                    ${waButton}
                     <button class="btn-edit" onclick="editRecord(${actualIndex})">Düzenle</button>
                     <button class="btn-delete" onclick="openDeleteModal(${actualIndex})">Sil</button>
                 </td>
@@ -660,51 +1388,67 @@
         });
     }
 
-    function openDeleteModal(index) {
-        activeDeleteIndex = index;
+    async function verifyAdminPin() {
+        const pin = prompt("🔒 İşlemi onaylamak için Yönetici PIN Kodunu giriniz:");
+        if (!pin) return false;
+
+        const snapshot = await db.ref('usersDB').once('value');
+        const users = snapshot.val() || {};
+        
+        const isMuratValid = users['murat'] && users['murat'].pin === pin.trim();
+        const isAdminValid = users['admin'] && users['admin'].pin === pin.trim();
+
+        if (isMuratValid || isAdminValid) {
+            return true;
+        } else {
+            alert("❌ Hatalı PIN Kodu! İşlem gerçekleştirilemedi.");
+            return false;
+        }
+    }
+
+    function editRecord(index) {
         const rec = records[index];
-        document.getElementById('delPeriodText').innerText = rec.period;
-        document.getElementById('delUserText').innerText = rec.userName;
-        document.getElementById('deleteModalText').innerText = `${rec.userName} kişisine ait ${rec.period} kaydı için yapılacak silme türünü seçin:`;
-        document.getElementById('deleteModal').style.display = 'flex';
-    }
+        
+        document.getElementById('editIndex').value = index;
+        document.getElementById('userName').value = rec.userName;
+        document.getElementById('period').value = rec.period;
+        document.getElementById('baseDaily').value = rec.dailyRate;
+        document.getElementById('raisePercent').value = 0;
 
-    function closeDeleteModal() {
-        document.getElementById('deleteModal').style.display = 'none';
-        activeDeleteIndex = null;
-    }
+        document.querySelectorAll('input[name="weeklyOff"]').forEach(cb => {
+            cb.checked = rec.weeklyOff.includes(parseInt(cb.value));
+        });
 
-    async function executeDelete(type) {
-        if (activeDeleteIndex === null) return;
-
-        const authorized = await verifyAdminPin();
-        if (!authorized) return;
-
-        const targetRec = records[activeDeleteIndex];
-
-        if (type === 'single') {
-            records.splice(activeDeleteIndex, 1);
-        } else if (type === 'future') {
-            records = records.filter(r => !(r.userName === targetRec.userName && r.period >= targetRec.period));
-        } else if (type === 'allUser') {
-            records = records.filter(r => r.userName !== targetRec.userName);
+        if (rec.selectedDays) {
+            selectedActiveDays = new Set(rec.selectedDays);
+        } else {
+            selectedActiveDays.clear();
         }
 
-        closeDeleteModal();
-        saveAndRefresh();
+        document.getElementById('formTitle').innerText = `${rec.userName} - ${rec.period} Ayı Düzenleme`;
+        document.getElementById('submitBtn').innerText = "💾 Değişiklikleri Kaydet";
+        document.getElementById('futureUpdateBox').style.display = "flex";
+
+        renderCalendar();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    async function deleteEntireUserFromFilter() {
-        const selectedUser = document.getElementById('filterUser').value;
-        if (selectedUser === 'ALL') return;
+    function resetForm() {
+        document.getElementById('harclikForm').reset();
+        document.getElementById('editIndex').value = "-1";
+        document.getElementById('formTitle').innerHTML = `<span>🎓 Okul Yılı Harçlık Planı Oluştur / Düzenle</span><span style="font-size: 0.8rem; font-weight: normal; color: #64748b;">(Eyl - Haz Dönemi)</span>`;
+        document.getElementById('submitBtn').innerText = "🎒 Okullara Göre 1 Okul Yılı Planla (Eyl - Haz)";
+        document.getElementById('futureUpdateBox').style.display = "none";
+        
+        selectedActiveDays.clear();
 
-        const authorized = await verifyAdminPin();
-        if (!authorized) return;
+        document.querySelectorAll('input[name="weeklyOff"]').forEach(cb => {
+            cb.checked = (cb.value === "0" || cb.value === "6");
+        });
 
-        records = records.filter(r => r.userName !== selectedUser);
-        document.getElementById('filterUser').value = 'ALL';
-        handleFilterChange();
-        saveAndRefresh();
+        const now = new Date();
+        document.getElementById('period').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        onPeriodOrUserChange();
     }
 
     function openPayModal(index) {
@@ -734,7 +1478,7 @@
     }
 
     function cancelPayment(index) {
-        if (confirm("Bu ödemenin onayını iptal etmek istediğinizden emin misiniz?")) {
+        if (confirm("Ödeme kaydını iptal etmek istediğinizden emin misiniz?")) {
             records[index].isPaid = false;
             records[index].paymentMethod = null;
             records[index].paymentDate = null;
@@ -742,71 +1486,86 @@
         }
     }
 
-    function formatDateTime(isoString) {
-        if (!isoString) return '';
-        const d = new Date(isoString);
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        const hours = String(d.getHours()).padStart(2, '0');
-        const minutes = String(d.getMinutes()).padStart(2, '0');
-        return `${day}.${month}.${year} ${hours}:${minutes}`;
+    function openDeleteModal(index) {
+        activeDeleteIndex = index;
+        const rec = records[index];
+        document.getElementById('delPeriodText').innerText = rec.period;
+        document.getElementById('delUserText').innerText = rec.userName;
+        document.getElementById('deleteModalText').innerText = `${rec.userName} için ${rec.period} dönemi silme işlemi seçin:`;
+        document.getElementById('deleteModal').style.display = 'flex';
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').style.display = 'none';
+        activeDeleteIndex = null;
+    }
+
+    async function executeDelete(type) {
+        if (activeDeleteIndex === null) return;
+
+        const authorized = await verifyAdminPin();
+        if (!authorized) return;
+
+        const targetRec = records[activeDeleteIndex];
+
+        if (type === 'single') {
+            records.splice(activeDeleteIndex, 1);
+        } else if (type === 'future') {
+            records = records.filter(r => !(r.userName === targetRec.userName && r.period >= targetRec.period));
+        } else if (type === 'allUser') {
+            records = records.filter(r => r.userName !== targetRec.userName);
+        }
+
+        closeDeleteModal();
+        saveAndRefresh();
+    }
+
+    function handleFilterChange() {
+        const filterUser = document.getElementById('filterUser').value;
+        const deleteBtn = document.getElementById('btnDeleteSelectedUser');
+        
+        if (filterUser !== 'ALL') {
+            deleteBtn.style.display = 'inline-flex';
+            deleteBtn.innerText = `🗑️ ${filterUser} Tüm Kayıtlarını Sil`;
+        } else {
+            deleteBtn.style.display = 'none';
+        }
+        renderTable();
+    }
+
+    async function deleteEntireUserFromFilter() {
+        const selectedUser = document.getElementById('filterUser').value;
+        if (selectedUser === 'ALL') return;
+
+        const authorized = await verifyAdminPin();
+        if (!authorized) return;
+
+        records = records.filter(r => r.userName !== selectedUser);
+        document.getElementById('filterUser').value = 'ALL';
+        handleFilterChange();
+        saveAndRefresh();
     }
 
     function sendWhatsApp(index) {
         const rec = records[index];
-        let statusMessage = "";
+        let statusMessage = rec.isPaid 
+            ? `*Ödeme Detayı:* ${formatDateTime(rec.paymentDate)} tarihinde *${rec.paymentMethod}* ile yatırılmıştır. ✅`
+            : `*Ödeme Durumu:* Henüz ödenmemiştir. ⏳`;
 
-        if (rec.isPaid) {
-            const formattedDate = formatDateTime(rec.paymentDate);
-            statusMessage = `*Ödeme Detayı:* ${formattedDate} tarihinde *${rec.paymentMethod}* yöntemi ile hesabına yatırılmıştır. ✅`;
-        } else {
-            statusMessage = `*Ödeme Durumu:* Henüz ödenmemiştir. ⏳`;
-        }
+        const message = `Merhaba ${rec.userName},\n\n*${rec.period}* Okul Dönemi Harçlık Detayı:\n- Ödenecek Seçili Gün: ${rec.payableDays} Gün\n- Günlük Harçlık: ${rec.dailyRate.toFixed(2)} ₺\n- *Toplam Tutar: ${rec.totalAmount.toFixed(2)} ₺*\n\n${statusMessage}\n\nİyi dersler dilerim! 📚💸`;
 
-        const message = `Merhaba ${rec.userName},\n\n*${rec.period}* dönemi harçlık detayların:\n- Ödenecek Gün: ${rec.payableDays} Gün\n- Günlük Harçlık: ${rec.dailyRate.toFixed(2)} ₺\n- *Toplam Tutar: ${rec.totalAmount.toFixed(2)} ₺*\n\n${statusMessage}\n\nGüle güle harca! 💸`;
-
-        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-        window.open(waUrl, '_blank');
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank');
     }
 
-    function editRecord(index) {
-        const rec = records[index];
-        
-        document.getElementById('editIndex').value = index;
-        document.getElementById('userName').value = rec.userName;
-        document.getElementById('period').value = rec.period;
-        document.getElementById('baseDaily').value = rec.dailyRate;
-        document.getElementById('raisePercent').value = 0;
-
-        document.querySelectorAll('input[name="weeklyOff"]').forEach(cb => {
-            cb.checked = rec.weeklyOff.includes(parseInt(cb.value));
-        });
-
-        document.getElementById('formTitle').innerText = `${rec.userName} - ${rec.period} Ayı Zam / Güncelleme`;
-        document.getElementById('submitBtn').innerText = "Değişiklikleri Kaydet";
-        document.getElementById('futureUpdateBox').style.display = "flex";
-
-        calculatePreviewDaily();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function resetForm() {
-        document.getElementById('harclikForm').reset();
-        document.getElementById('editIndex').value = "-1";
-        document.getElementById('formTitle').innerText = "12 Aylık Harçlık Planı Oluştur / Düzenle";
-        document.getElementById('submitBtn').innerText = "12 Aylık Plan Oluştur / Güncelle";
-        document.getElementById('futureUpdateBox').style.display = "none";
-        
-        document.querySelectorAll('input[name="weeklyOff"]').forEach(cb => {
-            cb.checked = (cb.value === "0" || cb.value === "6");
-        });
-        document.getElementById('period').value = "2026-08";
-        calculatePreviewDaily();
+    function formatDateTime(isoString) {
+        if (!isoString) return '';
+        const d = new Date(isoString);
+        return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     }
 
     function saveAndRefresh() {
         db.ref('harclikDB').set(records);
+        calculateFinancialStats();
     }
 </script>
 

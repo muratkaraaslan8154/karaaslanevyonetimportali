@@ -601,6 +601,11 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="baseIstanbulKart">Mevcut İst. Kart Aylık Ücreti (₺)</label>
+                            <input type="number" id="baseIstanbulKart" min="0" step="1" value="300" required oninput="calculatePreviewDaily(); saveDefaultsToDB();">
+                        </div>
+
+                        <div class="form-group">
                             <label for="raisePercent">Uygulanacak Zam Oranı (%)</label>
                             <input type="number" id="raisePercent" min="0" step="0.1" value="0" placeholder="Örn: 10" oninput="calculatePreviewDaily(); saveDefaultsToDB();">
                         </div>
@@ -611,7 +616,12 @@
                         </div>
 
                         <div class="form-group">
-                            <label>📊 Seçilen Gün Sayısı & Toplam Tutar</label>
+                            <label>Zamlı İst. Kart Aylık (₺)</label>
+                            <input type="number" id="previewIstanbulKart" readonly style="background-color: #f1f5f9; font-weight: bold; color: #0284c7;">
+                        </div>
+
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>📊 Seçilen Gün & Toplam Aylık Tutar (Harçlık + Kart)</label>
                             <input type="text" id="monthSummaryCalc" readonly style="background-color: #ecfdf5; font-weight: bold; color: #059669; border: 1px solid #a7f3d0;">
                         </div>
 
@@ -660,7 +670,7 @@
 
                         <div class="update-option" id="futureUpdateBox" style="display: none;">
                             <input type="checkbox" id="updateFutureMonths" checked>
-                            <label for="updateFutureMonths">Bu ayki güncellenmiş günlük ücreti sonraki tüm aylara uygula (Seçilen özel gün sayıları sıfırlanmaz)</label>
+                            <label for="updateFutureMonths">Bu ayki güncellenmiş ücretleri (Günlük Harçlık & İstanbul Kart) sonraki tüm aylara uygula</label>
                         </div>
 
                         <div class="form-actions">
@@ -694,7 +704,7 @@
                     <div class="stat-card">
                         <span class="stat-card-title">📊 Toplam Planlanan</span>
                         <span class="stat-card-value" id="statTotalPlanned" style="color: #2563eb;">0.00 ₺</span>
-                        <span class="stat-card-sub">Dönem bütçesi</span>
+                        <span class="stat-card-sub">Dönem bütçesi (Kart Dahil)</span>
                     </div>
                 </div>
 
@@ -758,9 +768,10 @@
                     <tr>
                         <th>Kişi</th>
                         <th>Dönem</th>
-                        <th>Günlük Ücret</th>
+                        <th>Günlük Harçlık</th>
+                        <th>İstanbul Kart</th>
                         <th>Ödenecek / Toplam Gün</th>
-                        <th>Toplam Harçlık</th>
+                        <th>Toplam Tutar (Harçlık + Kart)</th>
                         <th>Ödeme Durumu & Detayı</th>
                         <th>İşlemler</th>
                     </tr>
@@ -946,6 +957,7 @@
     function saveDefaultsToDB() {
         const defaults = {
             baseDaily: parseFloat(document.getElementById('baseDaily').value) || 0,
+            baseIstanbulKart: parseFloat(document.getElementById('baseIstanbulKart').value) || 0,
             raisePercent: parseFloat(document.getElementById('raisePercent').value) || 0,
             weeklyOff: Array.from(document.querySelectorAll('input[name="weeklyOff"]:checked')).map(cb => cb.value)
         };
@@ -956,6 +968,7 @@
         const data = snapshot.val();
         if (data && document.getElementById('editIndex').value === "-1") {
             if (data.baseDaily !== undefined) document.getElementById('baseDaily').value = data.baseDaily;
+            if (data.baseIstanbulKart !== undefined) document.getElementById('baseIstanbulKart').value = data.baseIstanbulKart;
             if (data.raisePercent !== undefined) document.getElementById('raisePercent').value = data.raisePercent;
             if (data.weeklyOff) {
                 document.querySelectorAll('input[name="weeklyOff"]').forEach(cb => {
@@ -1061,14 +1074,17 @@
         records.forEach(r => {
             const amount = r.totalAmount || 0;
             const days = r.payableDays || 0;
+            const ikFee = r.istanbulKartFee || 0;
             totalPlanned += amount;
 
             if (!userStats[r.userName]) {
-                userStats[r.userName] = { paid: 0, pending: 0, total: 0, totalDays: 0 };
+                userStats[r.userName] = { paid: 0, pending: 0, total: 0, totalDays: 0, monthCount: 0, totalIstanbulKart: 0 };
             }
 
             userStats[r.userName].total += amount;
             userStats[r.userName].totalDays += days;
+            userStats[r.userName].monthCount += 1;
+            userStats[r.userName].totalIstanbulKart += ikFee;
 
             if (r.isPaid) {
                 totalPaid += amount;
@@ -1094,14 +1110,18 @@
 
         userNames.forEach(u => {
             const stat = userStats[u];
+            // Ortalama hesaplama: İstanbul kart dahil toplam harçlığın gün ve ay sayısı ortalaması
             const avgDaily = stat.totalDays > 0 ? (stat.total / stat.totalDays) : 0;
+            const avgMonthly = stat.monthCount > 0 ? (stat.total / stat.monthCount) : 0;
+
             const card = document.createElement('div');
             card.className = 'user-debt-card';
             card.innerHTML = `
                 <div>
                     <div class="user-debt-name">👤 ${u}</div>
-                    <div style="font-size:0.75rem; color:#2563eb; font-weight:700; margin-top:2px;">Günlük Ort.: ${avgDaily.toFixed(2)} ₺</div>
-                    <span style="font-size:0.72rem; color:#64748b;">Toplam: ${stat.total.toFixed(2)} ₺ (${stat.totalDays} Gün)</span>
+                    <div style="font-size:0.75rem; color:#2563eb; font-weight:700; margin-top:2px;">Günlük Ort. (Kart Dahil): ${avgDaily.toFixed(2)} ₺</div>
+                    <div style="font-size:0.75rem; color:#0284c7; font-weight:700; margin-top:1px;">Aylık Ort. Toplam: ${avgMonthly.toFixed(2)} ₺</div>
+                    <span style="font-size:0.72rem; color:#64748b;">Toplam: ${stat.total.toFixed(2)} ₺ (${stat.monthCount} Ay / ${stat.totalDays} Gün)</span>
                 </div>
                 <div class="user-debt-details">
                     <div style="color:#10b981; font-weight:700;">Ödenen: ${stat.paid.toFixed(2)} ₺</div>
@@ -1167,6 +1187,7 @@
             const rec = records.find(r => r.userName === userName && r.period === period);
             if (rec) {
                 document.getElementById('baseDaily').value = rec.dailyRate;
+                document.getElementById('baseIstanbulKart').value = rec.istanbulKartFee !== undefined ? rec.istanbulKartFee : 300;
                 if (rec.selectedDays) {
                     selectedActiveDays = new Set(rec.selectedDays);
                 }
@@ -1264,13 +1285,20 @@
 
     function calculatePreviewDaily() {
         const base = parseFloat(document.getElementById('baseDaily').value) || 0;
+        const baseIK = parseFloat(document.getElementById('baseIstanbulKart').value) || 0;
         const raise = parseFloat(document.getElementById('raisePercent').value) || 0;
+
         const finalRate = base * (1 + (raise / 100));
+        const finalIK = baseIK * (1 + (raise / 100));
+
         document.getElementById('previewDaily').value = finalRate.toFixed(2);
+        document.getElementById('previewIstanbulKart').value = finalIK.toFixed(2);
 
         const activeDaysCount = selectedActiveDays.size;
-        const totalAmount = activeDaysCount * finalRate;
-        document.getElementById('monthSummaryCalc').value = `${activeDaysCount} Gün = ${totalAmount.toFixed(2)} ₺`;
+        const harclikTotal = activeDaysCount * finalRate;
+        const totalAmount = harclikTotal + finalIK;
+
+        document.getElementById('monthSummaryCalc').value = `${activeDaysCount} Gün Harçlık (${harclikTotal.toFixed(2)} ₺) + İst. Kart (${finalIK.toFixed(2)} ₺) = ${totalAmount.toFixed(2)} ₺`;
     }
 
     async function handleFormSubmit(event) {
@@ -1285,14 +1313,19 @@
         const userName = document.getElementById('userName').value;
         const startPeriod = document.getElementById('period').value;
         const baseDaily = parseFloat(document.getElementById('baseDaily').value) || 0;
+        const baseIstanbulKart = parseFloat(document.getElementById('baseIstanbulKart').value) || 0;
         const raisePercent = parseFloat(document.getElementById('raisePercent').value) || 0;
+
         const targetDailyRate = baseDaily * (1 + (raisePercent / 100));
+        const targetIstanbulKart = baseIstanbulKart * (1 + (raisePercent / 100));
+
         const weeklyOff = Array.from(document.querySelectorAll('input[name="weeklyOff"]:checked')).map(cb => parseInt(cb.value));
         const updateFuture = document.getElementById('updateFutureMonths').checked;
 
         saveDefaultsToDB();
 
         if (editIndex === -1) {
+            // 1 Okul Yılı (10 Ay) Planla
             for (let i = 0; i < 10; i++) {
                 const currentPeriod = addMonthsToPeriod(startPeriod, i);
                 const [curY, curM] = currentPeriod.split('-').map(Number);
@@ -1308,15 +1341,19 @@
                     daySelection = calculateDefaultWorkDays(curY, curM, weeklyOff);
                 }
 
+                const harclikSum = daySelection.length * targetDailyRate;
+                const totalMonthAmount = harclikSum + targetIstanbulKart;
+
                 const newRec = {
                     userName,
                     period: currentPeriod,
                     dailyRate: targetDailyRate,
+                    istanbulKartFee: targetIstanbulKart,
                     weeklyOff,
                     totalDays: new Date(curY, curM, 0).getDate(),
                     payableDays: daySelection.length,
                     selectedDays: daySelection,
-                    totalAmount: daySelection.length * targetDailyRate,
+                    totalAmount: totalMonthAmount,
                     isPaid: existingRec ? existingRec.isPaid : false,
                     paymentMethod: existingRec ? existingRec.paymentMethod : null,
                     paymentDate: existingRec ? existingRec.paymentDate : null
@@ -1330,27 +1367,35 @@
                 }
             }
         } else {
+            // Tekil Düzenleme
             const targetRec = records[editIndex];
-            const [curY, curM] = startPeriod.split('-').map(Number);
             const daySelection = Array.from(selectedActiveDays);
+
+            const harclikSum = daySelection.length * targetDailyRate;
+            const totalMonthAmount = harclikSum + targetIstanbulKart;
 
             records[editIndex] = {
                 ...targetRec,
                 dailyRate: targetDailyRate,
+                istanbulKartFee: targetIstanbulKart,
                 weeklyOff,
                 payableDays: daySelection.length,
                 selectedDays: daySelection,
-                totalAmount: daySelection.length * targetDailyRate
+                totalAmount: totalMonthAmount
             };
 
+            // Gelecek tüm aylara zammı ve yeni ücretleri yansıt
             if (updateFuture) {
                 records.forEach((rec, idx) => {
                     if (rec.userName === userName && rec.period > startPeriod) {
                         const recDays = rec.selectedDays || calculateDefaultWorkDays(...rec.period.split('-').map(Number), weeklyOff);
+                        const recHarclik = recDays.length * targetDailyRate;
+                        
                         records[idx].dailyRate = targetDailyRate;
+                        records[idx].istanbulKartFee = targetIstanbulKart;
                         records[idx].payableDays = recDays.length;
                         records[idx].selectedDays = recDays;
-                        records[idx].totalAmount = recDays.length * targetDailyRate;
+                        records[idx].totalAmount = recHarclik + targetIstanbulKart;
                     }
                 });
             }
@@ -1408,7 +1453,7 @@
         }
 
         if (filteredRecords.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">Gösterilebilecek harçlık kaydı bulunmuyor.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#94a3b8;">Gösterilebilecek harçlık kaydı bulunmuyor.</td></tr>`;
             return;
         }
 
@@ -1434,13 +1479,19 @@
             }
 
             const waButton = `<button class="btn-wa" ${!isAllowed ? 'disabled title="Sadece aktif dönemde kullanılabilir"' : ''} onclick="sendWhatsApp(${actualIndex})">💬 WA</button>`;
+            const ikFee = rec.istanbulKartFee || 0;
+            const harclikTotal = rec.payableDays * rec.dailyRate;
 
             tr.innerHTML = `
                 <td><strong>${rec.userName}</strong></td>
                 <td><span style="background:#e2e8f0; padding:3px 8px; border-radius:6px; font-weight:700;">${rec.period}</span></td>
                 <td><strong>${rec.dailyRate.toFixed(2)} ₺</strong></td>
+                <td><strong style="color:#0284c7;">${ikFee.toFixed(2)} ₺</strong></td>
                 <td><strong>${rec.payableDays}</strong> / ${rec.totalDays} Gün</td>
-                <td style="font-weight:bold; color:#059669;">${rec.totalAmount.toFixed(2)} ₺</td>
+                <td style="font-weight:bold; color:#059669;">
+                    ${rec.totalAmount.toFixed(2)} ₺
+                    <span style="font-size:0.72rem; color:#64748b; display:block;">(Harçlık: ${harclikTotal.toFixed(2)} ₺ + Kart: ${ikFee.toFixed(2)} ₺)</span>
+                </td>
                 <td>${statusHtml}</td>
                 <td style="display:flex; gap:4px; flex-wrap:wrap;">
                     ${payButton}
@@ -1478,6 +1529,7 @@
         document.getElementById('userName').value = rec.userName;
         document.getElementById('period').value = rec.period;
         document.getElementById('baseDaily').value = rec.dailyRate;
+        document.getElementById('baseIstanbulKart').value = rec.istanbulKartFee !== undefined ? rec.istanbulKartFee : 300;
         document.getElementById('raisePercent').value = 0;
 
         document.querySelectorAll('input[name="weeklyOff"]').forEach(cb => {
@@ -1612,11 +1664,14 @@
 
     function sendWhatsApp(index) {
         const rec = records[index];
+        const ikFee = rec.istanbulKartFee || 0;
+        const harclikSum = rec.payableDays * rec.dailyRate;
+
         let statusMessage = rec.isPaid 
             ? `*Ödeme Detayı:* ${formatDateTime(rec.paymentDate)} tarihinde *${rec.paymentMethod}* ile yatırılmıştır. ✅`
             : `*Ödeme Durumu:* Henüz ödenmemiştir. ⏳`;
 
-        const message = `Merhaba ${rec.userName},\n\n*${rec.period}* Okul Dönemi Harçlık Detayı:\n- Ödenecek Seçili Gün: ${rec.payableDays} Gün\n- Günlük Harçlık: ${rec.dailyRate.toFixed(2)} ₺\n- *Toplam Tutar: ${rec.totalAmount.toFixed(2)} ₺*\n\n${statusMessage}\n\nİyi dersler dilerim! 📚💸`;
+        const message = `Merhaba ${rec.userName},\n\n*${rec.period}* Okul Dönemi Harçlık Detayı:\n- Günlük Harçlık: ${rec.dailyRate.toFixed(2)} ₺ (${rec.payableDays} Gün = ${harclikSum.toFixed(2)} ₺)\n- Aylık İstanbul Kart Ücreti: ${ikFee.toFixed(2)} ₺\n- *TOPLAM TUTAR: ${rec.totalAmount.toFixed(2)} ₺*\n\n${statusMessage}\n\nİyi dersler dilerim! 📚💸`;
 
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank');
     }

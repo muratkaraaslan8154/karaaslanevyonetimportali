@@ -2,749 +2,1751 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harçlık Yönetim & Arşivlenen Dönemler Düzenleme Sistemi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>İlaç ve İnsülin Takibi</title>
+    <!-- Chart.js Kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --whatsapp: #25d366;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --border: #e2e8f0;
-            --text: #0f172a;
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        :root { 
+            --bg-color: #f0f4f8; 
+            --card-bg: #ffffff; 
+            --text-main: #2d3748; 
+            --text-muted: #718096; 
+            --water-color: #4299e1; 
+            --med-color: #48bb78; 
+            --danger: #f56565; 
+            --warning: #ed8936;
+            --border-radius: 1rem; 
         }
 
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 24px;
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .main-container {
-            max-width: 1300px;
-            margin: 0 auto;
+        body { 
+            background-color: var(--bg-color); 
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif; 
+            margin: 0; 
+            padding: 0.8rem; 
+            display: flex; 
+            justify-content: center; 
+            color: var(--text-main); 
+        }
+
+        .app-container { 
+            width: 100%; 
+            max-width: 1200px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 0.8rem; 
+        }
+
+        .header-bar {
             display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-
-        h2 {
-            margin-top: 0;
-            font-size: 1.25rem;
-            color: var(--text);
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .form-group label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #475569;
-        }
-
-        .form-group input, .form-group select {
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 0.95rem;
-            outline: none;
-        }
-
-        .checkbox-group {
-            display: flex;
+            justify-content: space-between;
+            align-items: center;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 0.5rem;
+            background: var(--card-bg);
+            padding: 0.8rem 1rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        .checkbox-group label {
-            font-size: 0.8rem;
-            background: #f1f5f9;
-            padding: 6px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
+        .nav-back { 
+            background: #e2e8f0; 
+            color: #2d3748; 
+            padding: 0.5rem 0.8rem; 
+            border-radius: 0.6rem; 
+            text-decoration: none; 
+            font-weight: bold; 
+            font-size: 0.85rem; 
+            display: inline-flex;
             align-items: center;
-            gap: 4px;
-        }
-
-        .update-option {
-            grid-column: 1 / -1;
-            background-color: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            padding: 10px 14px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #166534;
-        }
-
-        .form-actions {
-            grid-column: 1 / -1;
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        button {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
             transition: background 0.2s;
+        }
+        .nav-back:hover { background: #cbd5e0; }
+
+        .header-title-box { text-align: center; }
+        .header-title-box h1 { margin: 0; font-size: 1.2rem; }
+
+        .date-picker-box { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.4rem; 
+        }
+
+        input, select, button {
+            font-family: inherit;
+        }
+        
+        input[type="date"], input[type="text"], input[type="number"], select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            font-size: 16px !important;
+        }
+
+        .date-picker-box input { 
+            border: 1px solid #e2e8f0; 
+            padding: 0.4rem; 
+            border-radius: 0.5rem; 
+            font-weight: bold; 
+            background: #fff;
+        }
+        
+        .btn-today { 
+            background: #edf2f7; 
+            border: none; 
+            padding: 0.5rem 0.7rem; 
+            border-radius: 0.5rem; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 0.85rem; 
+            touch-action: manipulation;
+        }
+        
+        .sync-status { text-align: center; font-size: 0.75rem; color: var(--med-color); font-weight: bold; width: 100%; margin-top: 2px; }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.8rem;
+            align-items: start;
+        }
+
+        @media (max-width: 960px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            border-radius: var(--border-radius); 
+            padding: 0.9rem; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.04); 
+        }
+        .card h2 { margin: 0 0 0.6rem 0; font-size: 1.05rem; display: flex; align-items: center; justify-content: space-between; }
+        
+        .alert-box-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .alert-banner { padding: 0.6rem; border-radius: 0.6rem; font-weight: bold; text-align: center; font-size: 0.85rem; }
+        .alert-warning { background: #ed8936; color: white; }
+        .alert-danger { background: #e53e3e; color: white; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        .water-tracker { text-align: center; }
+        .water-circle { width: 110px; height: 110px; border-radius: 50%; background: conic-gradient(var(--water-color) 0%, #ebf8ff 0%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin: 0 auto; }
+        .water-circle-inner { width: 94px; height: 94px; border-radius: 50%; background: var(--card-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .water-amount { font-size: 1.5rem; font-weight: 700; color: var(--water-color); line-height: 1; }
+        .water-remaining-text { font-size: 0.8rem; font-weight: 700; color: #4a5568; }
+        .water-remaining-text.completed { color: var(--med-color); }
+        
+        .btn-group { display: flex; gap: 0.3rem; justify-content: center; align-items: center; }
+        .btn { 
+            border: none; 
+            padding: 0.5rem 0.8rem; 
+            border-radius: 0.6rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            color: white; 
+            font-size: 0.8rem; 
+            touch-action: manipulation;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
         }
-
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-secondary { background: #64748b; color: white; }
-        .btn-pay { background: var(--primary); color: white; padding: 6px 10px; font-size: 0.8rem; }
-        .btn-paid-cancel { background: #fee2e2; color: #b91c1c; padding: 6px 10px; font-size: 0.8rem; }
-        .btn-wa { background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 6px 10px; font-size: 0.8rem; }
-        .btn-wa:hover { background: var(--whatsapp); color: white; }
-        .btn-edit { background: var(--warning); color: white; padding: 6px 10px; font-size: 0.8rem; }
-        .btn-delete { background: var(--danger); color: white; padding: 6px 10px; font-size: 0.8rem; }
-        .btn-danger-dark { background: #991b1b; color: white; padding: 10px 14px; font-size: 0.85rem; }
-
-        .table-responsive { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }
-        th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
-        th { background-color: #f8fafc; color: #475569; font-weight: 600; }
+        .btn-water { background: var(--water-color); }
+        .btn-remove { background: #e2e8f0; color: var(--text-main); }
+        .btn-chart { background: #3182ce; width: 100%; margin-bottom: 0.4rem; padding: 0.5rem; }
+        .btn-print { background: #4a5568; width: 100%; margin-bottom: 0.6rem; padding: 0.5rem; }
         
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            display: inline-block;
+        .oz-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-top: 0.6rem; }
+        .btn-oz { 
+            background: #d69e2e; 
+            color: white; 
+            border: none; 
+            padding: 0.5rem 0.2rem; 
+            border-radius: 0.6rem; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 0.75rem; 
+            text-align: center; 
+            line-height: 1.1; 
+            touch-action: manipulation;
         }
-        .status-paid { background: #dcfce7; color: #15803d; }
-        .status-unpaid { background: #fee2e2; color: #b91c1c; }
+        .btn-oz small { display: block; font-size: 0.65rem; font-weight: normal; opacity: 0.9; margin-top: 1px; }
+        .manual-water-input { padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.5rem; outline: none; width: 70px; text-align: center; font-weight: bold; }
         
-        .pay-detail-info {
-            font-size: 0.78rem;
-            color: #64748b;
-            margin-top: 4px;
+        .water-summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+            margin-bottom: 0.6rem;
+            text-align: left;
+        }
+        .water-summary-box {
+            background: #ffffff;
+            border: 1px solid #bee3f8;
+            border-radius: 0.5rem;
+            padding: 0.4rem 0.6rem;
+        }
+        .water-summary-box .lbl {
+            font-size: 0.68rem;
+            color: #4a5568;
+            font-weight: bold;
             display: block;
         }
-
-        .filter-bar {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 15px;
-            align-items: center;
-            flex-wrap: wrap;
+        .water-summary-box .val {
+            font-size: 0.95rem;
+            color: #2b6cb0;
+            font-weight: 700;
         }
 
-        .modal {
+        .med-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+        .med-item { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #cbd5e0; padding: 0.6rem 0.8rem; border-radius: 0.6rem; display: flex; justify-content: space-between; align-items: center; }
+        .med-item.taken { border-left-color: var(--med-color); background: #f0fff4; }
+        .med-item.warning-item { border-left-color: var(--danger); background: #fff5f5; }
+        .med-info { flex: 1; padding-right: 0.4rem; text-align: left; }
+        .med-title { font-weight: 700; font-size: 0.85rem; margin: 0; }
+        .med-rule { font-size: 0.7rem; color: var(--text-muted); margin: 0; }
+        .med-badge { display: inline-block; font-size: 0.65rem; font-weight: bold; padding: 0.1rem 0.3rem; border-radius: 0.3rem; margin-top: 0.2rem; }
+        .badge-info { background: #e2e8f0; color: #4a5568; }
+        .badge-success { background: #c6f6d5; color: #22543d; }
+        .badge-danger { background: #fed7d7; color: #9b2c2c; }
+        .time-logs { margin-top: 0.2rem; font-size: 0.7rem; color: #2b6cb0; font-weight: 500; }
+        .med-actions { display: flex; align-items: center; gap: 0.3rem; flex-direction: column; min-width: 90px; }
+        .btn-action { border: none; padding: 0.5rem 0.5rem; border-radius: 0.4rem; font-weight: bold; cursor: pointer; font-size: 0.75rem; width: 100%; touch-action: manipulation; }
+        .btn-take-dose { background: var(--water-color); color: white; }
+        .btn-reset-dose { background: #e2e8f0; color: var(--text-main); }
+        .btn-toggle-completed { width: 100%; margin-top: 0.5rem; padding: 0.5rem; border: none; border-radius: 0.6rem; font-weight: bold; cursor: pointer; background: #e2e8f0; color: #4a5568; font-size: 0.8rem; display: none; touch-action: manipulation; }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .insulin-logs-table { width: 100%; border-collapse: collapse; margin-top: 0.4rem; font-size: 0.78rem; }
+        .insulin-logs-table th { background: #f7fafc; padding: 6px 8px; text-align: left; border-bottom: 2px solid #e2e8f0; color: #4a5568; }
+        .insulin-logs-table td { padding: 6px 8px; border-bottom: 1px solid #edf2f7; vertical-align: middle; height: 36px; }
+        .btn-mini-edit { background: #dd6b20; color: white; border: none; padding: 0.3rem 0.5rem; border-radius: 0.3rem; cursor: pointer; font-size: 0.75rem; font-weight: bold; touch-action: manipulation; }
+        .btn-mini-delete { background: #e53e3e; color: white; border: none; padding: 0.3rem 0.5rem; border-radius: 0.3rem; cursor: pointer; font-size: 0.75rem; font-weight: bold; touch-action: manipulation; }
+        .pagination-btn { background: #e2e8f0; color: var(--text-main); border: none; padding: 0.4rem 0.7rem; border-radius: 0.4rem; font-weight: bold; cursor: pointer; font-size: 0.8rem; touch-action: manipulation; }
+        .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        #chart-container { display: none; margin-bottom: 0.8rem; padding: 6px; background: #f7fafc; border-radius: 0.6rem; border: 1px solid #e2e8f0; max-height: 250px; }
+        #water-chart-container { display: none; margin-top: 0.6rem; padding: 6px; background: #ffffff; border-radius: 0.6rem; border: 1px solid #bee3f8; height: 220px; }
+
+        .report-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.6rem;
+            padding: 0.6rem;
+            margin-top: 0.6rem;
+        }
+        .report-section h3 {
+            margin: 0 0 0.4rem 0;
+            font-size: 0.85rem;
+            color: #2b6cb0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Açılır/Kapanır Akordiyon Stilleri */
+        details.accordion-card, details.accordion-section {
+            transition: all 0.2s ease;
+        }
+        details.accordion-card summary, details.accordion-section summary {
+            list-style: none;
+            cursor: pointer;
+            user-select: none;
+            outline: none;
+        }
+        details.accordion-card summary::-webkit-details-marker, details.accordion-section summary::-webkit-details-marker {
             display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
         }
-        .modal-content {
-            background: #fff;
-            padding: 24px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 440px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-        }
-        .modal-content h3 { margin: 0; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-        .modal-btn-group { display: flex; flex-direction: column; gap: 8px; }
-
-        .badge-adj {
-            font-size: 0.75rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: bold;
+        .accordion-arrow {
+            transition: transform 0.2s ease-in-out;
             display: inline-block;
-            margin-left: 4px;
+            font-size: 0.85rem;
+            color: #4a5568;
         }
-        .badge-pos { background: #dcfce7; color: #166534; }
-        .badge-neg { background: #fee2e2; color: #991b1b; }
+        details[open] .accordion-arrow {
+            transform: rotate(180deg);
+        }
+
+        .report-status-box {
+            margin-top: 0.4rem;
+            font-size: 0.78rem;
+            color: #2d3748;
+            line-height: 1.4;
+            background: #ffffff;
+            padding: 0.4rem 0.6rem;
+            border-radius: 0.4rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        #print-area { display: none; }
+
+        @media print {
+            body { background: #fff; color: #000; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+            .app-container { display: none !important; }
+            #print-area { display: block !important; width: 100%; }
+            .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 15px; }
+            .print-header h1 { margin: 0; font-size: 20px; color: #000; }
+            .print-header p { margin: 4px 0; font-size: 12px; color: #333; }
+            .print-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 6px 8px; text-align: left; word-break: break-word; }
+            .print-table th { background-color: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .print-footer { margin-top: 25px; font-size: 10px; text-align: right; color: #555; }
+            #print-area img { max-width: 100% !important; height: auto !important; display: block; margin: 10px auto; }
+        }
     </style>
 </head>
 <body>
+    <div class="app-container">
+        <!-- Canlı Uyarı Banner'ları -->
+        <div id="alert-box-container" class="alert-box-container"></div>
 
-<div class="main-container">
+        <!-- Üst Bar -->
+        <div class="header-bar">
+            <a href="saglik.html" class="nav-back">⬅️ Menü</a>
+            <div class="header-title-box">
+                <h1>💊 İlaç ve Su Takibi</h1>
+            </div>
+            <div class="date-picker-box">
+                <input type="date" id="selected-date">
+                <button class="btn-today" id="btn-today">Bugün</button>
+            </div>
+            <div class="sync-status" id="sync-status">☁️ Bulut Senkronizasyonu Aktif</div>
+        </div>
 
-    <!-- FORM ALANI -->
-    <div class="card">
-        <h2 id="formTitle">12 Aylık Harçlık Planı Oluştur / Düzenle</h2>
-        <form id="harclikForm" onsubmit="handleFormSubmit(event)">
-            <input type="hidden" id="editIndex" value="-1">
-
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="userName">Kişi Seçin</label>
-                    <select id="userName" required onchange="calculatePreviewDaily()">
-                        <option value="Kişi 1">Kişi 1</option>
-                        <option value="Kişi 2">Kişi 2</option>
-                        <option value="Kişi 3">Kişi 3</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="period">Başlangıç / İşlem Ayı</label>
-                    <input type="month" id="period" required onchange="calculatePreviewDaily()">
-                </div>
-
-                <div class="form-group">
-                    <label for="baseDaily">Mevcut / Yeni Günlük Ücret (₺)</label>
-                    <input type="number" id="baseDaily" min="0" step="0.5" value="100" required oninput="calculatePreviewDaily()">
-                </div>
-
-                <div class="form-group">
-                    <label for="raisePercent">Uygulanacak Zam Oranı (%)</label>
-                    <input type="number" id="raisePercent" min="0" step="0.1" value="0" placeholder="Örn: 10" oninput="calculatePreviewDaily()">
-                </div>
-
-                <div class="form-group">
-                    <label>Zamlı Günlük Ücret (₺)</label>
-                    <input type="number" id="previewDaily" readonly style="background-color: #f1f5f9; font-weight: bold; color: #2563eb;">
-                </div>
-
-                <div class="form-group">
-                    <label>📊 12 Aylık Ortalama Günlük Ücret (₺)</label>
-                    <input type="number" id="avg12MonthDaily" readonly style="background-color: #ecfdf5; font-weight: bold; color: #059669; border: 1px solid #a7f3d0;">
-                </div>
-
-                <div class="form-group" id="dayAdjustmentGroup">
-                    <label for="dayAdjustment">Gün Azaltma / Çoğaltma (Düzeltme)</label>
-                    <input type="number" id="dayAdjustment" step="1" value="0" placeholder="Örn: +2 veya -1" oninput="calculatePreviewDaily()">
-                </div>
-
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label>Haftalık Tatil Günleri</label>
-                    <div class="checkbox-group">
-                        <label><input type="checkbox" name="weeklyOff" value="1" onchange="calculatePreviewDaily()"> Pzt</label>
-                        <label><input type="checkbox" name="weeklyOff" value="2" onchange="calculatePreviewDaily()"> Sal</label>
-                        <label><input type="checkbox" name="weeklyOff" value="3" onchange="calculatePreviewDaily()"> Çar</label>
-                        <label><input type="checkbox" name="weeklyOff" value="4" onchange="calculatePreviewDaily()"> Per</label>
-                        <label><input type="checkbox" name="weeklyOff" value="5" onchange="calculatePreviewDaily()"> Cum</label>
-                        <label><input type="checkbox" name="weeklyOff" value="6" checked onchange="calculatePreviewDaily()"> Cmt</label>
-                        <label><input type="checkbox" name="weeklyOff" value="0" checked onchange="calculatePreviewDaily()"> Paz</label>
+        <!-- 3 SÜTUNLU PANEL DÜZENİ -->
+        <div class="dashboard-grid">
+            
+            <!-- 1. SÜTUN: SU TÜKETİMİ & ÇİZGİSEL GRAFİK / RAPOR -->
+            <div class="card water-tracker">
+                <h2 style="justify-content: center; text-align: center;">💧 Su Tüketimi</h2>
+                
+                <div style="display: flex; justify-content: center; align-items: center; margin: 0.6rem 0;">
+                    <div class="water-circle" id="water-progress">
+                        <div class="water-circle-inner">
+                            <span class="water-amount" id="water-count">0</span>
+                            <span style="font-size:0.65rem; color:#718096; margin-top: 2px;">/ 2500 ml</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="update-option" id="futureUpdateBox" style="display: none;">
-                    <input type="checkbox" id="updateFutureMonths" checked>
-                    <label for="updateFutureMonths">Bu ay yapılan zamlı ücreti bu ay ve SONRAKİ TÜM AYLARA sabit olarak yansıt</label>
+                <div class="oz-grid">
+                    <button class="btn-oz" id="btn-water-4oz">☕ 4 oz<small>(90 ml)</small></button>
+                    <button class="btn-oz" id="btn-water-7oz">🍵 7 oz<small>(180 ml)</small></button>
+                    <button class="btn-oz" id="btn-water-8oz">☕ 8 oz<small>(210 ml)</small></button>
+                    <button class="btn-oz" id="btn-water-12oz">🥤 12 oz<small>(325 ml)</small></button>
+                    <button class="btn-oz" id="btn-water-16oz" style="grid-column: span 2;">🥤 16 oz<small>(450 ml Dev Boy)</small></button>
+                </div>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; margin-top: 0.6rem; background: #f8fafc; padding: 0.5rem; border-radius: 0.6rem; border: 1px solid #e2e8f0; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 0.3rem; align-items: center;">
+                        <input type="number" id="manual-water-input" class="manual-water-input" placeholder="ml">
+                        <button class="btn btn-water" style="padding:0.4rem 0.6rem; font-size:0.75rem;" id="btn-water-manual">Elle Ekle</button>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem;">
+                        <div id="water-remaining" class="water-remaining-text" style="font-size:0.75rem;">⏳ Kalan: 2500 ml</div>
+                        <div class="btn-group" style="align-items: center;">
+                            <button class="btn btn-remove" id="btn-water-minus" style="padding:0.4rem 0.5rem; font-size:0.75rem;">-500</button>
+                            <button style="background:none; border:none; cursor:pointer; font-size:0.75rem; padding:0 2px;" id="btn-edit-minus" title="Eksiltme Değerini Düzenle">✏️</button>
+                            <button class="btn btn-water" id="btn-water-plus" style="padding:0.4rem 0.5rem; font-size:0.75rem;">+500 ml</button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary" id="submitBtn">12 Aylık Plan Oluştur / Güncelle</button>
-                    <button type="button" class="btn-secondary" onclick="resetForm()">Temizle / İptal</button>
+                <!-- SU TÜKETİMİ ÇİZGİSEL GRAFİK & DÖNEMSEL RAPOR MODÜLÜ (KAPALI GELİR) -->
+                <details class="report-section accordion-section" style="margin-top: 0.8rem; background: #ebf8ff; border: 1px solid #bee3f8;">
+                    <summary>
+                        <h3 style="color: #2b6cb0; font-size: 0.85rem; margin: 0;">
+                            <span>📊 Su Çizgisel Grafik & Raporlama</span>
+                            <span class="accordion-arrow">▼</span>
+                        </h3>
+                    </summary>
+                    <div style="margin-top: 0.6rem;">
+                        <div style="display: flex; gap: 0.3rem; margin-bottom: 0.4rem;">
+                            <input type="date" id="water-report-start" style="flex:1; padding:0.3rem; border:1px solid #cbd5e0; border-radius:0.4rem; font-size:0.75rem; background:white;">
+                            <input type="date" id="water-report-end" style="flex:1; padding:0.3rem; border:1px solid #cbd5e0; border-radius:0.4rem; font-size:0.75rem; background:white;">
+                        </div>
+
+                        <select id="water-report-type" style="width: 100%; padding: 0.4rem; border-radius: 0.4rem; border: 1px solid #cbd5e0; font-size: 0.75rem; font-weight: bold; background: white; margin-bottom: 0.4rem;">
+                            <option value="daily">📆 Günlük Tüketim Çizgisel Grafik</option>
+                            <option value="weekly">📅 Haftalık Toplam Özet</option>
+                            <option value="monthly">🗓️ Aylık Toplam Özet</option>
+                            <option value="yearly">📊 Yıllık Toplam Özet</option>
+                        </select>
+
+                        <button class="btn" id="btn-gen-water-report" style="background: #3182ce; width: 100%; padding: 0.4rem; font-size: 0.8rem; margin-bottom: 0.5rem;">📈 Verileri Hesapla & Grafiği Çiz</button>
+
+                        <!-- TOPLAM TÜKETİM VE ORTALAMA GÜNLÜK TÜKETİM ÖZET KARTLARI -->
+                        <div class="water-summary-grid" id="water-summary-container">
+                            <div class="water-summary-box">
+                                <span class="lbl">💧 Toplam Tüketim:</span>
+                                <span class="val" id="water-summary-total">0 ml</span>
+                            </div>
+                            <div class="water-summary-box">
+                                <span class="lbl">📊 Ort. Günlük Tüketim:</span>
+                                <span class="val" id="water-summary-avg">0 ml/gün</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 0.3rem;">
+                            <button class="btn" id="btn-print-water-report" style="background: #4a5568; flex: 1; padding: 0.4rem; font-size: 0.75rem;">🖨️ Yazdır / PDF</button>
+                            <button class="btn" id="btn-copy-water-table" style="background: #2b6cb0; flex: 1; padding: 0.4rem; font-size: 0.75rem;">📋 Tablo Kopyala</button>
+                        </div>
+
+                        <div id="water-chart-container">
+                            <canvas id="waterChart"></canvas>
+                        </div>
+                    </div>
+                </details>
+
+                <div style="margin-top: 0.8rem; border-top: 1px solid #e2e8f0; padding-top: 0.5rem;">
+                    <h3 style="font-size: 0.85rem; color: #4a5568; margin: 0 0 0.4rem 0; text-align: left;">📋 Seçilen Günün Tüketim Detayları</h3>
+                    <div id="water-logs-container" class="table-responsive">
+                        <p style="font-size:0.8rem; color:#718096; text-align:center;">Kayıt bulunamadı.</p>
+                    </div>
                 </div>
             </div>
-        </form>
+
+            <!-- 2. SÜTUN: İLAÇ TANIMLAMA & LİSTESİ -->
+            <div class="card">
+                <h2>⚙️ İlaç Tanımlama & Kurallar</h2>
+                
+                <div style="background: #f7fafc; padding: 0.6rem; border-radius: 0.6rem; border: 1px solid #cbd5e0; margin-bottom: 0.8rem;">
+                    <label style="font-size:0.75rem; font-weight:bold; color:#4a5568; display:block; margin-bottom:0.4rem;">📋 İlaç Seçin veya Yeni Tanımlayın:</label>
+                    <select id="med-select" style="width: 100%; padding: 0.4rem; border-radius: 0.4rem; border: 1px solid #cbd5e0; font-weight: bold; background: white;">
+                        <option value="DEFAULT" disabled selected>🔽 Seçiniz veya Düzenle...</option>
+                        <option value="NEW">➕ Yeni İlaç Tanımla...</option>
+                    </select>
+
+                    <div id="med-form-container" style="display: none; flex-direction: column; gap: 0.4rem; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed #cbd5e0;">
+                        <input type="text" id="med-name" placeholder="İlaç Adı (Örn: Parasetamol)" style="padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none;">
+                        
+                        <input type="text" id="med-diagnosis" placeholder="Teşhis / İCD Kodu (Örn: E11 - Tip 2 Diyabet)" style="padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; background: white;">
+
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                            <input type="number" id="med-box-count" placeholder="Kutu" min="1" value="1" title="Kutu Adedi" style="width: 65px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
+                            <input type="number" id="med-max-daily" placeholder="G. Doz" min="1" value="1" title="Günlük Kullanılacak Doz Adedi" style="width: 70px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
+                            <input type="number" id="med-stock" placeholder="Eldeki Doz" min="0" title="Eldeki Kalan Kutudaki Toplam Doz" style="width: 100px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; font-weight: bold;">
+                            <input type="text" id="med-rule" placeholder="Kurallar / Açıklama" style="flex: 1; min-width: 110px; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none;">
+                        </div>
+
+                        <div style="display: flex; gap: 0.4rem;">
+                            <input type="text" id="med-doctor" placeholder="Yazdıran Doktor" style="flex: 1; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none;">
+                            <input type="date" id="med-prescribed-date" title="Reçete Tarihi" style="flex: 1; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; background: white;">
+                        </div>
+
+                        <div>
+                            <label style="font-size:0.7rem; color:#4a5568; font-weight:bold; display:block;">📅 Doz Bitiş Tarihi:</label>
+                            <input type="date" id="med-end-date" style="width: 100%; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; outline: none; background: white; font-weight: bold;">
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.2rem; background: #edf2f7; padding: 0.4rem; border-radius: 0.4rem;">
+                            <input type="checkbox" id="med-no-reorder" style="width:16px; height:16px; cursor:pointer;">
+                            <label for="med-no-reorder" style="font-size:0.75rem; font-weight:bold; color:#4a5568; cursor:pointer;">🚫 Süresi bitti, tekrar yazdırılmayacak (Doktor listesinden çıkar)</label>
+                        </div>
+
+                        <div style="display: flex; gap: 0.4rem; margin-top: 0.1rem;">
+                            <button class="btn" style="background: #319795; flex: 1; padding: 0.5rem; font-size: 0.8rem;" id="btn-save-med">💾 Kaydet</button>
+                            <button class="btn" style="background: #e53e3e; padding: 0.5rem; font-size: 0.8rem; display: none;" id="btn-delete-master-med">🗑️ Sil</button>
+                            <button class="btn" style="background: #a0aec0; padding: 0.5rem; font-size: 0.8rem;" id="btn-cancel-med">❌ Kapat</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 0.6rem;">
+                    <button class="btn" style="background: #2b6cb0; width: 100%; padding: 0.6rem; font-size: 0.85rem;" id="btn-export-options">📋 İlaç Listesi Raporu / Kopyala</button>
+                </div>
+
+                <!-- DOKTORA VERİLECEK KULLANIM RAPORU MODÜLÜ (KAPALI GELİR) -->
+                <details class="report-section accordion-section" style="margin-bottom: 0.8rem; background: #ebf8ff; border: 1px solid #bee3f8;">
+                    <summary>
+                        <h3 style="color: #2b6cb0; font-size: 0.85rem; margin: 0;">
+                            <span>🩺 Doktora İlaç Kullanım Raporu Ver</span>
+                            <span class="accordion-arrow">▼</span>
+                        </h3>
+                    </summary>
+                    <div style="margin-top: 0.6rem;">
+                        <div style="display: flex; gap: 0.4rem; margin-bottom: 0.4rem;">
+                            <input type="date" id="doc-report-start" style="flex:1; padding:0.3rem; border:1px solid #cbd5e0; border-radius:0.4rem; font-size:0.75rem; background:white;">
+                            <input type="date" id="doc-report-end" style="flex:1; padding:0.3rem; border:1px solid #cbd5e0; border-radius:0.4rem; font-size:0.75rem; background:white;">
+                        </div>
+
+                        <label style="font-size:0.7rem; font-weight:bold; color:#2b6cb0; display:block; margin-bottom:0.2rem;">💊 Raporlanacak İlaçları Seçin:</label>
+                        <select id="doc-report-med-filter" multiple size="4" style="width: 100%; padding: 0.4rem; border-radius: 0.4rem; border: 1px solid #cbd5e0; font-size: 0.75rem; font-weight: bold; background: white; margin-bottom: 0.2rem; height: 95px;">
+                            <option value="ALL" selected>💊 Tüm İlaçlar (Hepsi)</option>
+                        </select>
+                        <small style="display:block; font-size:0.68rem; color:#4a5568; margin-bottom:0.4rem;">💡 Birden fazla ilaç seçmek için Ctrl/Cmd tuşuyla tıklayabilirsiniz.</small>
+
+                        <select id="doc-report-type" style="width: 100%; padding: 0.4rem; border-radius: 0.4rem; border: 1px solid #cbd5e0; font-size: 0.75rem; font-weight: bold; background: white; margin-bottom: 0.4rem;">
+                            <option value="detailed">📆 Gün Bazlı Detay Listesi (Tüm İlaç Geçmişi)</option>
+                            <option value="monthly">📅 Ay Bazlı Toplam Özet Rapor</option>
+                            <option value="yearly">🗓️ Yıl Bazlı Toplam Özet Rapor</option>
+                        </select>
+                        <button class="btn" id="btn-doc-med-report" style="background: #3182ce; width: 100%; padding: 0.5rem; font-size: 0.8rem;">🖨️ Doktora İlaç Kullanım Çıktısı Al</button>
+                    </div>
+                </details>
+
+                <ul class="med-list" id="med-list"></ul>
+                <button id="btn-toggle-completed" class="btn-toggle-completed">Tamamlananları Göster</button>
+            </div>
+
+            <!-- 3. SÜTUN: İNSÜLİN KALEMİ & SAĞLIK RAPORLARI TAKİBİ -->
+            <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                
+                <!-- İNSÜLİN & SAĞLIK RAPORLARI KARTI (KAPALI GELİR) -->
+                <details class="card accordion-card" style="border-left: 4px solid #805ad5;">
+                    <summary>
+                        <h2 style="margin: 0;">
+                            <span>💉 İnsülin & Sağlık Raporları</span>
+                            <span class="accordion-arrow">▼</span>
+                        </h2>
+                    </summary>
+                    <div style="margin-top: 0.8rem;">
+                        <div style="margin-bottom: 0.8rem; padding-bottom: 0.6rem; border-bottom: 1px dashed #e2e8f0;">
+                            <div style="font-weight: bold; font-size: 0.85rem; color: #4a5568; margin-bottom: 0.3rem;">💉 İnsülin Kalemi Takibi</div>
+                            <div id="insulin-pen-info" style="font-size:0.8rem; margin-bottom:0.4rem; line-height: 1.4;">
+                                ⏳ Yükleniyor...
+                            </div>
+                            <div style="display: flex; gap: 0.4rem; align-items: center;">
+                                <input type="date" id="insulin-pen-date-input" style="flex: 1; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.5rem; font-weight: bold; outline: none;">
+                                <button class="btn" style="background:#805ad5; padding: 0.5rem 0.8rem;" id="btn-change-insulin">💾 Kaydet</button>
+                            </div>
+                        </div>
+
+                        <div class="report-section">
+                            <h3>📋 Diyabet Rapor Bitiş Tarihi</h3>
+                            <div style="display: flex; gap: 0.4rem; align-items: center;">
+                                <input type="date" id="report-diabetes-date" style="flex: 1; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; font-weight: bold; background: white;">
+                                <button class="btn" style="background:#319795; padding: 0.4rem 0.6rem; font-size:0.75rem;" id="btn-save-diabetes-report">💾 Kaydet</button>
+                            </div>
+                            <div id="diabetes-report-status"></div>
+                        </div>
+
+                        <div class="report-section">
+                            <h3>🩺 Tansiyon Rapor Bitiş Tarihi</h3>
+                            <div style="display: flex; gap: 0.4rem; align-items: center;">
+                                <input type="date" id="report-hypertension-date" style="flex: 1; padding: 0.4rem; border: 1px solid #cbd5e0; border-radius: 0.4rem; font-weight: bold; background: white;">
+                                <button class="btn" style="background:#319795; padding: 0.4rem 0.6rem; font-size:0.75rem;" id="btn-save-hypertension-report">💾 Kaydet</button>
+                            </div>
+                            <div id="hypertension-report-status"></div>
+                        </div>
+                    </div>
+                </details>
+
+                <div class="card" style="border-left: 4px solid #3182ce;">
+                    <h2>📋 Tüm İnsülin Geçmişi</h2>
+                    
+                    <div style="display: flex; gap: 0.4rem;">
+                        <button class="btn btn-chart" id="btn-toggle-chart">📈 Grafik</button>
+                        <button class="btn btn-print" id="btn-print-report">🖨️ İnsülin PDF / Yazdır</button>
+                    </div>
+                    
+                    <div id="chart-container">
+                        <canvas id="insulinChart"></canvas>
+                    </div>
+
+                    <div id="global-insulin-logs-container" class="table-responsive">
+                        <p style="font-size:0.8rem; color:#718096; text-align:center;">Yükleniyor...</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
     </div>
 
-    <!-- ARŞİVLENEN DÖNEMLER TABLOSU -->
-    <div class="card">
-        <h2>📁 Arşivlenen Dönemler & Ödeme Takip Listesi</h2>
+    <!-- Yazdırma Alanı -->
+    <div id="print-area"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAhjq7KL_e80LiW8fC-wttmn8gba5UvhVE",
+            authDomain: "muratilactakip.firebaseapp.com",
+            projectId: "muratilactakip",
+            storageBucket: "muratilactakip.firebasestorage.app",
+            messagingSenderId: "1029760039126",
+            appId: "1:1029760039126:web:08dc48a945e8e7e19df177"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let insulinChartInstance = null;
+        let waterChartInstance = null;
+        let calculatedWaterRecords = [];
+
+        const DEFAULT_MASTER_MEDS = [
+            { id: "janumet", name: "JANUMET 50/1000 MG", boxCount: 1, diagnosis: "E11 - Tip 2 Diyabet", maxDaily: 2, stock: 56, ruleText: "Günde 2 adet (Sabah/Akşam).", doctor: "Dr. Ahmet Yılmaz", prescribedDate: "2026-08-01", endDate: "2026-09-21", noReorder: false },
+            { id: "delix", name: "DELIX PLUS 5/25 MG", boxCount: 1, diagnosis: "I10 - Esansiyel Hipertansiyon", maxDaily: 1, stock: 28, ruleText: "Günde 1 adet.", doctor: "Dr. Ahmet Yılmaz", prescribedDate: "2026-08-01", endDate: "2026-09-20", noReorder: false },
+            { id: "toujeo", name: "TOUJEO 300 U/ML İNSÜLİN", boxCount: 1, diagnosis: "E11 - Tip 2 Diyabet", maxDaily: 1, stock: 30, ruleText: "Günde 1 kez.", needsDose: true, defaultDose: 16, doctor: "Dr. Mehmet Kaya", prescribedDate: "2026-08-10", endDate: "2026-09-23", noReorder: false },
+            { id: "oroferon", name: "OROFERON DEPO 80 MG", boxCount: 1, diagnosis: "D50 - Demir Eksikliği Anemisi", maxDaily: 1, stock: 10, foodWarning: true, ruleText: "Günde 1 adet. Çay/Kahve ile 2 saat ara.", doctor: "Dr. Ayşe Demir", prescribedDate: "2026-08-05", endDate: "2026-09-03", noReorder: false },
+            { id: "benexol", name: "BENEXOL B12", boxCount: 1, diagnosis: "E53 - Vitamin B Eksikliği", maxDaily: 1, stock: 30, ruleText: "Günde 1 adet.", doctor: "Dr. Ayşe Demir", prescribedDate: "2026-08-05", endDate: "2026-09-23", noReorder: false },
+            { id: "dcolefor", name: "D-COLEFOR 20.000 İU", boxCount: 1, diagnosis: "E55 - D Vitamini Eksikliği", maxDaily: 1, stock: 4, allowedDays: [1, 4], ruleText: "Pazartesi ve Perşembe.", doctor: "Dr. Ayşe Demir", prescribedDate: "2026-08-05", endDate: "2026-09-10", noReorder: false },
+            { id: "voltaren", name: "VOLTAREN SR 75 MG", boxCount: 1, diagnosis: "M54 - Sırt/Eklem Ağrısı", maxDaily: 1, stock: 10, ruleText: "Ağrı durumunda (Max 1).", doctor: "", prescribedDate: "", endDate: "", noReorder: false }
+        ];
+
+        let masterMeds = [];
+        let insulinState = { lastChangedDate: "", lastDose: null, lastSaved: "" };
+        let reportsState = { diabetesEndDate: "", diabetesLastSaved: "", hypertensionEndDate: "", hypertensionLastSaved: "" };
+
+        function getLocalDateString(d = new Date()) {
+            const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+            return `${y}-${m}-${day}`;
+        }
+        function formatDateTime(d = new Date()) {
+            const day = String(d.getDate()).padStart(2,'0'), m = String(d.getMonth()+1).padStart(2,'0'), y = d.getFullYear();
+            const h = String(d.getHours()).padStart(2,'0'), min = String(d.getMinutes()).padStart(2,'0');
+            return `${day}-${m}-${y} ${h}:${min}`;
+        }
         
-        <div class="filter-bar">
-            <label><strong>Filtrele (Kişi):</strong></label>
-            <select id="filterUser" onchange="handleFilterChange()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);">
-                <option value="ALL">Tümü</option>
-                <option value="Kişi 1">Kişi 1</option>
-                <option value="Kişi 2">Kişi 2</option>
-                <option value="Kişi 3">Kişi 3</option>
-            </select>
-
-            <button type="button" class="btn-delete" id="btnDeleteSelectedUser" onclick="deleteEntireUserFromFilter()" style="display: none; margin-left: auto;">
-                🗑️ Seçili Kişinin TÜM Kayıtlarını Sil
-            </button>
-        </div>
-
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Kişi</th>
-                        <th>Dönem</th>
-                        <th>Günlük Ücret</th>
-                        <th>Ödenecek / Toplam Gün</th>
-                        <th>Toplam Harçlık</th>
-                        <th>Ödeme Durumu & Detayı</th>
-                        <th>İşlemler</th>
-                    </tr>
-                </thead>
-                <tbody id="recordsTableBody">
-                    <!-- Dinamik Veriler -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-</div>
-
-<!-- ÖDEME DETAY MODAL -->
-<div class="modal" id="payModal">
-    <div class="modal-content">
-        <h3>Ödeme Detaylarını Girin</h3>
-        
-        <div class="form-group">
-            <label for="payMethod">Ödeme Yöntemi</label>
-            <select id="payMethod">
-                <option value="Nakit">Nakit</option>
-                <option value="EFT / Havale">EFT / Havale</option>
-                <option value="FAST / Papara / Mobil">FAST / Papara / Mobil</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="payDateTime">Ödeme Tarihi ve Saati</label>
-            <input type="datetime-local" id="payDateTime">
-        </div>
-
-        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
-            <button type="button" class="btn-secondary" onclick="closePayModal()">İptal</button>
-            <button type="button" class="btn-primary" onclick="confirmPayment()">Ödemeyi Onayla</button>
-        </div>
-    </div>
-</div>
-
-<!-- GELİŞMİŞ SİLME MODAL -->
-<div class="modal" id="deleteModal">
-    <div class="modal-content">
-        <h3>Silme İşlemi Seçenekleri</h3>
-        <p id="deleteModalText" style="font-size:0.9rem; color:#475569; margin:0;">Silmek istediğiniz kapsamı seçin:</p>
-        
-        <div class="modal-btn-group">
-            <button class="btn-delete" onclick="executeDelete('single')">
-                🗑️ Sadece Bu Ayı Sil (<span id="delPeriodText"></span>)
-            </button>
-            <button class="btn-delete" style="background:#dc2626;" onclick="executeDelete('future')">
-                ⏩ Bu Ay ve Sonraki Tüm Ayları Sil
-            </button>
-            <button class="btn-danger-dark" onclick="executeDelete('allUser')">
-                ⚠️ <span id="delUserText"></span> Adlı Kişinin TÜM Kayıtlarını Sil
-            </button>
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; margin-top: 5px;">
-            <button type="button" class="btn-secondary" onclick="closeDeleteModal()">İptal</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    let records = JSON.parse(localStorage.getItem('harclik_kayitlar_v8')) || [];
-    let activePayIndex = null;
-    let activeDeleteIndex = null;
-
-    function calculatePreviewDaily() {
-        const base = parseFloat(document.getElementById('baseDaily').value) || 0;
-        const raise = parseFloat(document.getElementById('raisePercent').value) || 0;
-        const finalRate = base * (1 + (raise / 100));
-        document.getElementById('previewDaily').value = finalRate.toFixed(2);
-
-        const userName = document.getElementById('userName').value;
-        const startPeriod = document.getElementById('period').value;
-
-        if (!startPeriod) return;
-
-        let totalDailySum = 0;
-        for (let i = 0; i < 12; i++) {
-            const currentPeriod = addMonthsToPeriod(startPeriod, i);
-            const existingRec = records.find(r => r.userName === userName && r.period === currentPeriod);
-            const dailyForThisMonth = existingRec ? existingRec.dailyRate : finalRate;
-            totalDailySum += dailyForThisMonth;
+        function formatDateDMY(dateStr) {
+            if (!dateStr) return '—';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            return `${parts[2]}.${parts[1]}.${parts[0]}`;
         }
 
-        const avgDailyRate = totalDailySum / 12;
-        document.getElementById('avg12MonthDaily').value = avgDailyRate.toFixed(2);
-    }
+        // TARIHTEN HAFTANIN GUNU ADINI DÖNDÜRÜR (Cuma, Perşembe vs.)
+        function getDayName(dateStr) {
+            if (!dateStr) return '';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return '';
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
+            const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+            return days[d.getDay()];
+        }
 
-    function getOfficialHolidayCount(year, month) {
-        let count = 0;
-        if (month === 1) count += 1;
-        if (month === 4) count += 1;
-        if (month === 5) count += 2;
-        if (month === 7) count += 1;
-        if (month === 8) count += 1;
-        if (month === 10) count += 1;
+        function parseCustomDate(timeStr) {
+            if (!timeStr || timeStr === "Bilinmiyor") return 0;
+            try {
+                const parts = timeStr.split(' ');
+                if (parts.length !== 2) return 0;
+                const [day, month, year] = parts[0].split('-');
+                const [hour, minute] = parts[1].split(':');
+                return new Date(year, month - 1, day, hour, minute).getTime();
+            } catch(e) { return 0; }
+        }
+        function calculateDaysRemaining(targetDateStr) {
+            if (!targetDateStr) return null;
+            const parts = targetDateStr.split('-');
+            if (parts.length !== 3) return null;
+            const target = new Date(parts[0], parts[1] - 1, parts[2]);
+            const today = new Date(); today.setHours(0,0,0,0);
+            return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+        }
 
-        if (year === 2026 && month === 3) count += 3.5;
-        if (year === 2026 && month === 5) count += 4.5;
-        if (year === 2027 && month === 3) count += 3.5;
-        if (year === 2027 && month === 5) count += 4.5;
+        const todayStr = getLocalDateString();
+        let currentDateStr = todayStr;
+        let activeUnsubscribe = null;
+        let appState = { waterIntake: 0, waterLogs: [], medsData: {}, extraMeds: [] };
+        let lastSavedInsulinDose = null; 
+        
+        let globalInsulinLogs = [];
+        let currentInsulinPage = 1;
+        const insulinPerPage = 9;
 
-        return count;
-    }
+        let currentWaterPage = 1;
+        const waterPerPage = 5;
+        
+        let waterMinusVal = parseInt(localStorage.getItem('water_minus_val')) || 500;
+        let showCompletedMeds = false;
 
-    function addMonthsToPeriod(periodStr, monthsToAdd) {
-        const [y, m] = periodStr.split('-').map(Number);
-        const date = new Date(y, m - 1 + monthsToAdd, 1);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        return `${year}-${month}`;
-    }
+        const datePicker = document.getElementById('selected-date');
+        datePicker.value = todayStr;
+        datePicker.addEventListener('change', (e) => { currentDateStr = e.target.value; loadDateData(currentDateStr); });
+        document.getElementById('btn-today').onclick = () => { currentDateStr = todayStr; datePicker.value = todayStr; loadDateData(todayStr); };
 
-    window.onload = function() {
-        document.getElementById('period').value = "2026-08";
-        calculatePreviewDaily();
-        renderTable();
-    };
+        const docStartPicker = document.getElementById('doc-report-start');
+        const docEndPicker = document.getElementById('doc-report-end');
+        if (docStartPicker && docEndPicker) {
+            const d = new Date();
+            d.setDate(d.getDate() - 30);
+            docStartPicker.value = getLocalDateString(d);
+            docEndPicker.value = todayStr;
+        }
 
-    function handleFormSubmit(event) {
-        event.preventDefault();
+        const waterStartPicker = document.getElementById('water-report-start');
+        const waterEndPicker = document.getElementById('water-report-end');
+        if (waterStartPicker && waterEndPicker) {
+            const d = new Date();
+            d.setDate(d.getDate() - 30);
+            waterStartPicker.value = getLocalDateString(d);
+            waterEndPicker.value = todayStr;
+        }
 
-        const editIndex = parseInt(document.getElementById('editIndex').value);
-        const userName = document.getElementById('userName').value;
-        const startPeriod = document.getElementById('period').value;
-        const baseDaily = parseFloat(document.getElementById('baseDaily').value) || 0;
-        const raisePercent = parseFloat(document.getElementById('raisePercent').value) || 0;
-        const dayAdjustment = parseInt(document.getElementById('dayAdjustment').value) || 0;
-        const targetDailyRate = baseDaily * (1 + (raisePercent / 100));
-        const weeklyOff = Array.from(document.querySelectorAll('input[name="weeklyOff"]:checked')).map(cb => parseInt(cb.value));
-        const updateFuture = document.getElementById('updateFutureMonths').checked;
+        function updateMinusBtnText() {
+            const btn = document.getElementById('btn-water-minus');
+            if (btn) btn.innerText = `-${waterMinusVal}`;
+        }
 
-        if (editIndex === -1) {
-            for (let i = 0; i < 12; i++) {
-                const currentPeriod = addMonthsToPeriod(startPeriod, i);
-                const adj = (i === 0) ? dayAdjustment : 0;
-                const record = calculateMonthData(userName, currentPeriod, targetDailyRate, weeklyOff, false, null, null, adj);
-                
-                const existingIdx = records.findIndex(r => r.userName === userName && r.period === currentPeriod);
-                if (existingIdx > -1) {
-                    records[existingIdx] = { 
-                        ...record, 
-                        isPaid: records[existingIdx].isPaid, 
-                        paymentMethod: records[existingIdx].paymentMethod, 
-                        paymentDate: records[existingIdx].paymentDate 
-                    };
-                } else {
-                    records.push(record);
+        const masterMedsDocRef = doc(db, "sistem_ayarlari", "ilac_tanimlari");
+        onSnapshot(masterMedsDocRef, (snap) => {
+            if (snap.exists() && snap.data().list) {
+                masterMeds = snap.data().list;
+            } else {
+                masterMeds = DEFAULT_MASTER_MEDS;
+                setDoc(masterMedsDocRef, { list: DEFAULT_MASTER_MEDS });
+            }
+            updateMedSelectDropdown();
+            updateDocReportMedDropdown();
+            updateUI();
+            checkAllGlobalAlerts();
+        });
+
+        function resetMedFormFields() {
+            document.getElementById('med-name').value = '';
+            document.getElementById('med-box-count').value = '1';
+            document.getElementById('med-diagnosis').value = '';
+            document.getElementById('med-max-daily').value = '1';
+            document.getElementById('med-stock').value = '';
+            document.getElementById('med-rule').value = '';
+            document.getElementById('med-doctor').value = '';
+            document.getElementById('med-prescribed-date').value = '';
+            document.getElementById('med-end-date').value = '';
+            document.getElementById('med-no-reorder').checked = false;
+            document.getElementById('btn-delete-master-med').style.display = 'none';
+        }
+
+        function closeMedForm() {
+            resetMedFormFields();
+            document.getElementById('med-form-container').style.display = 'none';
+            document.getElementById('med-select').value = "DEFAULT";
+        }
+
+        document.getElementById('btn-cancel-med').onclick = (e) => {
+            e.preventDefault();
+            closeMedForm();
+        };
+
+        function updateMedSelectDropdown() {
+            const select = document.getElementById('med-select');
+            const currentValue = select.value;
+            select.innerHTML = `
+                <option value="DEFAULT" disabled selected>🔽 Seçiniz veya Düzenle...</option>
+                <option value="NEW">➕ Yeni İlaç Tanımla...</option>
+            `;
+            masterMeds.forEach(med => {
+                const statusTag = med.noReorder ? " 🚫 (Yazdırılmayacak)" : "";
+                select.innerHTML += `<option value="${med.id}">${med.name} (Günde ${med.maxDaily} Doz | Kalan: ${med.stock || 0})${statusTag}</option>`;
+            });
+            
+            if (currentValue && currentValue !== "DEFAULT" && masterMeds.some(m => m.id === currentValue)) {
+                select.value = currentValue;
+            } else if (currentValue === "NEW") {
+                select.value = "NEW";
+            } else {
+                select.value = "DEFAULT";
+            }
+        }
+
+        function updateDocReportMedDropdown() {
+            const docMedSelect = document.getElementById('doc-report-med-filter');
+            if (!docMedSelect) return;
+            const prevSelected = Array.from(docMedSelect.selectedOptions).map(opt => opt.value);
+
+            docMedSelect.innerHTML = '<option value="ALL">💊 Tüm İlaçlar (Hepsi)</option>';
+            masterMeds.forEach(med => {
+                docMedSelect.innerHTML += `<option value="${med.id}">💊 ${med.name}</option>`;
+            });
+
+            if (prevSelected.length > 0) {
+                Array.from(docMedSelect.options).forEach(opt => {
+                    if (prevSelected.includes(opt.value)) opt.selected = true;
+                });
+            } else {
+                if (docMedSelect.options[0]) docMedSelect.options[0].selected = true;
+            }
+        }
+
+        document.getElementById('med-select').addEventListener('change', (e) => {
+            const selectedId = e.target.value;
+            const formContainer = document.getElementById('med-form-container');
+            if (selectedId === "DEFAULT") { formContainer.style.display = 'none'; return; }
+            formContainer.style.display = 'flex';
+            if (selectedId === "NEW") {
+                resetMedFormFields();
+            } else {
+                const med = masterMeds.find(m => m.id === selectedId);
+                if (med) {
+                    document.getElementById('med-name').value = med.name || '';
+                    document.getElementById('med-box-count').value = med.boxCount !== undefined ? med.boxCount : 1;
+                    document.getElementById('med-diagnosis').value = med.diagnosis || '';
+                    document.getElementById('med-max-daily').value = med.maxDaily || 1;
+                    document.getElementById('med-stock').value = med.stock !== undefined ? med.stock : '';
+                    document.getElementById('med-rule').value = med.ruleText || '';
+                    document.getElementById('med-doctor').value = med.doctor || '';
+                    document.getElementById('med-prescribed-date').value = med.prescribedDate || '';
+                    document.getElementById('med-end-date').value = med.endDate || '';
+                    document.getElementById('med-no-reorder').checked = !!med.noReorder;
+                    document.getElementById('btn-delete-master-med').style.display = 'inline-block';
                 }
             }
-        } else {
-            const targetRecord = records[editIndex];
-            const updatedRecord = calculateMonthData(
-                userName, 
-                startPeriod, 
-                targetDailyRate, 
-                weeklyOff, 
-                targetRecord.isPaid, 
-                targetRecord.paymentMethod, 
-                targetRecord.paymentDate,
-                dayAdjustment
-            );
-            records[editIndex] = updatedRecord;
+        });
 
-            if (updateFuture) {
-                records.forEach((rec, idx) => {
-                    if (rec.userName === userName && rec.period > startPeriod) {
-                        records[idx] = calculateMonthData(
-                            userName, 
-                            rec.period, 
-                            targetDailyRate, 
-                            weeklyOff, 
-                            rec.isPaid, 
-                            rec.paymentMethod, 
-                            rec.paymentDate,
-                            rec.dayAdjustment || 0
-                        );
+        document.getElementById('btn-save-med').onclick = async () => {
+            const selectVal = document.getElementById('med-select').value;
+            const name = document.getElementById('med-name').value.trim();
+            const boxCount = parseInt(document.getElementById('med-box-count').value) || 1;
+            const diagnosis = document.getElementById('med-diagnosis').value.trim();
+            const maxDaily = parseInt(document.getElementById('med-max-daily').value) || 1;
+            const stock = parseInt(document.getElementById('med-stock').value) || 0;
+            const ruleText = document.getElementById('med-rule').value.trim();
+            const doctor = document.getElementById('med-doctor').value.trim();
+            const prescribedDate = document.getElementById('med-prescribed-date').value;
+            const endDate = document.getElementById('med-end-date').value;
+            const noReorder = document.getElementById('med-no-reorder').checked;
+
+            if (!name) return alert("Lütfen ilaç adını giriniz!");
+
+            let updatedList = [...masterMeds];
+            const medDataObj = { name, boxCount, diagnosis, maxDaily, stock, ruleText, doctor, prescribedDate, endDate, noReorder };
+
+            if (selectVal === "NEW") {
+                const newId = 'med_' + Date.now();
+                updatedList.push({ id: newId, ...medDataObj });
+                alert("✅ Yeni ilaç başarıyla kaydedildi!");
+            } else {
+                const index = updatedList.findIndex(m => m.id === selectVal);
+                if (index !== -1) {
+                    updatedList[index] = { ...updatedList[index], ...medDataObj };
+                    alert("✅ İlaç bilgileri güncellendi!");
+                }
+            }
+            await setDoc(masterMedsDocRef, { list: updatedList });
+            closeMedForm();
+        };
+
+        document.getElementById('btn-delete-master-med').onclick = async () => {
+            const selectVal = document.getElementById('med-select').value;
+            if (selectVal === "NEW" || selectVal === "DEFAULT") return;
+            if (confirm("Bu ilacı kayıtlı ilaçlar listesinden silmek istediğinize emin misiniz?")) {
+                const updatedList = masterMeds.filter(m => m.id !== selectVal);
+                await setDoc(masterMedsDocRef, { list: updatedList });
+                closeMedForm();
+                alert("🗑️ İlaç listeden silindi.");
+            }
+        };
+
+        window.editMasterMed = function(medId) {
+            const select = document.getElementById('med-select');
+            select.value = medId;
+            select.dispatchEvent(new Event('change'));
+            window.scrollTo({ top: document.getElementById('med-select').offsetTop - 20, behavior: 'smooth' });
+        };
+
+        function getRemainingDays(med) {
+            if (med.endDate) {
+                const parts = med.endDate.split('-');
+                if (parts.length === 3) {
+                    const end = new Date(parts[0], parts[1] - 1, parts[2]);
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    return Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+                }
+            }
+            if (med.stock !== undefined && med.stock !== null && med.maxDaily) {
+                return Math.floor(med.stock / med.maxDaily);
+            }
+            return 999;
+        }
+
+        function setPrintOrientation(isLandscape) {
+            let styleEl = document.getElementById('dynamic-print-style');
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = 'dynamic-print-style';
+                document.head.appendChild(styleEl);
+            }
+            styleEl.innerHTML = isLandscape ? '@media print { @page { size: landscape; margin: 8mm; } }' : '@media print { @page { size: portrait; margin: 10mm; } }';
+        }
+
+        // --- SU TÜKETİMİ ÇİZGİSEL GRAFİK VE RAPORLAMA FONKSİYONLARI ---
+        async function calculateAndRenderWaterReport() {
+            const startDate = document.getElementById('water-report-start').value;
+            const endDate = document.getElementById('water-report-end').value;
+            const reportType = document.getElementById('water-report-type').value;
+
+            if (!startDate || !endDate) return alert("Lütfen başlangıç ve bitiş tarihlerini seçiniz!");
+            if (startDate > endDate) return alert("Başlangıç tarihi bitiş tarihinden büyük olamaz!");
+
+            const querySnapshot = await getDocs(collection(db, "takip_verileri"));
+            let recordsMap = {};
+
+            querySnapshot.forEach((docSnap) => {
+                const dateId = docSnap.id;
+                if (dateId >= startDate && dateId <= endDate) {
+                    const data = docSnap.data();
+                    let amount = data.waterIntake || 0;
+                    if (!amount && data.waterLogs && data.waterLogs.length > 0) {
+                        amount = data.waterLogs.reduce((acc, c) => acc + (parseInt(c.amount) || 0), 0);
+                    }
+                    if (amount > 0) {
+                        recordsMap[dateId] = amount;
+                    }
+                }
+            });
+
+            const startD = new Date(startDate);
+            const endD = new Date(endDate);
+            let dayList = [];
+            let totalConsumption = 0;
+            let dayCount = 0;
+
+            for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+                const dateStr = getLocalDateString(d);
+                const val = recordsMap[dateStr] || 0;
+                dayList.push({ date: dateStr, amount: val });
+                totalConsumption += val;
+                dayCount++;
+            }
+
+            if (dayCount === 0) {
+                return alert("⚠️ Seçilen aralıkta veri bulunamadı.");
+            }
+
+            const avgDaily = Math.round(totalConsumption / dayCount);
+            calculatedWaterRecords = dayList;
+
+            document.getElementById('water-summary-total').innerText = `${totalConsumption.toLocaleString('tr-TR')} ml (${(totalConsumption/1000).toFixed(2)} L)`;
+            document.getElementById('water-summary-avg').innerText = `${avgDaily.toLocaleString('tr-TR')} ml/gün`;
+
+            const chartContainer = document.getElementById('water-chart-container');
+            chartContainer.style.display = 'block';
+
+            let chartLabels = [];
+            let chartData = [];
+
+            if (reportType === 'daily') {
+                chartLabels = dayList.map(item => formatDateDMY(item.date));
+                chartData = dayList.map(item => item.amount);
+            } else if (reportType === 'weekly') {
+                let weekSum = 0;
+                let weekCount = 0;
+                let weekLabelStr = "";
+                dayList.forEach((item, idx) => {
+                    if (weekCount === 0) weekLabelStr = formatDateDMY(item.date);
+                    weekSum += item.amount;
+                    weekCount++;
+                    if (weekCount === 7 || idx === dayList.length - 1) {
+                        chartLabels.push(`${weekLabelStr} - ${formatDateDMY(item.date)}`);
+                        chartData.push(weekSum);
+                        weekSum = 0;
+                        weekCount = 0;
+                    }
+                });
+            } else if (reportType === 'monthly') {
+                let monthMap = {};
+                dayList.forEach(item => {
+                    const ym = item.date.substring(0, 7);
+                    monthMap[ym] = (monthMap[ym] || 0) + item.amount;
+                });
+                Object.keys(monthMap).sort().forEach(ym => {
+                    const [y, m] = ym.split('-');
+                    chartLabels.push(`${m}.${y}`);
+                    chartData.push(monthMap[ym]);
+                });
+            } else if (reportType === 'yearly') {
+                let yearMap = {};
+                dayList.forEach(item => {
+                    const y = item.date.substring(0, 4);
+                    yearMap[y] = (yearMap[y] || 0) + item.amount;
+                });
+                Object.keys(yearMap).sort().forEach(y => {
+                    chartLabels.push(y);
+                    chartData.push(yearMap[y]);
+                });
+            }
+
+            const ctx = document.getElementById('waterChart').getContext('2d');
+            if (waterChartInstance) waterChartInstance.destroy();
+
+            waterChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Su Tüketimi (ml)',
+                        data: chartData,
+                        borderColor: '#4299e1',
+                        backgroundColor: 'rgba(66, 153, 225, 0.25)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#2b6cb0',
+                        pointRadius: 3,
+                        fill: true,
+                        tension: 0.35
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Miktar (ml)', font: { size: 10 } }
+                        },
+                        x: {
+                            ticks: { font: { size: 9 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.getElementById('btn-gen-water-report').onclick = () => calculateAndRenderWaterReport();
+
+        // SU RAPORU / PDF YAZDIRMA
+        document.getElementById('btn-print-water-report').onclick = () => {
+            if (calculatedWaterRecords.length === 0) return alert("⚠️ Önce verileri hesaplayınız!");
+            setPrintOrientation(false);
+            const startDate = document.getElementById('water-report-start').value;
+            const endDate = document.getElementById('water-report-end').value;
+            const printArea = document.getElementById('print-area');
+
+            const total = calculatedWaterRecords.reduce((a, c) => a + c.amount, 0);
+            const avg = Math.round(total / calculatedWaterRecords.length);
+
+            let chartImgSrc = waterChartInstance ? waterChartInstance.toBase64Image() : '';
+
+            let htmlContent = `
+                <div class="print-header">
+                    <h1>💧 Su Tüketim Detaylı Raporu</h1>
+                    <p><strong>Tarih Aralığı:</strong> ${formatDateDMY(startDate)} — ${formatDateDMY(endDate)}</p>
+                    <p><strong>Toplam Tüketim:</strong> ${total.toLocaleString('tr-TR')} ml (${(total/1000).toFixed(2)} Litre)</p>
+                    <p><strong>Ortalama Günlük Tüketim:</strong> ${avg.toLocaleString('tr-TR')} ml/gün</p>
+                    <p><strong>Rapor Giriş Gün Saati:</strong> ${formatDateTime(new Date())}</p>
+                </div>
+            `;
+
+            if (chartImgSrc) {
+                htmlContent += `<div style="text-align:center; margin:15px 0;"><img src="${chartImgSrc}" style="max-width:100%; max-height:280px; border:1px solid #cbd5e0; border-radius:8px;"/></div>`;
+            }
+
+            htmlContent += `
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Günlük İçilen Miktar (ml)</th>
+                            <th>Litre Karşılığı (L)</th>
+                            <th>Hedef Durumu (2500 ml)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            calculatedWaterRecords.forEach(item => {
+                const targetOk = item.amount >= 2500 ? '✅ Tamamlandı' : '⏳ Eksik';
+                htmlContent += `
+                    <tr>
+                        <td><b>${formatDateDMY(item.date)} (${getDayName(item.date)})</b></td>
+                        <td>${item.amount} ml</td>
+                        <td>${(item.amount / 1000).toFixed(2)} L</td>
+                        <td>${targetOk}</td>
+                    </tr>
+                `;
+            });
+
+            htmlContent += `</tbody></table><div class="print-footer">Sistem tarafından otomatik üretilmiştir. Giriş Zamanı: ${formatDateTime(new Date())}</div>`;
+            printArea.innerHTML = htmlContent;
+            window.print();
+        };
+
+        document.getElementById('btn-copy-water-table').onclick = async () => {
+            if (calculatedWaterRecords.length === 0) return alert("⚠️ Önce verileri hesaplayınız!");
+            const total = calculatedWaterRecords.reduce((a, c) => a + c.amount, 0);
+            const avg = Math.round(total / calculatedWaterRecords.length);
+
+            let text = `💧 Su Tüketim Raporu (${formatDateDMY(document.getElementById('water-report-start').value)} - ${formatDateDMY(document.getElementById('water-report-end').value)})\n`;
+            text += `Rapor Giriş Gün Saati: ${formatDateTime(new Date())}\n`;
+            text += `Toplam Tüketim: ${total} ml | Ortalama Günlük: ${avg} ml/gün\n\n`;
+            text += `Tarih\tMiktar (ml)\tLitre\n`;
+
+            calculatedWaterRecords.forEach(r => {
+                text += `${formatDateDMY(r.date)} (${getDayName(r.date)})\t${r.amount} ml\t${(r.amount/1000).toFixed(2)} L\n`;
+            });
+
+            try {
+                await navigator.clipboard.writeText(text);
+                alert("✅ Su raporu tablosu pano hafızasına kopyalandı!");
+            } catch (e) {
+                alert("⚠️ Kopyalama başarısız oldu.");
+            }
+        };
+
+        // --- İLAÇ LİSTESİ GENEL YAZDIRMA ---
+        document.getElementById('btn-export-options').onclick = () => {
+            setPrintOrientation(true);
+            const printArea = document.getElementById('print-area');
+            let htmlContent = `
+                <div class="print-header">
+                    <h1>📋 Kayıtlı İlaç ve Rapor Takip Listesi</h1>
+                    <p><strong>Rapor Tarih Giriş Gün Saati:</strong> ${formatDateTime(new Date())}</p>
+                </div>
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th>İlaç Adı</th>
+                            <th>Teşhis / ICD</th>
+                            <th>Günlük Doz</th>
+                            <th>Eldeki Stok</th>
+                            <th>Doktor</th>
+                            <th>Reçete Tarihi</th>
+                            <th>Rapor Bitiş Tarihi</th>
+                            <th>Bitiş Kalan Gün</th>
+                            <th>Yazdırılma Durumu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            masterMeds.forEach(med => {
+                const daysRem = calculateDaysRemaining(med.endDate);
+                const dayName = getDayName(med.endDate);
+                const daysRemStr = daysRem !== null ? (daysRem <= 0 ? '<b style="color:red;">Bitti</b>' : `${daysRem} Gün`) : '—';
+                
+                htmlContent += `
+                    <tr>
+                        <td><b>${med.name}</b></td>
+                        <td>${med.diagnosis || '—'}</td>
+                        <td>${med.maxDaily} Doz (${med.ruleText || '—'})</td>
+                        <td>${med.stock !== undefined ? med.stock : '—'}</td>
+                        <td>${med.doctor || '—'}</td>
+                        <td>${formatDateDMY(med.prescribedDate)} ${getDayName(med.prescribedDate)}</td>
+                        <td>${formatDateDMY(med.endDate)} ${dayName}</td>
+                        <td><b>${daysRemStr}</b></td>
+                        <td>${med.noReorder ? '🚫 Yazdırılmayacak' : '✅ Reçete Edilecek'}</td>
+                    </tr>
+                `;
+            });
+
+            htmlContent += `</tbody></table><div class="print-footer">Sistem tarafından otomatik üretilmiştir.</div>`;
+            printArea.innerHTML = htmlContent;
+            window.print();
+        };
+
+        // --- DOKTORA VERİLECEK İLAÇ RAPORU OLUŞTURMA ---
+        document.getElementById('btn-doc-med-report').onclick = async () => {
+            const startDate = document.getElementById('doc-report-start').value;
+            const endDate = document.getElementById('doc-report-end').value;
+            const docMedSelect = document.getElementById('doc-report-med-filter');
+            const selectedMedIds = Array.from(docMedSelect.selectedOptions).map(opt => opt.value);
+            const isAllSelected = selectedMedIds.includes('ALL') || selectedMedIds.length === 0;
+            const reportType = document.getElementById('doc-report-type').value;
+
+            if (!startDate || !endDate) return alert("Lütfen başlangıç ve bitiş tarihlerini seçiniz!");
+            if (startDate > endDate) return alert("Başlangıç tarihi bitiş tarihinden büyük olamaz!");
+
+            const querySnapshot = await getDocs(collection(db, "takip_verileri"));
+            let records = [];
+
+            querySnapshot.forEach((docSnap) => {
+                const dateId = docSnap.id;
+                if (dateId >= startDate && dateId <= endDate) {
+                    const data = docSnap.data();
+                    if (data.medsData && Object.keys(data.medsData).length > 0) {
+                        if (isAllSelected || Object.keys(data.medsData).some(mId => selectedMedIds.includes(mId))) {
+                            records.push({ date: dateId, medsData: data.medsData });
+                        }
+                    }
+                }
+            });
+
+            records.sort((a, b) => a.date.localeCompare(b.date));
+            if (records.length === 0) return alert("⚠️ Seçilen kriterlere uygun hiçbir kullanım kaydı bulunamadı.");
+
+            let selectedMedName = isAllSelected ? "Tüm İlaçlar (Hepsi)" : selectedMedIds.map(id => (masterMeds.find(m => m.id === id) || {}).name || id).join(', ');
+            setPrintOrientation(true);
+            const printArea = document.getElementById('print-area');
+            const medMap = {};
+            masterMeds.forEach(m => { medMap[m.id] = m; });
+
+            let htmlContent = `
+                <div class="print-header">
+                    <h1>🩺 Doktora İlaç Kullanım Detay Raporu</h1>
+                    <p><strong>Filtrelenen İlaçlar:</strong> ${selectedMedName}</p>
+                    <p><strong>Rapor Tarih Aralığı:</strong> ${formatDateDMY(startDate)} — ${formatDateDMY(endDate)}</p>
+                    <p><strong>Rapor Tarih Giriş Gün Saati:</strong> ${formatDateTime(new Date())}</p>
+                </div>
+            `;
+
+            if (reportType === 'detailed') {
+                htmlContent += `
+                    <table class="print-table">
+                        <thead>
+                            <tr>
+                                <th>Tarih</th>
+                                <th>İlaç Adı</th>
+                                <th>İçilen / Sınır</th>
+                                <th>Teşhis / Kural</th>
+                                <th>Rapor Bitiş Tarihi</th>
+                                <th>Bitiş Kalan Gün</th>
+                                <th>Rapor Tarih / Giriş Gün Saati</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                records.forEach(rec => {
+                    let medKeys = Object.keys(rec.medsData);
+                    if (!isAllSelected) medKeys = medKeys.filter(mId => selectedMedIds.includes(mId));
+                    medKeys.forEach(medId => {
+                        let history = rec.medsData[medId];
+                        if (typeof history === 'number') history = Array(history).fill({ time: "Bilinmiyor" });
+                        if (!history || history.length === 0) return;
+                        const medInfo = medMap[medId] || { name: medId, maxDaily: '—', diagnosis: '', ruleText: '', endDate: '' };
+
+                        const daysRem = calculateDaysRemaining(medInfo.endDate);
+                        const daysRemStr = daysRem !== null ? (daysRem <= 0 ? '<b style="color:red;">Süre Bitti</b>' : daysRem + ' Gün') : '—';
+                        const timesStr = history.map(h => `${h.time} ${h.dose ? '('+h.dose+' Ünite)' : ''}`).join('<br>');
+
+                        htmlContent += `
+                            <tr>
+                                <td><b>${formatDateDMY(rec.date)} (${getDayName(rec.date)})</b></td>
+                                <td><b>${medInfo.name || medId}</b></td>
+                                <td>${history.length} / ${medInfo.maxDaily || '—'} Doz</td>
+                                <td>${medInfo.diagnosis || medInfo.ruleText || '—'}</td>
+                                <td>${formatDateDMY(medInfo.endDate)} ${getDayName(medInfo.endDate)}</td>
+                                <td><b>${daysRemStr}</b></td>
+                                <td>${timesStr}</td>
+                            </tr>
+                        `;
+                    });
+                });
+                htmlContent += `</tbody></table>`;
+            }
+            htmlContent += `<div class="print-footer">Sistem tarafından otomatik üretilmiştir. Rapor Giriş Tarihi: ${formatDateTime(new Date())}</div>`;
+            printArea.innerHTML = htmlContent;
+            window.print();
+        };
+
+        // İNSÜLİN GRAFİĞİ & YAZDIRMA
+        document.getElementById('btn-toggle-chart').onclick = () => {
+            const container = document.getElementById('chart-container');
+            if (container.style.display === 'block') {
+                container.style.display = 'none';
+            } else {
+                container.style.display = 'block';
+                renderInsulinChart();
+            }
+        };
+
+        function renderInsulinChart() {
+            if (globalInsulinLogs.length === 0) return;
+            const sortedLogs = [...globalInsulinLogs].reverse();
+            const labels = sortedLogs.map(l => l.time);
+            const data = sortedLogs.map(l => parseInt(l.dose) || 0);
+
+            const ctx = document.getElementById('insulinChart').getContext('2d');
+            if (insulinChartInstance) insulinChartInstance.destroy();
+
+            insulinChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'İnsülin Dozu (Ünite)',
+                        data: data,
+                        borderColor: '#805ad5',
+                        backgroundColor: 'rgba(128, 90, 213, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        document.getElementById('btn-print-report').onclick = () => {
+            if (globalInsulinLogs.length === 0) return alert("⚠️ Yazdırılacak insülin kaydı bulunamadı!");
+            setPrintOrientation(false);
+            const printArea = document.getElementById('print-area');
+
+            if (!insulinChartInstance) renderInsulinChart();
+            let chartImgSrc = insulinChartInstance ? insulinChartInstance.toBase64Image() : '';
+
+            let htmlContent = `
+                <div class="print-header">
+                    <h1>💉 İnsülin Takip ve Geçmiş Raporu</h1>
+                    <p><strong>Rapor Tarih Giriş Gün Saati:</strong> ${formatDateTime(new Date())}</p>
+                </div>
+            `;
+
+            if (chartImgSrc) {
+                htmlContent += `<div style="text-align:center; margin:15px 0;"><img src="${chartImgSrc}" style="max-width:100%; max-height:250px; border:1px solid #cbd5e0; border-radius:8px;"/></div>`;
+            }
+
+            htmlContent += `
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th>Rapor Tarih Giriş Gün Saati</th>
+                            <th>Doz (Ünite)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            globalInsulinLogs.forEach(log => {
+                htmlContent += `
+                    <tr>
+                        <td><b>${log.time}</b></td>
+                        <td>${log.dose ? log.dose + ' Ünite' : 'Bilinmiyor'}</td>
+                    </tr>
+                `;
+            });
+
+            htmlContent += `</tbody></table><div class="print-footer">Sistem tarafından otomatik üretilmiştir.</div>`;
+            printArea.innerHTML = htmlContent;
+            window.print();
+        };
+
+        // İNSÜLİN & SAĞLIK RAPORLARI DİNLENMESİ
+        const insulinDocRef = doc(db, "sistem_ayarlari", "insulin");
+        onSnapshot(insulinDocRef, (snap) => {
+            const dateInput = document.getElementById('insulin-pen-date-input');
+            if (snap.exists()) {
+                const data = snap.data();
+                insulinState = data;
+                if (data.lastChangedDate && dateInput && !dateInput.value) dateInput.value = data.lastChangedDate;
+                if (data.lastDose) lastSavedInsulinDose = data.lastDose;
+            } else {
+                if (dateInput && !dateInput.value) dateInput.value = todayStr;
+            }
+            checkAllGlobalAlerts();
+        });
+
+        document.getElementById('btn-change-insulin').onclick = async () => {
+            const selectedDate = document.getElementById('insulin-pen-date-input').value;
+            if (!selectedDate) return alert("Lütfen geçerli bir tarih seçiniz!");
+            const nowTimeStr = formatDateTime(new Date());
+            if (confirm(`İnsülin kalem değişim tarihini [ ${formatDateDMY(selectedDate)} ] olarak güncellemek istediğinize emin misiniz?`)) {
+                await setDoc(insulinDocRef, { 
+                    lastChangedDate: selectedDate,
+                    lastSaved: nowTimeStr
+                }, { merge: true });
+                alert(`✅ Değişim tarihi ${formatDateDMY(selectedDate)} (${getDayName(selectedDate)}) olarak güncellendi!`);
+            }
+        };
+
+        // SAĞLIK RAPORLARININ DİNLENMESİ VE CANLI EKRAN GÜNCELLEMESİ
+        const reportsDocRef = doc(db, "sistem_ayarlari", "saglik_raporlari");
+        onSnapshot(reportsDocRef, (snap) => {
+            if (snap.exists()) {
+                reportsState = snap.data();
+                if (reportsState.diabetesEndDate) document.getElementById('report-diabetes-date').value = reportsState.diabetesEndDate;
+                if (reportsState.hypertensionEndDate) document.getElementById('report-hypertension-date').value = reportsState.hypertensionEndDate;
+            }
+            updateReportsUI();
+            checkAllGlobalAlerts();
+        });
+
+        function updateReportsUI() {
+            // Diyabet Rapor Durumu
+            const dStatusBox = document.getElementById('diabetes-report-status');
+            if (reportsState.diabetesEndDate) {
+                const dDate = reportsState.diabetesEndDate;
+                const daysRem = calculateDaysRemaining(dDate);
+                const dayName = getDayName(dDate);
+                const lastSavedStr = reportsState.diabetesLastSaved || 'Bilinmiyor';
+                const daysText = daysRem !== null ? (daysRem <= 0 ? '<b style="color:red;">Süre Doldu!</b>' : `<b>${daysRem} Gün Kaldı</b>`) : '—';
+                
+                dStatusBox.innerHTML = `
+                    <div class="report-status-box">
+                        📅 Bitiş: <b>${formatDateDMY(dDate)} (${dayName})</b><br>
+                        ⏳ Kalan Süre: ${daysText}<br>
+                        🕒 Son Kayıt: <b>${lastSavedStr}</b>
+                    </div>
+                `;
+            } else {
+                dStatusBox.innerHTML = '';
+            }
+
+            // Tansiyon Rapor Durumu
+            const hStatusBox = document.getElementById('hypertension-report-status');
+            if (reportsState.hypertensionEndDate) {
+                const hDate = reportsState.hypertensionEndDate;
+                const daysRem = calculateDaysRemaining(hDate);
+                const dayName = getDayName(hDate);
+                const lastSavedStr = reportsState.hypertensionLastSaved || 'Bilinmiyor';
+                const daysText = daysRem !== null ? (daysRem <= 0 ? '<b style="color:red;">Süre Doldu!</b>' : `<b>${daysRem} Gün Kaldı</b>`) : '—';
+                
+                hStatusBox.innerHTML = `
+                    <div class="report-status-box">
+                        📅 Bitiş: <b>${formatDateDMY(hDate)} (${dayName})</b><br>
+                        ⏳ Kalan Süre: ${daysText}<br>
+                        🕒 Son Kayıt: <b>${lastSavedStr}</b>
+                    </div>
+                `;
+            } else {
+                hStatusBox.innerHTML = '';
+            }
+        }
+
+        document.getElementById('btn-save-diabetes-report').onclick = async () => {
+            const dDate = document.getElementById('report-diabetes-date').value;
+            if (!dDate) return alert("Lütfen tarihi seçiniz!");
+            const nowTimeStr = formatDateTime(new Date());
+            await setDoc(reportsDocRef, { 
+                diabetesEndDate: dDate,
+                diabetesLastSaved: nowTimeStr
+            }, { merge: true });
+            alert(`✅ Diyabet rapor bitiş tarihi kaydedildi!\nSon Değişiklik: ${nowTimeStr}`);
+        };
+
+        document.getElementById('btn-save-hypertension-report').onclick = async () => {
+            const hDate = document.getElementById('report-hypertension-date').value;
+            if (!hDate) return alert("Lütfen tarihi seçiniz!");
+            const nowTimeStr = formatDateTime(new Date());
+            await setDoc(reportsDocRef, { 
+                hypertensionEndDate: hDate,
+                hypertensionLastSaved: nowTimeStr
+            }, { merge: true });
+            alert(`✅ Tansiyon rapor bitiş tarihi kaydedildi!\nSon Değişiklik: ${nowTimeStr}`);
+        };
+
+        function checkAllGlobalAlerts() {
+            const container = document.getElementById('alert-box-container');
+            container.innerHTML = "";
+            let alertHTMLs = [];
+
+            if (masterMeds && masterMeds.length > 0) {
+                masterMeds.forEach(med => {
+                    if (!med.noReorder) {
+                        const daysLeft = getRemainingDays(med);
+                        if (daysLeft <= 0) alertHTMLs.push(`<div class="alert-banner alert-danger">🚨 ACİL UYARI: <b>${med.name}</b> ilacının dozu / süresi BİTTİ!</div>`);
+                        else if (daysLeft <= 15) alertHTMLs.push(`<div class="alert-banner alert-warning">⚠️ UYARI: <b>${med.name}</b> ilacının bitmesine <b>${daysLeft} GÜN</b> kaldı!</div>`);
                     }
                 });
             }
+
+            if (insulinState && insulinState.lastChangedDate) {
+                const parts = insulinState.lastChangedDate.split('-');
+                if (parts.length === 3) {
+                    const lastDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+                    const remainingDays = 28 - diffDays;
+
+                    // 28 Günlük kullanımın bittiği tarihi ve gün adını hesaplama
+                    const endUsageDateObj = new Date(lastDate);
+                    endUsageDateObj.setDate(endUsageDateObj.getDate() + 28);
+                    const endUsageDateStr = getLocalDateString(endUsageDateObj);
+                    const endDayName = getDayName(endUsageDateStr);
+                    const lastChangedDayName = getDayName(insulinState.lastChangedDate);
+                    const lastSavedStr = insulinState.lastSaved ? `<br>🕒 Son Kayıt: <b>${insulinState.lastSaved}</b>` : '';
+
+                    document.getElementById('insulin-pen-info').innerHTML = `
+                        📅 Son Değişim: <b>${formatDateDMY(insulinState.lastChangedDate)} (${lastChangedDayName})</b> (${diffDays} gün önce)<br>
+                        🏁 Kalem Bitiş: <b>${formatDateDMY(endUsageDateStr)} (${endDayName})</b><br>
+                        ⏳ Kalan Kullanım: <b>${remainingDays > 0 ? remainingDays + " Gün Kaldı" : "<span style='color:red;'>Süre Doldu!</span>"}</b>${lastSavedStr}
+                    `;
+                    if (diffDays >= 28) alertHTMLs.push(`<div class="alert-banner alert-danger">🚨 ACİL UYARI: İnsülin kaleminizin 28 günlük kullanım süresi DOLDU!</div>`);
+                }
+            }
+            container.innerHTML = alertHTMLs.join('');
         }
 
-        saveAndRefresh();
-        resetForm();
-    }
+        function getLastInsulinDose() {
+            if (globalInsulinLogs.length > 0 && globalInsulinLogs[0].dose) return globalInsulinLogs[0].dose;
+            if (lastSavedInsulinDose) return lastSavedInsulinDose;
+            return localStorage.getItem('last_insulin_dose') || 16;
+        }
 
-    function calculateMonthData(userName, period, dailyRate, weeklyOff, isPaid, paymentMethod = null, paymentDate = null, dayAdjustment = 0) {
-        const [year, month] = period.split('-').map(Number);
-        const totalDays = new Date(year, month, 0).getDate();
-        const officialHolidays = getOfficialHolidayCount(year, month);
+        async function updateLastInsulinDose(dose) {
+            lastSavedInsulinDose = dose;
+            localStorage.setItem('last_insulin_dose', dose);
+            try { await setDoc(insulinDocRef, { lastDose: dose }, { merge: true }); } catch (e) {}
+        }
 
-        let weeklyOffCount = 0;
-        for (let day = 1; day <= totalDays; day++) {
-            const dayOfWeek = new Date(year, month - 1, day).getDay();
-            if (weeklyOff.includes(dayOfWeek)) {
-                weeklyOffCount++;
+        async function loadDateData(dateStr) {
+            if (activeUnsubscribe) activeUnsubscribe();
+            currentWaterPage = 1;
+            updateMinusBtnText();
+            const docRef = doc(db, "takip_verileri", dateStr);
+            activeUnsubscribe = onSnapshot(docRef, (snap) => {
+                if (snap.exists()) {
+                    appState = snap.data();
+                    if (!appState.medsData) appState.medsData = {};
+                    if (!appState.waterLogs) appState.waterLogs = [];
+                } else {
+                    appState = { waterIntake: 0, waterLogs: [], medsData: {}, extraMeds: [] };
+                }
+                updateUI();
+            });
+        }
+        
+        async function saveData() { await setDoc(doc(db, "takip_verileri", currentDateStr), appState); }
+
+        function recalcWaterIntake() {
+            if (appState.waterLogs && appState.waterLogs.length > 0) {
+                let total = appState.waterLogs.reduce((acc, curr) => acc + (parseInt(curr.amount) || 0), 0);
+                appState.waterIntake = Math.max(0, total);
+            } else {
+                appState.waterIntake = 0;
             }
         }
 
-        const basePayableDays = Math.max(0, totalDays - weeklyOffCount - officialHolidays);
-        const finalPayableDays = Math.max(0, basePayableDays + dayAdjustment);
-        const totalAmount = finalPayableDays * dailyRate;
+        function addWaterLog(amount) {
+            if (!appState.waterLogs) appState.waterLogs = [];
+            appState.waterLogs.push({
+                id: 'w_' + Date.now(),
+                time: formatDateTime(new Date()),
+                amount: amount
+            });
+            recalcWaterIntake();
+            saveData();
+        }
 
-        return {
-            userName, period, dailyRate, weeklyOff,
-            totalDays, payableDays: finalPayableDays, basePayableDays, dayAdjustment,
-            officialHolidays, totalAmount,
-            isPaid: isPaid || false,
-            paymentMethod: paymentMethod || null,
-            paymentDate: paymentDate || null
+        window.changeWaterPage = function(dir) { currentWaterPage += dir; renderWaterLogs(); };
+
+        window.editWaterLog = async function(id) {
+            const index = appState.waterLogs.findIndex(item => item.id === id);
+            if (index !== -1) {
+                const currentVal = appState.waterLogs[index].amount;
+                const newVal = prompt("Yeni su miktarını (ml) giriniz:", currentVal);
+                if (newVal !== null && newVal.trim() !== "" && !isNaN(newVal)) {
+                    appState.waterLogs[index].amount = parseInt(newVal.trim());
+                    recalcWaterIntake();
+                    await saveData();
+                }
+            }
         };
-    }
 
-    function handleFilterChange() {
-        const filterUser = document.getElementById('filterUser').value;
-        const deleteBtn = document.getElementById('btnDeleteSelectedUser');
-        
-        if (filterUser !== 'ALL') {
-            deleteBtn.style.display = 'inline-flex';
-            deleteBtn.innerText = `🗑️ ${filterUser} - Tüm Kayıtlarını Sil`;
-        } else {
-            deleteBtn.style.display = 'none';
-        }
-        renderTable();
-    }
+        window.deleteWaterLog = async function(id) {
+            if (!confirm("Bu su kaydını silmek istediğinize emin misiniz?")) return;
+            appState.waterLogs = appState.waterLogs.filter(item => item.id !== id);
+            recalcWaterIntake();
+            await saveData();
+        };
 
-    function renderTable() {
-        const tbody = document.getElementById('recordsTableBody');
-        const filterUser = document.getElementById('filterUser').value;
-        tbody.innerHTML = '';
-
-        records.sort((a, b) => a.period.localeCompare(b.period));
-        const filteredRecords = records.filter(r => filterUser === 'ALL' || r.userName === filterUser);
-
-        if (filteredRecords.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">Henüz kaydedilmiş veri bulunmuyor.</td></tr>`;
-            return;
-        }
-
-        filteredRecords.forEach((rec) => {
-            const actualIndex = records.indexOf(rec);
-            const tr = document.createElement('tr');
-            
-            let statusHtml = '';
-            let payButton = '';
-
-            if (rec.isPaid) {
-                const formattedDate = rec.paymentDate ? formatDateTime(rec.paymentDate) : '';
-                statusHtml = `
-                    <span class="status-badge status-paid">ÖDENDİ</span>
-                    <span class="pay-detail-info">💳 ${rec.paymentMethod || 'Belirtilmedi'}</span>
-                    <span class="pay-detail-info">🕒 ${formattedDate}</span>
-                `;
-                payButton = `<button class="btn-paid-cancel" onclick="cancelPayment(${actualIndex})" title="Ödendi durumunu iptal et">İptal Et</button>`;
-            } else {
-                statusHtml = `<span class="status-badge status-unpaid">ÖDENMEDİ</span>`;
-                payButton = `<button class="btn-pay" onclick="openPayModal(${actualIndex})">Öde</button>`;
-            }
-
-            let adjBadge = '';
-            if (rec.dayAdjustment > 0) {
-                adjBadge = `<span class="badge-adj badge-pos">+${rec.dayAdjustment} Gün Düzeltme</span>`;
-            } else if (rec.dayAdjustment < 0) {
-                adjBadge = `<span class="badge-adj badge-neg">${rec.dayAdjustment} Gün Düzeltme</span>`;
-            }
-
-            tr.innerHTML = `
-                <td><strong>${rec.userName}</strong></td>
-                <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:600;">${rec.period}</span></td>
-                <td><strong>${rec.dailyRate.toFixed(2)} ₺</strong></td>
-                <td><strong>${rec.payableDays}</strong> / ${rec.totalDays} Gün ${adjBadge}</td>
-                <td style="font-weight:bold; color:#059669;">${rec.totalAmount.toFixed(2)} ₺</td>
-                <td>${statusHtml}</td>
-                <td style="display:flex; gap:4px; flex-wrap:wrap;">
-                    ${payButton}
-                    <button class="btn-wa" onclick="sendWhatsApp(${actualIndex})" title="WhatsApp ile Gönder">💬 WA</button>
-                    <button class="btn-edit" onclick="editRecord(${actualIndex})">✏️ Düzenle</button>
-                    <button class="btn-delete" onclick="openDeleteModal(${actualIndex})">Sil</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    function editRecord(index) {
-        const rec = records[index];
-        
-        document.getElementById('editIndex').value = index;
-        document.getElementById('userName').value = rec.userName;
-        document.getElementById('period').value = rec.period;
-        document.getElementById('baseDaily').value = rec.dailyRate;
-        document.getElementById('raisePercent').value = 0;
-        document.getElementById('dayAdjustment').value = rec.dayAdjustment || 0;
-
-        document.querySelectorAll('input[name="weeklyOff"]').forEach(cb => {
-            cb.checked = rec.weeklyOff.includes(parseInt(cb.value));
-        });
-
-        document.getElementById('formTitle').innerText = `${rec.userName} - ${rec.period} Dönemi Düzenleme & Gün/Ücret Düzeltme`;
-        document.getElementById('submitBtn').innerText = "✏️ Değişiklikleri Entegre Et ve Kaydet";
-        document.getElementById('futureUpdateBox').style.display = "flex";
-
-        calculatePreviewDaily();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function openDeleteModal(index) {
-        activeDeleteIndex = index;
-        const rec = records[index];
-        document.getElementById('delPeriodText').innerText = rec.period;
-        document.getElementById('delUserText').innerText = rec.userName;
-        document.getElementById('deleteModalText').innerText = `${rec.userName} kişisine ait ${rec.period} kaydı için yapılacak silme türünü seçin:`;
-        document.getElementById('deleteModal').style.display = 'flex';
-    }
-
-    function closeDeleteModal() {
-        document.getElementById('deleteModal').style.display = 'none';
-        activeDeleteIndex = null;
-    }
-
-    function executeDelete(type) {
-        if (activeDeleteIndex === null) return;
-        const targetRec = records[activeDeleteIndex];
-
-        if (type === 'single') {
-            records.splice(activeDeleteIndex, 1);
-        } else if (type === 'future') {
-            records = records.filter(r => !(r.userName === targetRec.userName && r.period >= targetRec.period));
-        } else if (type === 'allUser') {
-            if (confirm(`${targetRec.userName} kişisine ait TÜM geçmiş ve gelecek kayıtlar silinsin mi?`)) {
-                records = records.filter(r => r.userName !== targetRec.userName);
-            } else {
+        function renderWaterLogs() {
+            const container = document.getElementById('water-logs-container');
+            const logs = appState.waterLogs || [];
+            if (logs.length === 0) {
+                container.innerHTML = `<p style="font-size:0.8rem; color:#718096; text-align:center; padding: 6px 0;">Kayıt bulunamadı.</p>`;
                 return;
             }
+
+            const sortedLogs = [...logs].reverse();
+            const totalPages = Math.ceil(sortedLogs.length / waterPerPage);
+            if (currentWaterPage > totalPages) currentWaterPage = totalPages || 1;
+            if (currentWaterPage < 1) currentWaterPage = 1;
+
+            const startIndex = (currentWaterPage - 1) * waterPerPage;
+            const paginatedLogs = sortedLogs.slice(startIndex, startIndex + waterPerPage);
+
+            let rows = paginatedLogs.map((item) => `
+                <tr>
+                    <td><b>${item.time}</b></td>
+                    <td style="color:${item.amount >= 0 ? 'var(--water-color)' : 'var(--danger)'}; font-weight:bold;">${item.amount > 0 ? '+' : ''}${item.amount} ml</td>
+                    <td style="text-align:right;">
+                        <button class="btn-mini-edit" onclick="editWaterLog('${item.id}')">✏️</button>
+                        <button class="btn-mini-delete" onclick="deleteWaterLog('${item.id}')">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            container.innerHTML = `
+                <table class="insulin-logs-table">
+                    <thead><tr><th>Tarih / Saat</th><th>Miktar</th><th style="text-align:right;">İşlem</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                <div style="display:flex; justify-content:space-between; margin-top:8px; align-items:center;">
+                    <button class="pagination-btn" onclick="changeWaterPage(-1)" ${currentWaterPage === 1 ? 'disabled' : ''}>⬅️ Geri</button>
+                    <span style="font-size:0.75rem; font-weight:bold;">Sayfa ${currentWaterPage} / ${totalPages}</span>
+                    <button class="pagination-btn" onclick="changeWaterPage(1)" ${currentWaterPage === totalPages ? 'disabled' : ''}>İleri ➡️</button>
+                </div>
+            `;
         }
 
-        closeDeleteModal();
-        saveAndRefresh();
-    }
+        async function handleTakeMed(medConfig) {
+            let history = appState.medsData[medConfig.id] || [];
+            if(typeof history === 'number') history = Array(history).fill({ time: "Bilinmiyor" });
+            if (history.length >= medConfig.maxDaily) return alert(`⚠️ HAK DOLDU: Günlük (${medConfig.maxDaily}) sınırına ulaştınız.`);
+            
+            let doseAmount = null;
+            if (medConfig.needsDose) {
+                let defaultDoseVal = (medConfig.id === 'toujeo') ? getLastInsulinDose() : medConfig.defaultDose;
+                let userDose = prompt(`${medConfig.name} dozu (Ünite):`, defaultDoseVal);
+                if (userDose === null) return;
+                doseAmount = userDose.trim() !== "" ? userDose.trim() : defaultDoseVal;
+                if (medConfig.id === 'toujeo') updateLastInsulinDose(doseAmount);
+            }
 
-    function deleteEntireUserFromFilter() {
-        const selectedUser = document.getElementById('filterUser').value;
-        if (selectedUser === 'ALL') return;
-
-        if (confirm(`${selectedUser} kişisine ait TÜM kayıtlar kalıcı olarak silinecek. Emin misiniz?`)) {
-            records = records.filter(r => r.userName !== selectedUser);
-            document.getElementById('filterUser').value = 'ALL';
-            handleFilterChange();
-            saveAndRefresh();
-        }
-    }
-
-    function openPayModal(index) {
-        activePayIndex = index;
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        document.getElementById('payDateTime').value = now.toISOString().slice(0, 16);
-        document.getElementById('payModal').style.display = 'flex';
-    }
-
-    function closePayModal() {
-        document.getElementById('payModal').style.display = 'none';
-        activePayIndex = null;
-    }
-
-    function confirmPayment() {
-        if (activePayIndex === null) return;
-        const method = document.getElementById('payMethod').value;
-        const dateTime = document.getElementById('payDateTime').value;
-
-        records[activePayIndex].isPaid = true;
-        records[activePayIndex].paymentMethod = method;
-        records[activePayIndex].paymentDate = dateTime;
-
-        closePayModal();
-        saveAndRefresh();
-    }
-
-    function cancelPayment(index) {
-        if (confirm("Bu ödemenin onayını iptal etmek istediğinizden emin misiniz?")) {
-            records[index].isPaid = false;
-            records[index].paymentMethod = null;
-            records[index].paymentDate = null;
-            saveAndRefresh();
-        }
-    }
-
-    function formatDateTime(isoString) {
-        if (!isoString) return '';
-        const d = new Date(isoString);
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        const hours = String(d.getHours()).padStart(2, '0');
-        const minutes = String(d.getMinutes()).padStart(2, '0');
-        return `${day}.${month}.${year} ${hours}:${minutes}`;
-    }
-
-    function sendWhatsApp(index) {
-        const rec = records[index];
-        let statusMessage = "";
-
-        if (rec.isPaid) {
-            const formattedDate = formatDateTime(rec.paymentDate);
-            statusMessage = `*Ödeme Detayı:* ${formattedDate} tarihinde *${rec.paymentMethod}* yöntemi ile hesabına yatırılmıştır. ✅`;
-        } else {
-            statusMessage = `*Ödeme Durumu:* Henüz ödenmemiştir. ⏳`;
+            history.push({ time: formatDateTime(new Date()), dose: doseAmount });
+            appState.medsData[medConfig.id] = history;
+            await saveData();
+            if(medConfig.id === 'toujeo') fetchGlobalInsulinLogs(); 
         }
 
-        const message = `Merhaba ${rec.userName},\n\n*${rec.period}* dönemi harçlık detayların:\n- Ödenecek Gün: ${rec.payableDays} Gün\n- Günlük Harçlık: ${rec.dailyRate.toFixed(2)} ₺\n- *Toplam Tutar: ${rec.totalAmount.toFixed(2)} ₺*\n\n${statusMessage}\n\nGüle güle harca! 💸`;
+        async function handleResetMed(medId) {
+            if (confirm("Bu ilacın bugünkü tüm kayıtları SIFIRLANACAK! Emin misiniz?")) {
+                delete appState.medsData[medId]; 
+                await saveData();
+                if(medId === 'toujeo') fetchGlobalInsulinLogs();
+            }
+        }
 
-        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-        window.open(waUrl, '_blank');
-    }
+        async function fetchGlobalInsulinLogs() {
+            const querySnapshot = await getDocs(collection(db, "takip_verileri"));
+            let allLogs = [];
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                if (data.medsData && data.medsData['toujeo']) {
+                    let history = data.medsData['toujeo'];
+                    if (Array.isArray(history)) {
+                        history.forEach((log, index) => {
+                            allLogs.push({ docId: docSnap.id, time: log.time, dose: log.dose, index: index, parsedDate: parseCustomDate(log.time) });
+                        });
+                    }
+                }
+            });
+            allLogs.sort((a, b) => b.parsedDate - a.parsedDate);
+            globalInsulinLogs = allLogs;
+            renderGlobalInsulinLogs();
+        }
 
-    function resetForm() {
-        document.getElementById('harclikForm').reset();
-        document.getElementById('editIndex').value = "-1";
-        document.getElementById('formTitle').innerText = "12 Aylık Harçlık Planı Oluştur / Düzenle";
-        document.getElementById('submitBtn').innerText = "12 Aylık Plan Oluştur / Güncelle";
-        document.getElementById('futureUpdateBox').style.display = "none";
-        document.getElementById('dayAdjustment').value = "0";
+        function renderGlobalInsulinLogs() {
+            const container = document.getElementById('global-insulin-logs-container');
+            if (globalInsulinLogs.length === 0) {
+                container.innerHTML = `<p style="font-size:0.8rem; color:#718096; text-align:center;">İnsülin kaydı bulunamadı.</p>`; return;
+            }
+            const totalPages = Math.ceil(globalInsulinLogs.length / insulinPerPage);
+            if (currentInsulinPage > totalPages) currentInsulinPage = totalPages || 1;
+            if (currentInsulinPage < 1) currentInsulinPage = 1;
+            const startIndex = (currentInsulinPage - 1) * insulinPerPage;
+            const paginatedLogs = globalInsulinLogs.slice(startIndex, startIndex + insulinPerPage);
+
+            let rows = paginatedLogs.map((item) => `
+                <tr>
+                    <td><b>${item.time}</b></td>
+                    <td style="color:#2b6cb0; font-weight:bold;">${item.dose ? item.dose + ' Ünite' : 'Bilinmiyor'}</td>
+                    <td style="text-align:right;">
+                        <button class="btn-mini-edit" onclick="editGlobalInsulinDose('${item.docId}', ${item.index})">✏️</button>
+                        <button class="btn-mini-delete" onclick="deleteGlobalInsulinDose('${item.docId}', ${item.index})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            container.innerHTML = `
+                <table class="insulin-logs-table">
+                    <thead><tr><th>Tarih / Saat</th><th>Doz</th><th style="text-align:right;">İşlem</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+                <div style="display:flex; justify-content:space-between; margin-top:8px; align-items:center;">
+                    <button class="pagination-btn" onclick="changeInsulinPage(-1)" ${currentInsulinPage === 1 ? 'disabled' : ''}>⬅️ Geri</button>
+                    <span style="font-size:0.75rem; font-weight:bold;">Sayfa ${currentInsulinPage} / ${totalPages}</span>
+                    <button class="pagination-btn" onclick="changeInsulinPage(1)" ${currentInsulinPage === totalPages ? 'disabled' : ''}>İleri ➡️</button>
+                </div>
+            `;
+        }
+
+        window.changeInsulinPage = function(dir) { currentInsulinPage += dir; renderGlobalInsulinLogs(); };
+
+        function updateUI() {
+            const currentWater = appState.waterIntake || 0;
+            const targetWater = 2500;
+            const percentage = Math.min(100, (currentWater / targetWater) * 100);
+            const remainingWater = Math.max(0, targetWater - currentWater);
+
+            document.getElementById('water-count').innerText = currentWater;
+            const waterCircle = document.getElementById('water-progress');
+            waterCircle.style.background = `conic-gradient(var(--water-color) ${percentage}%, #ebf8ff ${percentage}%)`;
+
+            const remainingEl = document.getElementById('water-remaining');
+            if (remainingWater > 0) { remainingEl.innerText = `⏳ Kalan: ${remainingWater} ml`; remainingEl.className = 'water-remaining-text'; } 
+            else { remainingEl.innerText = `🎉 Hedef tamamlandı!`; remainingEl.className = 'water-remaining-text completed'; }
+
+            renderWaterLogs();
+
+            const listEl = document.getElementById('med-list'); 
+            listEl.innerHTML = "";
+            let completedCount = 0;
+            const currentDayIndex = (new Date(currentDateStr + "T00:00:00")).getDay();
+
+            masterMeds.forEach(med => {
+                let history = appState.medsData[med.id] || [];
+                if(typeof history === 'number') history = Array(history).fill({ time: "Bilinmiyor" });
+                if (med.allowedDays && !med.allowedDays.includes(currentDayIndex)) {
+                    if (history.length === 0) return;
+                }
+
+                const currentDose = history.length;
+                const isCompleted = currentDose >= med.maxDaily;
+                if (isCompleted) completedCount++;
+
+                let logsHTML = history.map((l,i) => `<div>✔️ ${i+1}. Doz: ${l.time} ${l.dose ? '('+l.dose+' Ünite)' : ''}</div>`).join('');
+                const daysLeft = getRemainingDays(med);
+                let expiryBadgeHTML = '';
+                let isWarning = false;
+
+                if (med.noReorder) {
+                    expiryBadgeHTML = `<span class="med-badge" style="background:#edf2f7; color:#4a5568;">🚫 Süresi Bitti</span>`;
+                } else if (daysLeft <= 15) {
+                    isWarning = true;
+                    expiryBadgeHTML = `<span class="med-badge badge-danger">⚠️ Bitişe ${daysLeft <= 0 ? 'Süre Doldu!' : daysLeft + ' Gün Kaldı'}</span>`;
+                }
+
+                const li = document.createElement('li');
+                li.className = `med-item ${currentDose > 0 ? 'taken' : ''} ${isWarning ? 'warning-item' : ''}`;
+                if (isCompleted && !showCompletedMeds) li.style.display = 'none';
+
+                li.innerHTML = `
+                    <div class="med-info">
+                        <div class="med-title">${med.name}</div>
+                        <div class="med-rule">${med.ruleText || 'Özel kural belirtilmedi.'}</div>
+                        <span class="med-badge ${currentDose > 0 ? 'badge-success' : 'badge-info'}">${currentDose}/${med.maxDaily} İçildi</span>
+                        ${expiryBadgeHTML}
+                        ${currentDose > 0 ? `<div class="time-logs">${logsHTML}</div>` : ''}
+                    </div>
+                    <div class="med-actions">
+                        ${currentDose < med.maxDaily ? `<button class="btn-action btn-take-dose" id="t-${med.id}">+1 İçtim</button>` : ''}
+                        ${currentDose > 0 ? `<button class="btn-action btn-reset-dose" id="r-${med.id}">Sıfırla</button>` : ''}
+                        <button class="btn-action" style="background:#edf2f7; color:#4a5568;" onclick="editMasterMed('${med.id}')">✏️ Düzenle</button>
+                    </div>`;
+                
+                listEl.appendChild(li);
+                if(currentDose < med.maxDaily) document.getElementById(`t-${med.id}`).onclick = () => handleTakeMed(med);
+                if(currentDose > 0) document.getElementById(`r-${med.id}`).onclick = () => handleResetMed(med.id);
+            });
+        }
+
+        document.getElementById('btn-water-plus').onclick = () => addWaterLog(500);
+        document.getElementById('btn-water-minus').onclick = () => addWaterLog(-waterMinusVal);
+        document.getElementById('btn-water-4oz').onclick = () => addWaterLog(90);
+        document.getElementById('btn-water-7oz').onclick = () => addWaterLog(180);
+        document.getElementById('btn-water-8oz').onclick = () => addWaterLog(210);
+        document.getElementById('btn-water-12oz').onclick = () => addWaterLog(325);
+        document.getElementById('btn-water-16oz').onclick = () => addWaterLog(450);
+        document.getElementById('btn-water-manual').onclick = () => { 
+            const v = parseInt(document.getElementById('manual-water-input').value); 
+            if(v > 0) { addWaterLog(v); document.getElementById('manual-water-input').value = ""; }
+        };
         
-        document.querySelectorAll('input[name="weeklyOff"]').forEach(cb => {
-            cb.checked = (cb.value === "0" || cb.value === "6");
-        });
-        document.getElementById('period').value = "2026-08";
-        calculatePreviewDaily();
-    }
-
-    function saveAndRefresh() {
-        localStorage.setItem('harclik_kayitlar_v8', JSON.stringify(records));
-        calculatePreviewDaily();
-        renderTable();
-    }
-</script>
-
+        loadDateData(todayStr);
+        fetchGlobalInsulinLogs();
+    </script>
 </body>
 </html>

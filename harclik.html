@@ -17,6 +17,23 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        /* CHROME, SAFARI VE MODERN TARAYICILARDA SCROLLBAR GİZLEME */
+        html, body {
+            overflow-x: hidden;
+            -ms-overflow-style: none;  /* IE ve Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        ::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+            width: 0px;
+            background: transparent;
+        }
+
         :root {
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
@@ -42,7 +59,7 @@
         }
 
         .main-container {
-            max-width: 1350px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
@@ -67,6 +84,26 @@
         .db-online { background-color: #dcfce7; color: #15803d; border: 1px solid #86efac; }
         .db-offline { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
+        /* YENİ ÜST LAYOUT GRID (SOL: FORM | SAĞ: ÖZET & BAYRAMLAR) */
+        .top-layout-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .layout-col-left, .layout-col-right {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .top-layout-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .card {
             background: var(--card-bg);
             border: 1px solid var(--border);
@@ -82,7 +119,7 @@
         }
         details.card summary {
             padding: 16px 20px;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: bold;
             cursor: pointer;
             list-style: none;
@@ -106,7 +143,7 @@
 
         h2 {
             margin-top: 0;
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             color: var(--text);
             border-bottom: 2px solid #f1f5f9;
             padding-bottom: 10px;
@@ -116,67 +153,67 @@
             justify-content: space-between;
         }
 
-        /* FINANSAL ÖZET KARTLARI */
+        /* FİNANSAL ÖZET KARTLARI */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
         }
         .stat-card {
             background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 16px;
+            padding: 14px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
         .stat-card-title {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 600;
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .stat-card-value {
-            font-size: 1.4rem;
+            font-size: 1.25rem;
             font-weight: 800;
         }
         .stat-card-sub {
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             color: #94a3b8;
         }
 
         .user-debt-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
             margin-top: 14px;
         }
         .user-debt-card {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
-            padding: 12px 14px;
+            padding: 10px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         .user-debt-name {
             font-weight: 700;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             color: #1e293b;
         }
         .user-debt-details {
             text-align: right;
-            font-size: 0.82rem;
+            font-size: 0.8rem;
         }
 
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
         }
 
         .form-group {
@@ -195,7 +232,7 @@
             padding: 8px 10px;
             border: 1px solid var(--border);
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             outline: none;
             transition: all 0.2s;
         }
@@ -204,23 +241,17 @@
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
-        /* YAN YANA DÜZEN: HAFTALIK TATİL VE COMPACT TAKVİM */
+        /* YAN YANA / ALT ALTA ESNEK DÜZEN: HAFTALIK TATİL VE COMPACT TAKVİM */
         .weekly-and-calendar-row {
             grid-column: 1 / -1;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
             align-items: start;
             background: #f8fafc;
             padding: 12px;
             border-radius: 10px;
             border: 1px solid var(--border);
-        }
-
-        @media (max-width: 768px) {
-            .weekly-and-calendar-row {
-                grid-template-columns: 1fr;
-            }
         }
 
         .checkbox-group {
@@ -233,7 +264,7 @@
             font-size: 0.78rem;
             background: #ffffff;
             border: 1px solid var(--border);
-            padding: 5px 9px;
+            padding: 4px 8px;
             border-radius: 6px;
             cursor: pointer;
             display: flex;
@@ -358,7 +389,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: #166534;
         }
@@ -400,7 +431,14 @@
         .btn-delete { background: var(--danger); color: white; padding: 5px 8px; font-size: 0.78rem; }
         .btn-danger-dark { background: #991b1b; color: white; padding: 8px 12px; font-size: 0.82rem; }
 
-        .table-responsive { overflow-x: auto; }
+        .table-responsive { 
+            overflow-x: auto; 
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .table-responsive::-webkit-scrollbar {
+            display: none;
+        }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
         th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); }
         th { background-color: #f8fafc; color: #475569; font-weight: 600; }
@@ -454,11 +492,11 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        /* RESMİ VE DİNİ BAYRAMLAR LISTESI */
+        /* RESMİ VE DİNİ BAYRAMLAR LISTESI Grid */
         .holiday-list-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 8px;
             margin-top: 10px;
         }
         .holiday-item-card {
@@ -476,11 +514,11 @@
         }
         .holiday-item-title {
             font-weight: 700;
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             color: #1e293b;
         }
         .holiday-item-date {
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             color: #64748b;
             display: flex;
             justify-content: space-between;
@@ -492,7 +530,7 @@
             padding: 1px 5px;
             border-radius: 4px;
             font-weight: 600;
-            font-size: 0.7rem;
+            font-size: 0.68rem;
         }
 
         .modal {
@@ -523,163 +561,175 @@
 
 <div class="main-container">
 
+    <!-- ÜST HEADER VE STATUS BAR -->
     <div class="header-status-bar">
-        <a href="index.html" class="btn-secondary" style="font-size: 0.82rem; padding: 5px 12px;">← Ana Menüye Dön</a>
+        <a href="finans.html" class="btn-secondary" style="font-size: 0.82rem; padding: 5px 12px;">⬅️ Finans Portalı'na Dön</a>
         <div id="dbStatusBadge" class="db-status-badge db-offline">
             🔴 DB Bağlantısı Kesildi
         </div>
     </div>
 
-    <!-- FİNANSAL ÖZET VE KİŞİ BAZLI BORÇ KARTLARI -->
-    <div class="card">
-        <h2>
-            <span>💰 Ödenen Harçlıklar & Vadesi Gelmemiş Borçlar Özeti</span>
-        </h2>
-        <div class="stats-grid">
-            <div class="stat-card">
-                <span class="stat-card-title">🟢 Toplam Ödenen Harçlık</span>
-                <span class="stat-card-value" id="statTotalPaid" style="color: #10b981;">0.00 ₺</span>
-                <span class="stat-card-sub">Tamamlanan tüm ödemeler</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-card-title">⏳ Bekleyen / Vadesi Gelmemiş Borç</span>
-                <span class="stat-card-value" id="statTotalPending" style="color: #ef4444;">0.00 ₺</span>
-                <span class="stat-card-sub">Gelecek ve henüz ödenmeyen bakiyeler</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-card-title">📊 Toplam Planlanan Harçlık</span>
-                <span class="stat-card-value" id="statTotalPlanned" style="color: #2563eb;">0.00 ₺</span>
-                <span class="stat-card-sub">Dönem geneli toplam bütçe</span>
-            </div>
-        </div>
+    <!-- İKİ KOLONLU ÜST DÜZEN (SOL: FORM | SAĞ: ÖZET VE BAYRAMLAR) -->
+    <div class="top-layout-grid">
 
-        <h3 style="font-size:0.92rem; color:#475569; margin-top:16px; margin-bottom:6px;">Kişi Bazlı Ödeme ve Borç Dağılımı:</h3>
-        <div class="user-debt-grid" id="userDebtGrid">
-            <!-- Dinamik -->
-        </div>
-    </div>
+        <!-- SOL KOLON: PLANLAMA FORMU VE TAKVİM -->
+        <div class="layout-col-left">
+            <div class="card">
+                <h2 id="formTitle">
+                    <span>🎓 Okul Yılı Harçlık Planı Oluştur / Düzenle</span>
+                    <span style="font-size: 0.78rem; font-weight: normal; color: #64748b;">(Eyl - Haz Dönemi)</span>
+                </h2>
+                <form id="harclikForm" onsubmit="handleFormSubmit(event)">
+                    <input type="hidden" id="editIndex" value="-1">
 
-    <!-- FORM VE YAN YANA COMPACT TAKVİM ALANI -->
-    <div class="card">
-        <h2 id="formTitle">
-            <span>🎓 Okul Yılı Harçlık Planı Oluştur / Düzenle</span>
-            <span style="font-size: 0.8rem; font-weight: normal; color: #64748b;">(Eyl - Haz Dönemi)</span>
-        </h2>
-        <form id="harclikForm" onsubmit="handleFormSubmit(event)">
-            <input type="hidden" id="editIndex" value="-1">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="userName">Kişi Seçin (Ayarlar DB)</label>
+                            <select id="userName" required onchange="onPeriodOrUserChange()">
+                                <!-- Dinamik -->
+                            </select>
+                        </div>
 
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="userName">Kişi Seçin (Ayarlar DB)</label>
-                    <select id="userName" required onchange="onPeriodOrUserChange()">
-                        <!-- Dinamik -->
-                    </select>
-                </div>
+                        <div class="form-group">
+                            <label for="period">İşlem Yapılacak Ay</label>
+                            <input type="month" id="period" required onchange="onPeriodOrUserChange()">
+                        </div>
 
-                <div class="form-group">
-                    <label for="period">İşlem Yapılacak Ay</label>
-                    <input type="month" id="period" required onchange="onPeriodOrUserChange()">
-                </div>
+                        <div class="form-group">
+                            <label for="baseDaily">Mevcut / Yeni Günlük Ücret (₺)</label>
+                            <input type="number" id="baseDaily" min="0" step="0.5" value="100" required oninput="calculatePreviewDaily(); saveDefaultsToDB();">
+                        </div>
 
-                <div class="form-group">
-                    <label for="baseDaily">Mevcut / Yeni Günlük Ücret (₺)</label>
-                    <input type="number" id="baseDaily" min="0" step="0.5" value="100" required oninput="calculatePreviewDaily(); saveDefaultsToDB();">
-                </div>
+                        <div class="form-group">
+                            <label for="raisePercent">Uygulanacak Zam Oranı (%)</label>
+                            <input type="number" id="raisePercent" min="0" step="0.1" value="0" placeholder="Örn: 10" oninput="calculatePreviewDaily(); saveDefaultsToDB();">
+                        </div>
 
-                <div class="form-group">
-                    <label for="raisePercent">Uygulanacak Zam Oranı (%)</label>
-                    <input type="number" id="raisePercent" min="0" step="0.1" value="0" placeholder="Örn: 10" oninput="calculatePreviewDaily(); saveDefaultsToDB();">
-                </div>
+                        <div class="form-group">
+                            <label>Zamlı Günlük Ücret (₺)</label>
+                            <input type="number" id="previewDaily" readonly style="background-color: #f1f5f9; font-weight: bold; color: #2563eb;">
+                        </div>
 
-                <div class="form-group">
-                    <label>Zamlı Günlük Ücret (₺)</label>
-                    <input type="number" id="previewDaily" readonly style="background-color: #f1f5f9; font-weight: bold; color: #2563eb;">
-                </div>
+                        <div class="form-group">
+                            <label>📊 Seçilen Gün Sayısı & Toplam Tutar</label>
+                            <input type="text" id="monthSummaryCalc" readonly style="background-color: #ecfdf5; font-weight: bold; color: #059669; border: 1px solid #a7f3d0;">
+                        </div>
 
-                <div class="form-group">
-                    <label>📊 Seçilen Gün Sayısı & Toplam Tutar</label>
-                    <input type="text" id="monthSummaryCalc" readonly style="background-color: #ecfdf5; font-weight: bold; color: #059669; border: 1px solid #a7f3d0;">
-                </div>
+                        <!-- HAFTALIK OTOMATİK TATİL GÜNLERİ VE COMPACT TAKVİM -->
+                        <div class="weekly-and-calendar-row">
+                            <div class="form-group">
+                                <label>Haftalık Otomatik Tatil Günleri</label>
+                                <div class="checkbox-group">
+                                    <label><input type="checkbox" name="weeklyOff" value="1" onchange="renderCalendar(); saveDefaultsToDB();"> Pzt</label>
+                                    <label><input type="checkbox" name="weeklyOff" value="2" onchange="renderCalendar(); saveDefaultsToDB();"> Sal</label>
+                                    <label><input type="checkbox" name="weeklyOff" value="3" onchange="renderCalendar(); saveDefaultsToDB();"> Çar</label>
+                                    <label><input type="checkbox" name="weeklyOff" value="4" onchange="renderCalendar(); saveDefaultsToDB();"> Per</label>
+                                    <label><input type="checkbox" name="weeklyOff" value="5" onchange="renderCalendar(); saveDefaultsToDB();"> Cum</label>
+                                    <label><input type="checkbox" name="weeklyOff" value="6" checked onchange="renderCalendar(); saveDefaultsToDB();"> Cmt</label>
+                                    <label><input type="checkbox" name="weeklyOff" value="0" checked onchange="renderCalendar(); saveDefaultsToDB();"> Paz</label>
+                                </div>
+                            </div>
 
-                <!-- HAFTALIK OTOMATİK TATİL GÜNLERİ VE COMPACT TAKVİM YAN YANA -->
-                <div class="weekly-and-calendar-row">
-                    <div class="form-group">
-                        <label>Haftalık Otomatik Tatil Günleri</label>
-                        <div class="checkbox-group">
-                            <label><input type="checkbox" name="weeklyOff" value="1" onchange="renderCalendar(); saveDefaultsToDB();"> Pzt</label>
-                            <label><input type="checkbox" name="weeklyOff" value="2" onchange="renderCalendar(); saveDefaultsToDB();"> Sal</label>
-                            <label><input type="checkbox" name="weeklyOff" value="3" onchange="renderCalendar(); saveDefaultsToDB();"> Çar</label>
-                            <label><input type="checkbox" name="weeklyOff" value="4" onchange="renderCalendar(); saveDefaultsToDB();"> Per</label>
-                            <label><input type="checkbox" name="weeklyOff" value="5" onchange="renderCalendar(); saveDefaultsToDB();"> Cum</label>
-                            <label><input type="checkbox" name="weeklyOff" value="6" checked onchange="renderCalendar(); saveDefaultsToDB();"> Cmt</label>
-                            <label><input type="checkbox" name="weeklyOff" value="0" checked onchange="renderCalendar(); saveDefaultsToDB();"> Paz</label>
+                            <!-- %50 KÜÇÜLTÜLMÜŞ VE AÇILIR KAPANIR TAKVİM -->
+                            <div class="mini-calendar-container">
+                                <details class="mini-calendar-details">
+                                    <summary>
+                                        <span>📅 Özel Gün Takvimi</span>
+                                        <span style="font-size:0.68rem; opacity:0.8;">Göster/Gizle ▼</span>
+                                    </summary>
+                                    <div class="calendar-section">
+                                        <div class="calendar-header">
+                                            <div class="calendar-title" id="calendarTitle">📅 Ay Seçiniz</div>
+                                            <span style="font-size:0.62rem; color:#64748b;">(Tıkla Seç/Çıkar)</span>
+                                        </div>
+                                        <div class="holiday-badge-list" id="holidayBadgeList"></div>
+                                        <div class="calendar-grid">
+                                            <div class="cal-day-header">Pz</div>
+                                            <div class="cal-day-header">Sa</div>
+                                            <div class="cal-day-header">Çr</div>
+                                            <div class="cal-day-header">Pr</div>
+                                            <div class="cal-day-header">Cm</div>
+                                            <div class="cal-day-header">Ct</div>
+                                            <div class="cal-day-header">Pz</div>
+                                        </div>
+                                        <div class="calendar-grid" id="calendarGridBody" style="margin-top:2px;"></div>
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+
+                        <div class="update-option" id="futureUpdateBox" style="display: none;">
+                            <input type="checkbox" id="updateFutureMonths" checked>
+                            <label for="updateFutureMonths">Bu ayki güncellenmiş günlük ücreti sonraki tüm aylara uygula (Seçilen özel gün sayıları sıfırlanmaz)</label>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary" id="submitBtn">🎒 Okullara Göre 1 Okul Yılı Planla (Eyl - Haz)</button>
+                            <button type="button" class="btn-secondary" onclick="resetForm()">Temizle / İptal</button>
                         </div>
                     </div>
+                </form>
+            </div>
+        </div>
 
-                    <!-- %50 KÜÇÜLTÜLMÜŞ VE AÇILIR KAPANIR TAKVİM -->
-                    <div class="mini-calendar-container">
-                        <details class="mini-calendar-details">
-                            <summary>
-                                <span>📅 Özel Gün Takvimi (Küçültülmüş & Seçilebilir)</span>
-                                <span style="font-size:0.68rem; opacity:0.8;">Göster/Gizle ▼</span>
-                            </summary>
-                            <div class="calendar-section">
-                                <div class="calendar-header">
-                                    <div class="calendar-title" id="calendarTitle">📅 Ay Seçiniz</div>
-                                    <span style="font-size:0.62rem; color:#64748b;">(Tıkla Seç/Çıkar)</span>
-                                </div>
-                                <div class="holiday-badge-list" id="holidayBadgeList"></div>
-                                <div class="calendar-grid">
-                                    <div class="cal-day-header">Pz</div>
-                                    <div class="cal-day-header">Sa</div>
-                                    <div class="cal-day-header">Çr</div>
-                                    <div class="cal-day-header">Pr</div>
-                                    <div class="cal-day-header">Cm</div>
-                                    <div class="cal-day-header">Ct</div>
-                                    <div class="cal-day-header">Pz</div>
-                                </div>
-                                <div class="calendar-grid" id="calendarGridBody" style="margin-top:2px;"></div>
-                            </div>
-                        </details>
+        <!-- SAĞ KOLON: ÖZET VE BAYRAMLAR LISTESI -->
+        <div class="layout-col-right">
+
+            <!-- FİNANSAL ÖZET VE KİŞİ BAZLI BORÇ KARTLARI -->
+            <div class="card">
+                <h2>
+                    <span>💰 Ödenen Harçlıklar & Vadesi Gelmemiş Borçlar Özeti</span>
+                </h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-card-title">🟢 Toplam Ödenen</span>
+                        <span class="stat-card-value" id="statTotalPaid" style="color: #10b981;">0.00 ₺</span>
+                        <span class="stat-card-sub">Tamamlanan ödemeler</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-card-title">⏳ Gelmemiş Borç</span>
+                        <span class="stat-card-value" id="statTotalPending" style="color: #ef4444;">0.00 ₺</span>
+                        <span class="stat-card-sub">Gelecek bakiyeler</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-card-title">📊 Toplam Planlanan</span>
+                        <span class="stat-card-value" id="statTotalPlanned" style="color: #2563eb;">0.00 ₺</span>
+                        <span class="stat-card-sub">Dönem bütçesi</span>
                     </div>
                 </div>
 
-                <div class="update-option" id="futureUpdateBox" style="display: none;">
-                    <input type="checkbox" id="updateFutureMonths" checked>
-                    <label for="updateFutureMonths">Bu ayki güncellenmiş günlük ücreti sonraki tüm aylara uygula (Seçilen özel gün sayıları sıfırlanmaz)</label>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary" id="submitBtn">🎒 Okullara Göre 1 Okul Yılı Planla (Eyl - Haz)</button>
-                    <button type="button" class="btn-secondary" onclick="resetForm()">Temizle / İptal</button>
+                <h3 style="font-size:0.88rem; color:#475569; margin-top:14px; margin-bottom:6px;">Kişi Bazlı Ödeme ve Borç Dağılımı:</h3>
+                <div class="user-debt-grid" id="userDebtGrid">
+                    <!-- Dinamik -->
                 </div>
             </div>
-        </form>
+
+            <!-- AÇILIR/KAPANIR TÜRKİYE RESMİ VE DİNİ BAYRAMLAR LISTESİ -->
+            <details class="card">
+                <summary>
+                    <span>🎉 Türkiye Dini ve Resmi Bayramlar Listesi (2025 - 2050)</span>
+                    <span style="font-size:0.78rem; font-weight:normal; color:#2563eb;">Genişlet ▼</span>
+                </summary>
+                <div class="details-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-size:0.8rem; color:#64748b;">Listelenecek Yıl:</span>
+                        <div>
+                            <select id="holidayYearSelect" onchange="renderHolidayList()" style="padding:4px 8px; border-radius:6px; border:1px solid var(--border); font-weight:bold; color:var(--primary); font-size:0.82rem;">
+                                <!-- 2025 - 2050 dinamik -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="holiday-list-grid" id="holidayListGrid">
+                        <!-- Dinamik -->
+                    </div>
+                </div>
+            </details>
+
+        </div>
+
     </div>
 
-    <!-- AÇILIR/KAPANIR TÜRKİYE RESMİ VE DİNİ BAYRAMLAR LISTESİ (2050'YE KADAR) -->
-    <details class="card">
-        <summary>
-            <span>🎉 Türkiye Dini ve Resmi Bayramlar / Tatiller Listesi (2025 - 2050)</span>
-            <span style="font-size:0.85rem; font-weight:normal; color:#2563eb;">Tıklayıp Genişlet ▼</span>
-        </summary>
-        <div class="details-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                <span style="font-size:0.85rem; color:#64748b;">Aşağıdan listelemek istediğiniz yılı seçiniz:</span>
-                <div>
-                    <label style="font-size:0.85rem; font-weight:600; color:#475569; margin-right:6px;">Yıl Seçin:</label>
-                    <select id="holidayYearSelect" onchange="renderHolidayList()" style="padding:4px 10px; border-radius:6px; border:1px solid var(--border); font-weight:bold; color:var(--primary);">
-                        <!-- 2025 - 2050 dinamik oluşturulacak -->
-                    </select>
-                </div>
-            </div>
-            <div class="holiday-list-grid" id="holidayListGrid">
-                <!-- Dinamik Doldurulacak -->
-            </div>
-        </div>
-    </details>
-
-    <!-- KAYITLI VERİLER TABLOSU -->
+    <!-- EN ALT: KAYITLI VERİLER TABLOSU -->
     <div class="card">
         <h2>
             <span>Harçlık Planı ve Ödeme Takip Listesi</span>
@@ -866,6 +916,14 @@
         return `${y}-${m}-${day}`;
     }
 
+    // BULUNDUĞUMUZ AYI (YYYY-AA) OTOMATİK SEÇEN YARDIMCI FONKSİYON
+    function setCurrentPeriod() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        document.getElementById('period').value = `${yyyy}-${mm}`;
+    }
+
     let records = [];
     let activePayIndex = null;
     let activeDeleteIndex = null;
@@ -884,7 +942,7 @@
         }
     });
 
-    // SON GİRDİĞİM DEFAULT DEĞERLERİ LOKALE DEĞİL FIREBASE DB'YE KAYDETME/DİNLEME (settingsDB)
+    // DEFAULT DEĞERLERİ FIREBASE DB'YE KAYDETME/DİNLEME
     function saveDefaultsToDB() {
         const defaults = {
             baseDaily: parseFloat(document.getElementById('baseDaily').value) || 0,
@@ -946,10 +1004,10 @@
     });
 
     window.onload = function() {
+        setCurrentPeriod(); // Bulunduğumuz ayı otomatik seçer
+        
         const now = new Date();
-        const yyyy = now.getFullYear();
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        document.getElementById('period').value = `${yyyy}-${mm}`;
+        const currentYear = now.getFullYear();
         
         // 2025'ten 2050'ye kadar Yıl Seçeneklerini Doldur
         const yearSelect = document.getElementById('holidayYearSelect');
@@ -958,7 +1016,7 @@
             const opt = document.createElement('option');
             opt.value = y;
             opt.textContent = y;
-            if (y === yyyy) opt.selected = true;
+            if (y === currentYear) opt.selected = true;
             yearSelect.appendChild(opt);
         }
 
@@ -1002,13 +1060,15 @@
 
         records.forEach(r => {
             const amount = r.totalAmount || 0;
+            const days = r.payableDays || 0;
             totalPlanned += amount;
 
             if (!userStats[r.userName]) {
-                userStats[r.userName] = { paid: 0, pending: 0, total: 0 };
+                userStats[r.userName] = { paid: 0, pending: 0, total: 0, totalDays: 0 };
             }
 
             userStats[r.userName].total += amount;
+            userStats[r.userName].totalDays += days;
 
             if (r.isPaid) {
                 totalPaid += amount;
@@ -1034,23 +1094,25 @@
 
         userNames.forEach(u => {
             const stat = userStats[u];
+            const avgDaily = stat.totalDays > 0 ? (stat.total / stat.totalDays) : 0;
             const card = document.createElement('div');
             card.className = 'user-debt-card';
             card.innerHTML = `
                 <div>
                     <div class="user-debt-name">👤 ${u}</div>
-                    <span style="font-size:0.75rem; color:#64748b;">Toplam: ${stat.total.toFixed(2)} ₺</span>
+                    <div style="font-size:0.75rem; color:#2563eb; font-weight:700; margin-top:2px;">Günlük Ort.: ${avgDaily.toFixed(2)} ₺</div>
+                    <span style="font-size:0.72rem; color:#64748b;">Toplam: ${stat.total.toFixed(2)} ₺ (${stat.totalDays} Gün)</span>
                 </div>
                 <div class="user-debt-details">
                     <div style="color:#10b981; font-weight:700;">Ödenen: ${stat.paid.toFixed(2)} ₺</div>
-                    <div style="color:#ef4444; font-weight:700;">Vadesi Gelmemiş Borç: ${stat.pending.toFixed(2)} ₺</div>
+                    <div style="color:#ef4444; font-weight:700;">Borç: ${stat.pending.toFixed(2)} ₺</div>
                 </div>
             `;
             debtGrid.appendChild(card);
         });
     }
 
-    // 2050'YE KADAR SEÇİLİ YILA GÖRE RESMİ VE DİNİ BAYRAMLAR LISTESİ RENDER
+    // RESMİ VE DİNİ BAYRAMLAR LISTESİ RENDER
     function renderHolidayList() {
         const selectedYear = parseInt(document.getElementById('holidayYearSelect').value);
         const container = document.getElementById('holidayListGrid');
@@ -1059,7 +1121,7 @@
         const yearHolidaysObj = getHolidaysForYear(selectedYear);
         const yearHolidays = [];
         const turkishDays = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
-        const turkishMonths = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+        const turkishMonths = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylul", "Ekim", "Kasım", "Aralık"];
 
         Object.keys(yearHolidaysObj).forEach(dateStr => {
             const [y, m, d] = dateStr.split('-').map(Number);
@@ -1093,6 +1155,10 @@
     }
 
     function onPeriodOrUserChange() {
+        if (!document.getElementById('period').value) {
+            setCurrentPeriod();
+        }
+
         const userName = document.getElementById('userName').value;
         const period = document.getElementById('period').value;
         const editIndex = parseInt(document.getElementById('editIndex').value);
@@ -1112,7 +1178,6 @@
         renderCalendar();
     }
 
-    // %50 KÜÇÜLTÜLMÜŞ VE AÇILIR/SEÇİLİR TAKVİMİ RENDER ETME
     function renderCalendar() {
         const period = document.getElementById('period').value;
         if (!period) return;
@@ -1193,7 +1258,7 @@
     }
 
     function getMonthName(monthNum) {
-        const names = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+        const names = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylul", "Ekim", "Kasım", "Aralık"];
         return names[monthNum - 1];
     }
 
@@ -1446,8 +1511,7 @@
             cb.checked = (cb.value === "0" || cb.value === "6");
         });
 
-        const now = new Date();
-        document.getElementById('period').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        setCurrentPeriod(); // Sıfırlama sonrasında da güncel ayı seçer
         onPeriodOrUserChange();
     }
 

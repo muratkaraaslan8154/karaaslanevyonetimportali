@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kişisel Birikim & Taksit - KARAASLAN</title>
 
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- jsPDF & AutoTable (PDF Raporlama için) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
     <script>
         const activeUser = (localStorage.getItem('currentUser') || '').toLowerCase();
@@ -69,6 +74,13 @@
         .btn-mini { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size:0.8rem; }
         .btn-edit { background: #ecc94b; color: #744210; }
         .btn-del { background: #fc8181; color: white; }
+        .btn-pdf { background: #e53e3e; color: white; }
+        .btn-pdf:hover { background: #c53030; }
+
+        .summary-box { background: #edf2f7; border-radius: 8px; padding: 12px; margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+        .summary-item { text-align: center; }
+        .summary-item label { font-size: 0.75rem; color: #718096; margin-bottom: 2px; }
+        .summary-item span { font-weight: bold; font-size: 1rem; }
     </style>
 </head>
 <body>
@@ -91,14 +103,22 @@
         </div>
 
         <div class="card">
-            <h3 id="tableTitle" style="margin-top:0; color:#2d3748;">🗓️ Taksit Ödeme Tablosu</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                <h3 id="tableTitle" style="margin:0; color:#2d3748;">🗓️ Taksit Ödeme Tablosu</h3>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <button class="btn-mini" style="background:#4a5568; color:white;" onclick="changeDisplayMonth(-1)">⬅️ Önceki Dönem</button>
+                    <button class="btn-mini" style="background:#cbd5e0; color:#2d3748;" onclick="resetDisplayMonth()">📅 Güncel Ay</button>
+                    <button class="btn-mini" style="background:#4a5568; color:white;" onclick="changeDisplayMonth(1)">Sonraki Dönem ➡️</button>
+                </div>
+            </div>
+            
             <div style="overflow-x:auto;">
                 <table>
                     <thead>
                         <tr>
                             <th>Kullanıcı</th>
                             <th>Mevcut Birikim</th>
-                            <th>Bu Ay Ödenecek Taksit</th>
+                            <th>Ödenecek Taksit (Dönem)</th>
                             <th>Toplam Borç</th>
                             <th>Hızlı İşlem</th>
                         </tr>
@@ -166,23 +186,51 @@
         </div>
 
         <div class="card">
-            <h3 style="margin-top:0; color:#2d3748;">📋 Geçmiş İşlemler</h3>
-            <div style="display:flex; gap:10px; margin-bottom:15px; align-items:flex-end;">
-                <div style="flex:1;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                <h3 style="margin:0; color:#2d3748;">📋 Geçmiş İşlemler</h3>
+                <button class="btn-mini btn-pdf" style="padding:8px 14px; font-size:0.85rem;" onclick="exportPDF()">📄 PDF Rapor Al</button>
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-bottom:15px; align-items:flex-end; flex-wrap:wrap;">
+                <div style="flex:1; min-width:130px;">
                     <label>Filtre (Kullanıcı):</label>
                     <select id="filterUser" onchange="currentPage=1; renderHistory()">
                         <option value="all">Tümü</option>
                     </select>
                 </div>
-                <div style="flex:1;">
-                    <label>Başlangıç:</label>
-                    <input type="date" id="filterStart" onchange="currentPage=1; renderHistory()">
+                <div style="flex:1; min-width:140px;">
+                    <label>İşlem Türü:</label>
+                    <select id="filterType" onchange="currentPage=1; renderHistory()">
+                        <option value="all">Tüm İşlemler</option>
+                        <option value="birikim_all">Tüm Birikim İşlemleri</option>
+                        <option value="birikim_ekle">Birikim Ekle (+)</option>
+                        <option value="birikim_dus">Birikim Düş (-)</option>
+                        <option value="borc_all">Tüm Borç / Taksit İşlemleri</option>
+                        <option value="taksit_ekle">Borç / Taksit Ekle (+)</option>
+                        <option value="taksit_odendi">Borç Ödendi (-)</option>
+                    </select>
                 </div>
-                <div style="flex:1;">
+                <div style="flex:1; min-width:140px;">
+                    <label>Hızlı Süre Filtresi:</label>
+                    <select id="filterRange" onchange="applyQuickDateFilter()">
+                        <option value="custom">Tüm Zamanlar / Özel</option>
+                        <option value="current_month">Güncel Ay</option>
+                        <option value="last_1_month">Son 1 Ay</option>
+                        <option value="last_3_months">Son 3 Ay</option>
+                        <option value="last_6_months">Son 6 Ay</option>
+                        <option value="last_1_year">Son 1 Yıl (Sene)</option>
+                    </select>
+                </div>
+                <div style="flex:1; min-width:120px;">
+                    <label>Başlangıç:</label>
+                    <input type="date" id="filterStart" onchange="document.getElementById('filterRange').value='custom'; currentPage=1; renderHistory()">
+                </div>
+                <div style="flex:1; min-width:120px;">
                     <label>Bitiş:</label>
-                    <input type="date" id="filterEnd" onchange="currentPage=1; renderHistory()">
+                    <input type="date" id="filterEnd" onchange="document.getElementById('filterRange').value='custom'; currentPage=1; renderHistory()">
                 </div>
             </div>
+
             <div style="overflow-x:auto;">
                 <table>
                     <thead>
@@ -191,6 +239,8 @@
                     <tbody id="historyTableBody"></tbody>
                 </table>
             </div>
+
+            <div class="summary-box" id="filterSummaryBox"></div>
 
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; border-top:1px solid #e2e8f0; padding-top:10px;">
                 <button class="btn-mini" style="background:#cbd5e0; color:#2d3748; padding:8px 15px;" onclick="prevPage()">⬅️ Önceki</button>
@@ -206,6 +256,17 @@
         let targetUsers = [];
         let transactions = [];
         let userBalances = {};
+        let userUnpaidMonths = {};
+        let userScheduledMonths = {};
+
+        function getCurrentRealMonthStr() {
+            const d = new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            return `${y}-${m}`;
+        }
+
+        let selectedDisplayMonth = getCurrentRealMonthStr();
 
         let currentPage = 1;
         const itemsPerPage = 5;
@@ -224,6 +285,103 @@
                 if (ib === -1) ib = 99;
                 return ia - ib;
             });
+        }
+
+        function formatDateYMD(dateObj) {
+            let year = dateObj.getFullYear();
+            let month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            let day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatMonthTitle(yearMonthStr) {
+            if (!yearMonthStr || yearMonthStr.length < 7) return yearMonthStr;
+            const parts = yearMonthStr.split('-');
+            const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+            return date.toLocaleString('tr-TR', { month: 'long', year: 'numeric' });
+        }
+
+        function getNextMonthStr(yearMonthStr) {
+            const parts = yearMonthStr.split('-');
+            let year = parseInt(parts[0]);
+            let month = parseInt(parts[1]); 
+            let d = new Date(year, month, 1);
+            let y = d.getFullYear();
+            let m = String(d.getMonth() + 1).padStart(2, '0');
+            return `${y}-${m}`;
+        }
+
+        function isWithin7DaysOfRealMonthEnd() {
+            const today = new Date();
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            const daysRemaining = lastDay - today.getDate();
+            return daysRemaining <= 7;
+        }
+
+        function changeDisplayMonth(direction) {
+            let parts = selectedDisplayMonth.split('-');
+            let year = parseInt(parts[0]);
+            let month = parseInt(parts[1]) - 1 + direction;
+
+            let d = new Date(year, month, 1);
+            let y = d.getFullYear();
+            let m = String(d.getMonth() + 1).padStart(2, '0');
+            selectedDisplayMonth = `${y}-${m}`;
+            calculateBalances();
+        }
+
+        function resetDisplayMonth() {
+            selectedDisplayMonth = getCurrentRealMonthStr();
+            calculateBalances();
+        }
+
+        function addMonthsToDate(baseDateObj, monthsToAdd) {
+            let d = new Date(baseDateObj.getTime());
+            let targetDay = d.getDate();
+            d.setMonth(d.getMonth() + monthsToAdd);
+            if (d.getDate() !== targetDay) {
+                d.setDate(0);
+            }
+            return d;
+        }
+
+        function applyQuickDateFilter() {
+            const val = document.getElementById('filterRange').value;
+            const startInput = document.getElementById('filterStart');
+            const endInput = document.getElementById('filterEnd');
+            const today = new Date();
+
+            if (val === 'custom') {
+                startInput.value = '';
+                endInput.value = '';
+            } else if (val === 'current_month') {
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                startInput.value = formatDateYMD(firstDay);
+                endInput.value = formatDateYMD(today);
+            } else if (val === 'last_1_month') {
+                const pastDate = new Date(today);
+                pastDate.setMonth(today.getMonth() - 1);
+                startInput.value = formatDateYMD(pastDate);
+                endInput.value = formatDateYMD(today);
+            } else if (val === 'last_3_months') {
+                const pastDate = new Date(today);
+                pastDate.setMonth(today.getMonth() - 3);
+                startInput.value = formatDateYMD(pastDate);
+                endInput.value = formatDateYMD(today);
+            } else if (val === 'last_6_months') {
+                const pastDate = new Date(today);
+                pastDate.setMonth(today.getMonth() - 6);
+                startInput.value = formatDateYMD(pastDate);
+                endInput.value = formatDateYMD(today);
+            } else if (val === 'last_1_year') {
+                const pastDate = new Date(today);
+                pastDate.setFullYear(today.getFullYear() - 1);
+                startInput.value = formatDateYMD(pastDate);
+                endInput.value = formatDateYMD(today);
+            }
+
+            currentPage = 1;
+            renderHistory();
         }
 
         function initData() {
@@ -268,90 +426,67 @@
         }
 
         function calculateBalances() {
-            let currentMonthStr = new Date().toISOString().substring(0, 7);
-            
-            // Yardımcı fonksiyon: İstenilen aya kadar olan hesaplamaları yapar
-            function computeForMonth(monthStr) {
-                let tempBalances = {};
-                targetUsers.forEach(u => {
-                    tempBalances[u] = { savings: 0, totalDebt: 0, pastAndCurrentTaksit: 0, totalPaid: 0, thisMonthDue: 0 };
-                });
+            let tempBalances = {};
+            targetUsers.forEach(u => {
+                tempBalances[u] = { savings: 0, totalDebt: 0 };
+            });
 
-                transactions.forEach(tx => {
-                    if(!tempBalances[tx.userId]) return;
-                    const amt = parseFloat(tx.amount) || 0;
-                    
-                    if(tx.type === 'birikim_ekle') tempBalances[tx.userId].savings += amt;
-                    if(tx.type === 'birikim_dus') tempBalances[tx.userId].savings -= amt;
-                    
-                    if(tx.type === 'taksit_ekle') {
-                        tempBalances[tx.userId].totalDebt += amt;
-                        // İşlem tarihi, kontrol edilen aydan küçük/eşitse taksit vadesi gelmiş sayılır
-                        if(tx.date && tx.date.substring(0, 7) <= monthStr) {
-                            tempBalances[tx.userId].pastAndCurrentTaksit += amt;
-                        }
-                    }
-                    if(tx.type === 'taksit_odendi') {
-                        tempBalances[tx.userId].totalDebt -= amt;
-                        tempBalances[tx.userId].totalPaid += amt;
-                    }
-                });
-
-                let totalDue = 0;
-                targetUsers.forEach(u => {
-                    const b = tempBalances[u];
-                    b.thisMonthDue = Math.max(0, b.pastAndCurrentTaksit - b.totalPaid);
-                    b.debt = Math.max(0, b.totalDebt);
-                    totalDue += b.thisMonthDue;
-                });
-                return { balances: tempBalances, totalDue: totalDue };
-            }
-
-            let result = computeForMonth(currentMonthStr);
-            let displayMonthStr = currentMonthStr;
-            let isFutureMonth = false;
-
-            // Eğer bu ayki tüm taksitler ödendiyse, sonraki aylara bak
-            if (result.totalDue === 0) {
-                let targetDate = new Date();
+            transactions.forEach(tx => {
+                if(!tempBalances[tx.userId]) return;
+                const amt = parseFloat(tx.amount) || 0;
                 
-                // İleriye dönük max 12 aya kadar borçlu olunan ilk ayı bul
-                for(let i = 1; i <= 12; i++) {
-                    targetDate.setMonth(targetDate.getMonth() + 1);
-                    let nextMonthStr = targetDate.toISOString().substring(0, 7);
-                    let nextResult = computeForMonth(nextMonthStr);
-                    
-                    if (nextResult.totalDue > 0) {
-                        result = nextResult;
-                        displayMonthStr = nextMonthStr;
-                        isFutureMonth = true;
-                        break;
-                    }
-                }
-                
-                // Eğer gelecekte hiç borç yoksa, yine de bir sonraki ayın boş halini göster
-                if (result.totalDue === 0) {
-                    targetDate = new Date();
-                    targetDate.setMonth(targetDate.getMonth() + 1);
-                    displayMonthStr = targetDate.toISOString().substring(0, 7);
-                    result = computeForMonth(displayMonthStr);
-                    isFutureMonth = true;
-                }
-            }
+                if(tx.type === 'birikim_ekle') tempBalances[tx.userId].savings += amt;
+                if(tx.type === 'birikim_dus') tempBalances[tx.userId].savings -= amt;
+                if(tx.type === 'taksit_ekle') tempBalances[tx.userId].totalDebt += amt;
+                if(tx.type === 'taksit_odendi') tempBalances[tx.userId].totalDebt -= amt;
+            });
 
-            userBalances = result.balances;
-            // Tabloyu çizerken, gösterilen ayın bilgisini ve gelecek ay olup olmadığını gönderiyoruz
-            renderBalances(displayMonthStr, isFutureMonth);
+            targetUsers.forEach(u => {
+                tempBalances[u].debt = Math.max(0, tempBalances[u].totalDebt);
+            });
+            userBalances = tempBalances;
+
+            userUnpaidMonths = {};
+            userScheduledMonths = {};
+
+            targetUsers.forEach(u => {
+                userUnpaidMonths[u] = {};
+                userScheduledMonths[u] = {};
+
+                const debts = transactions
+                    .filter(t => t.userId === u && t.type === 'taksit_ekle')
+                    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+                let paidPool = transactions
+                    .filter(t => t.userId === u && t.type === 'taksit_odendi')
+                    .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
+                debts.forEach(d => {
+                    const amt = parseFloat(d.amount) || 0;
+                    const monthKey = d.date ? d.date.substring(0, 7) : 'Bilinmeyen';
+
+                    userScheduledMonths[u][monthKey] = (userScheduledMonths[u][monthKey] || 0) + amt;
+
+                    if (paidPool >= amt) {
+                        paidPool -= amt;
+                        userUnpaidMonths[u][monthKey] = userUnpaidMonths[u][monthKey] || 0;
+                    } else {
+                        const unpaid = amt - paidPool;
+                        paidPool = 0;
+                        userUnpaidMonths[u][monthKey] = (userUnpaidMonths[u][monthKey] || 0) + unpaid;
+                    }
+                });
+            });
+
+            renderBalances(selectedDisplayMonth);
         }
 
-        function renderBalances(displayMonthStr, isFutureMonth) {
+        function renderBalances(displayMonthStr) {
             const cont = document.getElementById('balancesContainer');
             const payTbody = document.getElementById('monthlyPayTableBody');
             const tableTitle = document.getElementById('tableTitle');
             
-            // Başlığı dinamik olarak değiştir (Örn: "Ağustos 2026")
-            const dateObj = new Date(displayMonthStr + "-01");
-            const monthName = dateObj.toLocaleString('tr-TR', { month: 'long', year: 'numeric' });
+            const monthName = formatMonthTitle(displayMonthStr);
             if (tableTitle) {
                 tableTitle.innerHTML = `🗓️ ${monthName} Taksit Ödeme Tablosu`;
             }
@@ -359,13 +494,10 @@
             cont.innerHTML = "";
             payTbody.innerHTML = "";
 
-            let activeMonthlyDebtsCount = 0;
-
             targetUsers.forEach(u => {
                 const bal = userBalances[u];
                 const savClass = bal.savings < 0 ? 'text-red' : 'text-green';
                 const debtClass = bal.debt > 0 ? 'text-red' : 'text-green';
-                const monthDueClass = bal.thisMonthDue > 0 ? 'text-red' : 'text-green';
                 
                 cont.innerHTML += `
                     <div class="balance-card">
@@ -376,50 +508,98 @@
                         <div class="bal-val ${debtClass}">${bal.debt.toFixed(2)} TL</div>
                     </div>
                 `;
-
-                if (bal.thisMonthDue > 0) {
-                    activeMonthlyDebtsCount++;
-                    
-                    // Gelecek ay gösteriliyorsa butonu inaktif (disabled) yap
-                    let actionButton = "";
-                    if (isFutureMonth) {
-                        actionButton = `<button class="btn-mini" style="background:#cbd5e0; color:#4a5568; cursor:not-allowed;" disabled title="Bu ay henüz gelmedi">
-                                    ⏳ Zamanı Gelmedi
-                                </button>`;
-                    } else {
-                        actionButton = `<button class="btn-mini" style="background:#319795; color:white;" onclick="payMonthlyInstallment('${u}', ${bal.thisMonthDue})">
-                                    💳 Taksiti Birikimden Öde
-                                </button>`;
-                    }
-
-                    payTbody.innerHTML += `
-                        <tr>
-                            <td style="font-weight:bold;">${u.toUpperCase()}</td>
-                            <td class="${savClass}" style="font-weight:bold;">${bal.savings.toFixed(2)} TL</td>
-                            <td class="${monthDueClass}" style="font-weight:bold; font-size:1.05rem;">${bal.thisMonthDue.toFixed(2)} TL</td>
-                            <td style="color:#718096;">${bal.debt.toFixed(2)} TL</td>
-                            <td>${actionButton}</td>
-                        </tr>
-                    `;
-                }
             });
 
-            if (activeMonthlyDebtsCount === 0) {
+            const currentRealMonth = getCurrentRealMonthStr();
+            const nextRealMonth = getNextMonthStr(currentRealMonth);
+            const isNearEnd = isWithin7DaysOfRealMonthEnd();
+
+            let rowsAdded = 0;
+
+            targetUsers.forEach(u => {
+                const bal = userBalances[u];
+                
+                const scheduledKeys = Object.keys(userScheduledMonths[u] || {});
+                const unpaidKeys = Object.keys(userUnpaidMonths[u] || {});
+                const allUserMonthKeys = Array.from(new Set([...scheduledKeys, ...unpaidKeys])).sort();
+
+                allUserMonthKeys.forEach(mKey => {
+                    const scheduledAmt = userScheduledMonths[u]?.[mKey] || 0;
+                    const unpaidAmt = userUnpaidMonths[u]?.[mKey] || 0;
+
+                    // Tabloda Gösterilme Koşulları:
+                    // 1) Seçilen görüntüleme dönemi ile tam eşleşen taksitler
+                    // 2) Geçmişten kalan ödenmemiş taksitler (mKey < displayMonthStr ve borç varsa)
+                    // 3) Ayın bitimine 7 gün kala, güncel aydayken bir sonraki ayın taksiti
+                    const isCurrentDisplayMonth = (mKey === displayMonthStr);
+                    const isPastUnpaid = (mKey < displayMonthStr && unpaidAmt > 0);
+                    const isUpcomingPreview = (displayMonthStr === currentRealMonth && isNearEnd && mKey === nextRealMonth);
+
+                    if (isCurrentDisplayMonth || isPastUnpaid || isUpcomingPreview) {
+                        rowsAdded++;
+
+                        const savClass = bal.savings < 0 ? 'text-red' : 'text-green';
+                        const isDue = (mKey <= currentRealMonth);
+
+                        let actionButton = "";
+                        let installmentDisplay = "";
+
+                        if (unpaidAmt <= 0 && scheduledAmt > 0) {
+                            installmentDisplay = `<span class="text-green">0.00 TL</span> <span style="font-size:0.75rem; color:#38a169;">(Ödendi)</span>`;
+                            actionButton = `<button class="btn-mini" style="background:#38a169; color:white; cursor:default;" disabled>✅ Ödendi</button>`;
+                        } else if (unpaidAmt > 0) {
+                            installmentDisplay = `<span class="text-red">${unpaidAmt.toFixed(2)} TL</span>`;
+                            
+                            if (isDue) {
+                                actionButton = `<button class="btn-mini" style="background:#319795; color:white;" onclick="payMonthlyInstallment('${u}', ${unpaidAmt}, '${mKey}')">
+                                                    💳 Taksiti Birikimden Öde
+                                                </button>`;
+                            } else {
+                                actionButton = `<button class="btn-mini" style="background:#cbd5e0; color:#4a5568; cursor:not-allowed;" disabled title="Bu dönemin henüz vadesi gelmedi">
+                                                    ⏳ Vadesi Gelmedi
+                                                </button>`;
+                            }
+                        } else {
+                            installmentDisplay = `<span style="color:#718096;">0.00 TL</span>`;
+                            actionButton = `<button class="btn-mini" style="background:#e2e8f0; color:#a0aec0; cursor:default;" disabled>—</button>`;
+                        }
+
+                        const monthLabel = formatMonthTitle(mKey);
+
+                        payTbody.innerHTML += `
+                            <tr>
+                                <td style="font-weight:bold;">${u.toUpperCase()}</td>
+                                <td class="${savClass}" style="font-weight:bold;">${bal.savings.toFixed(2)} TL</td>
+                                <td style="font-weight:bold; font-size:0.95rem;">
+                                    ${installmentDisplay}
+                                    <div style="font-size:0.75rem; color:#718096; font-weight:normal;">📅 Dönem: ${monthLabel}</div>
+                                </td>
+                                <td style="color:#718096;">${bal.debt.toFixed(2)} TL</td>
+                                <td>${actionButton}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            if (rowsAdded === 0) {
                 payTbody.innerHTML = `
                     <tr>
                         <td colspan="5" style="text-align:center; color:#38a169; font-weight:bold; padding:15px;">
-                            🎉 ${monthName} döneminde ödenmesi gereken aktif bir taksit borcu bulunmamaktadır!
+                            🎉 ${monthName} dönemi için ödenmesi gereken herhangi bir taksit borcu bulunmamaktadır!
                         </td>
                     </tr>
                 `;
             }
         }
 
-        async function payMonthlyInstallment(user, amount) {
+        async function payMonthlyInstallment(user, amount, monthKey) {
             if (amount <= 0) return alert("Bu kullanıcının ödenmesi gereken vadesi gelmiş taksit borcu bulunmamaktadır.");
             if (!verifyPin()) return;
 
-            if (!confirm(`${user.toUpperCase()} kullanıcısının ${amount.toFixed(2)} TL tutarındaki taksiti birikim fonundan düşülecek. Onaylıyor musunuz?`)) return;
+            const monthLabel = formatMonthTitle(monthKey);
+
+            if (!confirm(`${user.toUpperCase()} kullanıcısının ${monthLabel} dönemine ait ${amount.toFixed(2)} TL tutarındaki taksiti birikim fonundan düşülecek. Onaylıyor musunuz?`)) return;
 
             const dateStr = new Date().toISOString().split('T')[0];
 
@@ -427,7 +607,7 @@
                 userId: user,
                 type: 'taksit_odendi',
                 amount: amount,
-                desc: `Aylık Taksit Ödemesi (Birikimden Ödendi)`,
+                desc: `Aylık Taksit Ödemesi (${monthLabel})`,
                 date: dateStr,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
@@ -436,23 +616,31 @@
                 userId: user,
                 type: 'birikim_dus',
                 amount: amount,
-                desc: `Aylık Taksit Ödemesi İçin Birikimden Düşüldü`,
+                desc: `Aylık Taksit Ödemesi İçin Birikimden Düşüldü (${monthLabel})`,
                 date: dateStr,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
             });
 
-            alert(`✅ Başarılı! ${user.toUpperCase()} kullanıcısının ${amount.toFixed(2)} TL taksit ödemesi birikiminden düşüldü.`);
+            alert(`✅ Başarılı! ${user.toUpperCase()} kullanıcısının ${monthLabel} dönemine ait ${amount.toFixed(2)} TL taksit ödemesi birikiminden düşüldü.`);
         }
 
         function getFilteredTransactions() {
             const fUser = document.getElementById('filterUser').value;
+            const fType = document.getElementById('filterType').value;
             const fStart = document.getElementById('filterStart').value;
             const fEnd = document.getElementById('filterEnd').value;
 
             let filtered = transactions;
+            
             if(fUser !== 'all') filtered = filtered.filter(t => t.userId === fUser);
+            
+            if(fType === 'birikim_all') filtered = filtered.filter(t => t.type === 'birikim_ekle' || t.type === 'birikim_dus');
+            else if(fType === 'borc_all') filtered = filtered.filter(t => t.type === 'taksit_ekle' || t.type === 'taksit_odendi');
+            else if(fType !== 'all') filtered = filtered.filter(t => t.type === fType);
+
             if(fStart) filtered = filtered.filter(t => t.date >= fStart);
             if(fEnd) filtered = filtered.filter(t => t.date <= fEnd);
+            
             return filtered;
         }
 
@@ -492,6 +680,50 @@
                     </tr>
                 `;
             });
+
+            renderFilterSummary(filtered);
+        }
+
+        function renderFilterSummary(filteredList) {
+            const summaryBox = document.getElementById('filterSummaryBox');
+            
+            let totalSavingsIn = 0;
+            let totalSavingsOut = 0;
+            let totalDebtAdded = 0;
+            let totalDebtPaid = 0;
+
+            filteredList.forEach(tx => {
+                let amt = parseFloat(tx.amount) || 0;
+                if(tx.type === 'birikim_ekle') totalSavingsIn += amt;
+                if(tx.type === 'birikim_dus') totalSavingsOut += amt;
+                if(tx.type === 'taksit_ekle') totalDebtAdded += amt;
+                if(tx.type === 'taksit_odendi') totalDebtPaid += amt;
+            });
+
+            let netSavings = totalSavingsIn - totalSavingsOut;
+
+            summaryBox.innerHTML = `
+                <div class="summary-item">
+                    <label>Filtrelenen Birikim (+):</label><br>
+                    <span class="text-green">+${totalSavingsIn.toFixed(2)} TL</span>
+                </div>
+                <div class="summary-item">
+                    <label>Filtrelenen Birikim Düşüşü (-):</label><br>
+                    <span class="text-red">-${totalSavingsOut.toFixed(2)} TL</span>
+                </div>
+                <div class="summary-item">
+                    <label>Net Birikim Toplamı:</label><br>
+                    <span class="${netSavings >= 0 ? 'text-green' : 'text-red'}">${netSavings.toFixed(2)} TL</span>
+                </div>
+                <div class="summary-item">
+                    <label>Filtrelenen Borç/Taksit Ekleme:</label><br>
+                    <span class="text-red">+${totalDebtAdded.toFixed(2)} TL</span>
+                </div>
+                <div class="summary-item">
+                    <label>Filtrelenen Borç Ödemesi:</label><br>
+                    <span class="text-green">-${totalDebtPaid.toFixed(2)} TL</span>
+                </div>
+            `;
         }
 
         function prevPage() {
@@ -510,6 +742,79 @@
             }
         }
 
+        function trToAscii(str) {
+            if (!str) return "";
+            return str
+                .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
+                .replace(/Ü/g, 'U').replace(/ü/g, 'u')
+                .replace(/Ş/g, 'S').replace(/ş/g, 's')
+                .replace(/İ/g, 'I').replace(/ı/g, 'i')
+                .replace(/Ö/g, 'O').replace(/ö/g, 'o')
+                .replace(/Ç/g, 'C').replace(/ç/g, 'c');
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const filtered = getFilteredTransactions();
+            if (filtered.length === 0) {
+                return alert("Seçili kriterlere uygun raporlanacak işlem bulunamadı!");
+            }
+
+            const fUser = document.getElementById('filterUser').value;
+            const fStart = document.getElementById('filterStart').value;
+            const fEnd = document.getElementById('filterEnd').value;
+
+            let titleUser = fUser === 'all' ? 'TUM KULLANICILAR' : fUser.toUpperCase();
+            let dateRangeText = "";
+
+            if (fStart || fEnd) {
+                dateRangeText = `Tarih Araligi: ${fStart || 'Baslangic Yok'} / ${fEnd || 'Bitis Yok'}`;
+            } else {
+                dateRangeText = `Tarih Araligi: TUM ZAMANLAR (Komple Girdiler)`;
+            }
+
+            doc.setFontSize(15);
+            doc.text("KARAASLAN - GECMIS ISLEMLER RAPORU", 14, 15);
+
+            doc.setFontSize(9);
+            doc.text(trToAscii(`Kullanici Filtresi: ${titleUser}`), 14, 22);
+            doc.text(trToAscii(dateRangeText), 14, 27);
+            doc.text(trToAscii(`Rapor Alma Tarihi: ${new Date().toLocaleDateString('tr-TR')}`), 14, 32);
+
+            const tableColumns = ["Tarih", "Kullanici", "Islem Turu", "Tutar (TL)", "Aciklama"];
+            const tableRows = [];
+
+            filtered.forEach(tx => {
+                let typeStr = "";
+                if (tx.type === 'birikim_ekle') typeStr = "Birikim (+)";
+                if (tx.type === 'birikim_dus') typeStr = "Birikim (-)";
+                if (tx.type === 'taksit_ekle') typeStr = "Borc (+)";
+                if (tx.type === 'taksit_odendi') typeStr = "Borc Odendi";
+
+                const row = [
+                    tx.date || "",
+                    trToAscii((tx.userId || "").toUpperCase()),
+                    trToAscii(typeStr),
+                    `${parseFloat(tx.amount || 0).toFixed(2)} TL`,
+                    trToAscii(tx.desc || "")
+                ];
+                tableRows.push(row);
+            });
+
+            doc.autoTable({
+                head: [tableColumns],
+                body: tableRows,
+                startY: 37,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [214, 158, 46], textColor: [255, 255, 255] }
+            });
+
+            const pdfFileName = `Gecmis_Islemler_Raporu_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(pdfFileName);
+        }
+
         async function saveSharedExpense() {
             const desc = document.getElementById('sharedDesc').value.trim();
             const totalAmount = parseFloat(document.getElementById('sharedAmount').value);
@@ -526,8 +831,8 @@
             const baseDate = new Date();
 
             for(let i = 0; i < installmentCount; i++) {
-                let txDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate());
-                let dateStr = txDate.toISOString().split('T')[0];
+                let txDate = addMonthsToDate(baseDate, i);
+                let dateStr = formatDateYMD(txDate);
 
                 for(let chk of checkboxes) {
                     await db.ref('savingsTransactions').push({
@@ -600,22 +905,29 @@
             
             if(!settings.autoPay) return;
 
-            const currentMonthStr = new Date().toISOString().substring(0, 7);
+            const currentMonthStr = getCurrentRealMonthStr();
             
             if(settings.lastProcessedMonth !== currentMonthStr) {
                 let hasProcessed = false;
                 const todayStr = new Date().toISOString().split('T')[0];
                 
                 for(let u of targetUsers) {
-                    const debt = userBalances[u] ? userBalances[u].thisMonthDue : 0;
-                    if(debt > 0) {
+                    const unpaidMap = userUnpaidMonths[u] || {};
+                    let totalDue = 0;
+                    Object.keys(unpaidMap).forEach(mKey => {
+                        if (mKey <= currentMonthStr) {
+                            totalDue += unpaidMap[mKey];
+                        }
+                    });
+
+                    if(totalDue > 0) {
                         await db.ref('savingsTransactions').push({
-                            userId: u, type: 'taksit_odendi', amount: debt,
+                            userId: u, type: 'taksit_odendi', amount: totalDue,
                             desc: `Otomatik Sistem Tahsilatı (${currentMonthStr})`,
                             date: todayStr, timestamp: firebase.database.ServerValue.TIMESTAMP
                         });
                         await db.ref('savingsTransactions').push({
-                            userId: u, type: 'birikim_dus', amount: debt,
+                            userId: u, type: 'birikim_dus', amount: totalDue,
                             desc: `Otomatik Sistem Tahsilatı (${currentMonthStr})`,
                             date: todayStr, timestamp: firebase.database.ServerValue.TIMESTAMP
                         });

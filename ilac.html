@@ -368,7 +368,7 @@
                     </div>
                 </div>
 
-                <!-- SU TÜKETİMİ ÇİZGİSEL GRAFİK & DÖNEMSEL RAPOR MODÜLÜ (KAPALI GELİR) -->
+                <!-- SU TÜKETİMİ ÇİZGİSEL GRAFİK & DÖNEMSEL RAPOR MODÜLÜ -->
                 <details class="report-section accordion-section" style="margin-top: 0.8rem; background: #ebf8ff; border: 1px solid #bee3f8;">
                     <summary>
                         <h3 style="color: #2b6cb0; font-size: 0.85rem; margin: 0;">
@@ -391,7 +391,6 @@
 
                         <button class="btn" id="btn-gen-water-report" style="background: #3182ce; width: 100%; padding: 0.4rem; font-size: 0.8rem; margin-bottom: 0.5rem;">📈 Verileri Hesapla & Grafiği Çiz</button>
 
-                        <!-- TOPLAM TÜKETİM VE ORTALAMA GÜNLÜK TÜKETİM ÖZET KARTLARI -->
                         <div class="water-summary-grid" id="water-summary-container">
                             <div class="water-summary-box">
                                 <span class="lbl">💧 Toplam Tüketim:</span>
@@ -472,7 +471,7 @@
                     <button class="btn" style="background: #2b6cb0; width: 100%; padding: 0.6rem; font-size: 0.85rem;" id="btn-export-options">📋 İlaç Listesi Raporu / Kopyala</button>
                 </div>
 
-                <!-- DOKTORA VERİLECEK KULLANIM RAPORU MODÜLÜ (KAPALI GELİR) -->
+                <!-- DOKTORA VERİLECEK KULLANIM RAPORU MODÜLÜ -->
                 <details class="report-section accordion-section" style="margin-bottom: 0.8rem; background: #ebf8ff; border: 1px solid #bee3f8;">
                     <summary>
                         <h3 style="color: #2b6cb0; font-size: 0.85rem; margin: 0;">
@@ -508,7 +507,6 @@
             <!-- 3. SÜTUN: İNSÜLİN KALEMİ & SAĞLIK RAPORLARI TAKİBİ -->
             <div style="display: flex; flex-direction: column; gap: 0.8rem;">
                 
-                <!-- İNSÜLİN & SAĞLIK RAPORLARI KARTI (KAPALI GELİR) -->
                 <details class="card accordion-card" style="border-left: 4px solid #805ad5;">
                     <summary>
                         <h2 style="margin: 0;">
@@ -610,10 +608,36 @@
             const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
             return `${y}-${m}-${day}`;
         }
+
         function formatDateTime(d = new Date()) {
             const day = String(d.getDate()).padStart(2,'0'), m = String(d.getMonth()+1).padStart(2,'0'), y = d.getFullYear();
             const h = String(d.getHours()).padStart(2,'0'), min = String(d.getMinutes()).padStart(2,'0');
             return `${day}-${m}-${y} ${h}:${min}`;
+        }
+
+        function getDateTimeForSelectedDate(dateStr) {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            if (!dateStr) return formatDateTime(now);
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return formatDateTime(now);
+            return `${parts[2]}-${parts[1]}-${parts[0]} ${h}:${min}`;
+        }
+
+        function extractDocIdFromCustomDate(timeStr) {
+            if (!timeStr) return null;
+            const parts = timeStr.trim().split(' ');
+            if (!parts[0]) return null;
+            const dateParts = parts[0].split('-');
+            if (dateParts.length !== 3) return null;
+            const day = dateParts[0].padStart(2, '0');
+            const month = dateParts[1].padStart(2, '0');
+            const year = dateParts[2];
+            if (year.length === 4) {
+                return `${year}-${month}-${day}`;
+            }
+            return null;
         }
         
         function formatDateDMY(dateStr) {
@@ -623,7 +647,6 @@
             return `${parts[2]}.${parts[1]}.${parts[0]}`;
         }
 
-        // TARIHTEN HAFTANIN GUNU ADINI DÖNDÜRÜR (Cuma, Perşembe vs.)
         function getDayName(dateStr) {
             if (!dateStr) return '';
             const parts = dateStr.split('-');
@@ -643,6 +666,7 @@
                 return new Date(year, month - 1, day, hour, minute).getTime();
             } catch(e) { return 0; }
         }
+
         function calculateDaysRemaining(targetDateStr) {
             if (!targetDateStr) return null;
             const parts = targetDateStr.split('-');
@@ -876,7 +900,31 @@
             styleEl.innerHTML = isLandscape ? '@media print { @page { size: landscape; margin: 8mm; } }' : '@media print { @page { size: portrait; margin: 10mm; } }';
         }
 
-        // --- SU TÜKETİMİ ÇİZGİSEL GRAFİK VE RAPORLAMA FONKSİYONLARI ---
+        async function copyTableToClipboard(htmlTableString, plainTextFallback) {
+            try {
+                if (navigator.clipboard && window.ClipboardItem) {
+                    const blobHtml = new Blob([htmlTableString], { type: 'text/html' });
+                    const blobText = new Blob([plainTextFallback], { type: 'text/plain' });
+                    const item = new ClipboardItem({
+                        'text/html': blobHtml,
+                        'text/plain': blobText
+                    });
+                    await navigator.clipboard.write([item]);
+                } else {
+                    await navigator.clipboard.writeText(plainTextFallback);
+                }
+                alert("✅ Tablo, e-postaya doğrudan yapıştırılacak şekilde hafızaya kopyalandı!");
+            } catch (err) {
+                try {
+                    await navigator.clipboard.writeText(plainTextFallback);
+                    alert("✅ Tablo metin olarak hafızaya kopyalandı!");
+                } catch (e) {
+                    alert("⚠️ Kopyalama başarısız oldu: " + e.message);
+                }
+            }
+        }
+
+        // --- SU TÜKETİMİ ÇİZGİSEL GRAFİK VE RAPORLAMA ---
         async function calculateAndRenderWaterReport() {
             const startDate = document.getElementById('water-report-start').value;
             const endDate = document.getElementById('water-report-end').value;
@@ -1010,7 +1058,6 @@
 
         document.getElementById('btn-gen-water-report').onclick = () => calculateAndRenderWaterReport();
 
-        // SU RAPORU / PDF YAZDIRMA
         document.getElementById('btn-print-water-report').onclick = () => {
             if (calculatedWaterRecords.length === 0) return alert("⚠️ Önce verileri hesaplayınız!");
             setPrintOrientation(false);
@@ -1089,55 +1136,201 @@
             }
         };
 
-        // --- İLAÇ LİSTESİ GENEL YAZDIRMA ---
+        // --- İLAÇ LİSTESİ RAPORU ---
         document.getElementById('btn-export-options').onclick = () => {
-            setPrintOrientation(true);
+            const choice = prompt(
+                "📋 İLAÇ LİSTESİ VE DOKTORA YAZDIRMA RAPORU\n\n" +
+                "Lütfen yapmak istediğiniz işlemi seçiniz (1-4):\n\n" +
+                "1 - Tüm ilaçların tüm listesini PDF olarak ver (Şu anki haliyle)\n" +
+                "2 - Tüm ilaç listesini e-postaya yapıştırılacak tablo olarak hafızaya kopyala\n" +
+                "3 - Doktora iletmek için süresi biten veya 15 gün ve altında kalan ilaçları PDF olarak ver\n" +
+                "4 - 3. seçenekteki doktora özel tabloyu e-postaya yapıştırmak için hafızaya kopyala"
+            );
+
+            if (!choice) return;
             const printArea = document.getElementById('print-area');
-            let htmlContent = `
-                <div class="print-header">
-                    <h1>📋 Kayıtlı İlaç ve Rapor Takip Listesi</h1>
-                    <p><strong>Rapor Tarih Giriş Gün Saati:</strong> ${formatDateTime(new Date())}</p>
-                </div>
-                <table class="print-table">
-                    <thead>
-                        <tr>
-                            <th>İlaç Adı</th>
-                            <th>Teşhis / ICD</th>
-                            <th>Günlük Doz</th>
-                            <th>Eldeki Stok</th>
-                            <th>Doktor</th>
-                            <th>Reçete Tarihi</th>
-                            <th>Rapor Bitiş Tarihi</th>
-                            <th>Bitiş Kalan Gün</th>
-                            <th>Yazdırılma Durumu</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
 
-            masterMeds.forEach(med => {
-                const daysRem = calculateDaysRemaining(med.endDate);
-                const dayName = getDayName(med.endDate);
-                const daysRemStr = daysRem !== null ? (daysRem <= 0 ? '<b style="color:red;">Bitti</b>' : `${daysRem} Gün`) : '—';
-                
-                htmlContent += `
-                    <tr>
-                        <td><b>${med.name}</b></td>
-                        <td>${med.diagnosis || '—'}</td>
-                        <td>${med.maxDaily} Doz (${med.ruleText || '—'})</td>
-                        <td>${med.stock !== undefined ? med.stock : '—'}</td>
-                        <td>${med.doctor || '—'}</td>
-                        <td>${formatDateDMY(med.prescribedDate)} ${getDayName(med.prescribedDate)}</td>
-                        <td>${formatDateDMY(med.endDate)} ${dayName}</td>
-                        <td><b>${daysRemStr}</b></td>
-                        <td>${med.noReorder ? '🚫 Yazdırılmayacak' : '✅ Reçete Edilecek'}</td>
-                    </tr>
+            if (choice === "1") {
+                setPrintOrientation(true);
+                let htmlContent = `
+                    <div class="print-header">
+                        <h1>📋 Kayıtlı İlaç ve Rapor Takip Listesi (Tüm Liste)</h1>
+                        <p><strong>Rapor Tarih Giriş Gün Saati:</strong> ${formatDateTime(new Date())}</p>
+                    </div>
+                    <table class="print-table">
+                        <thead>
+                            <tr>
+                                <th>İlaç Adı</th>
+                                <th>Teşhis / ICD</th>
+                                <th>Günlük Doz</th>
+                                <th>Eldeki Stok</th>
+                                <th>Doktor</th>
+                                <th>Reçete Tarihi</th>
+                                <th>Rapor Bitiş Tarihi</th>
+                                <th>Bitiş Kalan Gün</th>
+                                <th>Yazdırılma Durumu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                 `;
-            });
 
-            htmlContent += `</tbody></table><div class="print-footer">Sistem tarafından otomatik üretilmiştir.</div>`;
-            printArea.innerHTML = htmlContent;
-            window.print();
+                masterMeds.forEach(med => {
+                    const daysRem = calculateDaysRemaining(med.endDate);
+                    const dayName = getDayName(med.endDate);
+                    const daysRemStr = daysRem !== null ? (daysRem <= 0 ? '<b style="color:red;">Bitti</b>' : `${daysRem} Gün`) : '—';
+                    
+                    htmlContent += `
+                        <tr>
+                            <td><b>${med.name}</b></td>
+                            <td>${med.diagnosis || '—'}</td>
+                            <td>${med.maxDaily} Doz (${med.ruleText || '—'})</td>
+                            <td>${med.stock !== undefined ? med.stock : '—'}</td>
+                            <td>${med.doctor || '—'}</td>
+                            <td>${formatDateDMY(med.prescribedDate)} ${getDayName(med.prescribedDate)}</td>
+                            <td>${formatDateDMY(med.endDate)} ${dayName}</td>
+                            <td><b>${daysRemStr}</b></td>
+                            <td>${med.noReorder ? '🚫 Yazdırılmayacak' : '✅ Reçete Edilecek'}</td>
+                        </tr>
+                    `;
+                });
+
+                htmlContent += `</tbody></table><div class="print-footer">Sistem tarafından otomatik üretilmiştir.</div>`;
+                printArea.innerHTML = htmlContent;
+                window.print();
+
+            } else if (choice === "2") {
+                let htmlTable = `
+                    <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 13px; width: 100%;">
+                        <thead>
+                            <tr style="background-color: #f2f2f2;">
+                                <th style="padding: 8px; text-align: left;">İlaç Adı</th>
+                                <th style="padding: 8px; text-align: left;">Teşhis / ICD</th>
+                                <th style="padding: 8px; text-align: left;">Günlük Doz</th>
+                                <th style="padding: 8px; text-align: left;">Eldeki Stok</th>
+                                <th style="padding: 8px; text-align: left;">Doktor</th>
+                                <th style="padding: 8px; text-align: left;">Reçete Tarihi</th>
+                                <th style="padding: 8px; text-align: left;">Rapor Bitiş Tarihi</th>
+                                <th style="padding: 8px; text-align: left;">Kalan Gün</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                let plainText = `📋 KAYITLI İLAÇ VE RAPOR TAKİP LİSTESİ (${formatDateTime(new Date())})\n\n`;
+                plainText += `İlaç Adı\tTeşhis / ICD\tGünlük Doz\tStok\tDoktor\tReçete Tarihi\tRapor Bitiş Tarihi\tKalan Gün\n`;
+
+                masterMeds.forEach(med => {
+                    const daysRem = calculateDaysRemaining(med.endDate);
+                    const daysRemStr = daysRem !== null ? (daysRem <= 0 ? 'Bitti' : `${daysRem} Gün`) : '—';
+                    
+                    htmlTable += `
+                        <tr>
+                            <td style="padding: 6px;"><b>${med.name}</b></td>
+                            <td style="padding: 6px;">${med.diagnosis || '—'}</td>
+                            <td style="padding: 6px;">${med.maxDaily} Doz</td>
+                            <td style="padding: 6px;">${med.stock !== undefined ? med.stock : '—'}</td>
+                            <td style="padding: 6px;">${med.doctor || '—'}</td>
+                            <td style="padding: 6px;">${formatDateDMY(med.prescribedDate)}</td>
+                            <td style="padding: 6px;">${formatDateDMY(med.endDate)}</td>
+                            <td style="padding: 6px;"><b>${daysRemStr}</b></td>
+                        </tr>
+                    `;
+
+                    plainText += `${med.name}\t${med.diagnosis || '—'}\t${med.maxDaily} Doz\t${med.stock !== undefined ? med.stock : '—'}\t${med.doctor || '—'}\t${formatDateDMY(med.prescribedDate)}\t${formatDateDMY(med.endDate)}\t${daysRemStr}\n`;
+                });
+
+                htmlTable += `</tbody></table>`;
+                copyTableToClipboard(htmlTable, plainText);
+
+            } else if (choice === "3") {
+                const expiredMeds = masterMeds.filter(med => !med.noReorder && getRemainingDays(med) <= 15);
+
+                if (expiredMeds.length === 0) {
+                    alert("⚠️ Reçete yazdırılacak / kullanım süresi 15 gün ve altında kalan ilaç bulunamadı.");
+                    return;
+                }
+
+                setPrintOrientation(false);
+                let htmlContent = `
+                    <div class="print-header">
+                        <h1>🩺 Doktora İlaç Reçete Talep Listesi</h1>
+                        <p><strong>Talep Tarihi:</strong> ${formatDateTime(new Date())}</p>
+                        <p><strong>Açıklama:</strong> Aşağıda süresi biten veya bitmesine 15 gün ve daha az kalan ve tekrar yazılması rica olunan ilaçların listesi bulunmaktadır.</p>
+                    </div>
+                    <table class="print-table">
+                        <thead>
+                            <tr>
+                                <th>İlaç Adı</th>
+                                <th>Teşhis / ICD Kodu</th>
+                                <th>Günlük Doz</th>
+                                <th>Açıklama / Kural</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                expiredMeds.forEach(med => {
+                    htmlContent += `
+                        <tr>
+                            <td><b>${med.name}</b></td>
+                            <td>${med.diagnosis || '—'}</td>
+                            <td>Günde ${med.maxDaily} Doz/Adet</td>
+                            <td>${med.ruleText || 'Özel açıklama belirtilmedi.'}</td>
+                        </tr>
+                    `;
+                });
+
+                htmlContent += `</tbody></table><div class="print-footer">Doktora iletilmek üzere üretilmiştir. Tarih: ${formatDateTime(new Date())}</div>`;
+                printArea.innerHTML = htmlContent;
+                window.print();
+
+            } else if (choice === "4") {
+                const expiredMeds = masterMeds.filter(med => !med.noReorder && getRemainingDays(med) <= 15);
+
+                if (expiredMeds.length === 0) {
+                    alert("⚠️ Reçete yazdırılacak / kullanım süresi 15 gün ve altında kalan ilaç bulunamadı.");
+                    return;
+                }
+
+                let htmlTable = `
+                    <div style="font-family: Arial, sans-serif; font-size: 14px; margin-bottom: 10px;">
+                        <strong>Sayın Doktorum,</strong><br>
+                        Aşağıda kullanım süresi 15 gün ve altında kalan, tekrar yazdırılması gereken ilaçlarımın listesi yer almaktadır. Reçete etmenizi rica ederim.
+                    </div>
+                    <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 13px; width: 100%;">
+                        <thead>
+                            <tr style="background-color: #ebf8ff; color: #2b6cb0;">
+                                <th style="padding: 8px; text-align: left;">İlaç Adı</th>
+                                <th style="padding: 8px; text-align: left;">Teşhis / ICD Kodu</th>
+                                <th style="padding: 8px; text-align: left;">Günlük Doz</th>
+                                <th style="padding: 8px; text-align: left;">Açıklama / Kural</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                let plainText = `Sayın Doktorum,\n\nAşağıda kullanım süresi 15 gün ve altında kalan, tekrar yazdırılması gereken ilaçlarımın listesi yer almaktadır:\n\n`;
+                plainText += `İlaç Adı\tTeşhis / ICD Kodu\tGünlük Doz\tAçıklama / Kural\n`;
+
+                expiredMeds.forEach(med => {
+                    htmlTable += `
+                        <tr>
+                            <td style="padding: 6px;"><b>${med.name}</b></td>
+                            <td style="padding: 6px;">${med.diagnosis || '—'}</td>
+                            <td style="padding: 6px;">Günde ${med.maxDaily} Doz</td>
+                            <td style="padding: 6px;">${med.ruleText || '—'}</td>
+                        </tr>
+                    `;
+
+                    plainText += `${med.name}\t${med.diagnosis || '—'}\tGünde ${med.maxDaily} Doz\t${med.ruleText || '—'}\n`;
+                });
+
+                htmlTable += `</tbody></table>`;
+                copyTableToClipboard(htmlTable, plainText);
+
+            } else {
+                alert("⚠️ Geçersiz seçim! Lütfen 1, 2, 3 veya 4 rakamlarından birini giriniz.");
+            }
         };
 
         // --- DOKTORA VERİLECEK İLAÇ RAPORU OLUŞTURMA ---
@@ -1350,7 +1543,7 @@
             }
         };
 
-        // SAĞLIK RAPORLARININ DİNLENMESİ VE CANLI EKRAN GÜNCELLEMESİ
+        // SAĞLIK RAPORLARI
         const reportsDocRef = doc(db, "sistem_ayarlari", "saglik_raporlari");
         onSnapshot(reportsDocRef, (snap) => {
             if (snap.exists()) {
@@ -1363,7 +1556,6 @@
         });
 
         function updateReportsUI() {
-            // Diyabet Rapor Durumu
             const dStatusBox = document.getElementById('diabetes-report-status');
             if (reportsState.diabetesEndDate) {
                 const dDate = reportsState.diabetesEndDate;
@@ -1383,7 +1575,6 @@
                 dStatusBox.innerHTML = '';
             }
 
-            // Tansiyon Rapor Durumu
             const hStatusBox = document.getElementById('hypertension-report-status');
             if (reportsState.hypertensionEndDate) {
                 const hDate = reportsState.hypertensionEndDate;
@@ -1449,7 +1640,6 @@
                     const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
                     const remainingDays = 28 - diffDays;
 
-                    // 28 Günlük kullanımın bittiği tarihi ve gün adını hesaplama
                     const endUsageDateObj = new Date(lastDate);
                     endUsageDateObj.setDate(endUsageDateObj.getDate() + 28);
                     const endUsageDateStr = getLocalDateString(endUsageDateObj);
@@ -1512,7 +1702,7 @@
             if (!appState.waterLogs) appState.waterLogs = [];
             appState.waterLogs.push({
                 id: 'w_' + Date.now(),
-                time: formatDateTime(new Date()),
+                time: getDateTimeForSelectedDate(currentDateStr),
                 amount: amount
             });
             recalcWaterIntake();
@@ -1525,11 +1715,47 @@
             const index = appState.waterLogs.findIndex(item => item.id === id);
             if (index !== -1) {
                 const currentVal = appState.waterLogs[index].amount;
+                const currentTime = appState.waterLogs[index].time || formatDateTime(new Date());
+
                 const newVal = prompt("Yeni su miktarını (ml) giriniz:", currentVal);
-                if (newVal !== null && newVal.trim() !== "" && !isNaN(newVal)) {
-                    appState.waterLogs[index].amount = parseInt(newVal.trim());
+                if (newVal === null) return;
+
+                const newTime = prompt("Tarih ve saati düzenleyiniz (GG-AA-YYYY SS:DK):", currentTime);
+                if (newTime === null) return;
+
+                let updatedVal = currentVal;
+                if (newVal.trim() !== "" && !isNaN(newVal)) {
+                    updatedVal = parseInt(newVal.trim());
+                }
+
+                let updatedTime = currentTime;
+                if (newTime.trim() !== "") {
+                    updatedTime = newTime.trim();
+                }
+
+                const targetDocId = extractDocIdFromCustomDate(updatedTime) || currentDateStr;
+
+                if (targetDocId === currentDateStr) {
+                    appState.waterLogs[index].amount = updatedVal;
+                    appState.waterLogs[index].time = updatedTime;
                     recalcWaterIntake();
                     await saveData();
+                } else {
+                    const targetDocRef = doc(db, "takip_verileri", targetDocId);
+                    const targetSnap = await getDoc(targetDocRef);
+                    let targetData = targetSnap.exists() ? targetSnap.data() : { waterIntake: 0, waterLogs: [], medsData: {} };
+                    if (!targetData.waterLogs) targetData.waterLogs = [];
+
+                    targetData.waterLogs.push({ id: id, time: updatedTime, amount: updatedVal });
+                    let totalWater = targetData.waterLogs.reduce((acc, curr) => acc + (parseInt(curr.amount) || 0), 0);
+                    targetData.waterIntake = Math.max(0, totalWater);
+
+                    appState.waterLogs.splice(index, 1);
+                    recalcWaterIntake();
+
+                    await saveData();
+                    await setDoc(targetDocRef, targetData, { merge: true });
+                    alert(`✅ Su kaydı ${formatDateDMY(targetDocId)} tarihine taşındı.`);
                 }
             }
         };
@@ -1583,7 +1809,7 @@
 
         async function handleTakeMed(medConfig) {
             let history = appState.medsData[medConfig.id] || [];
-            if(typeof history === 'number') history = Array(history).fill({ time: "Bilinmiyor" });
+            if (typeof history === 'number') history = Array(history).fill({ time: "Bilinmiyor" });
             if (history.length >= medConfig.maxDaily) return alert(`⚠️ HAK DOLDU: Günlük (${medConfig.maxDaily}) sınırına ulaştınız.`);
             
             let doseAmount = null;
@@ -1595,10 +1821,30 @@
                 if (medConfig.id === 'toujeo') updateLastInsulinDose(doseAmount);
             }
 
-            history.push({ time: formatDateTime(new Date()), dose: doseAmount });
-            appState.medsData[medConfig.id] = history;
-            await saveData();
-            if(medConfig.id === 'toujeo') fetchGlobalInsulinLogs(); 
+            let defaultTimeStr = getDateTimeForSelectedDate(currentDateStr);
+            let userTimeStr = prompt("Tarih ve saati onaylayın veya düzenleyin (GG-AA-YYYY SS:DK):", defaultTimeStr);
+            if (userTimeStr === null) return;
+            const recordTime = userTimeStr.trim() !== "" ? userTimeStr.trim() : defaultTimeStr;
+
+            const targetDocId = extractDocIdFromCustomDate(recordTime) || currentDateStr;
+
+            if (targetDocId === currentDateStr) {
+                history.push({ time: recordTime, dose: doseAmount });
+                appState.medsData[medConfig.id] = history;
+                await saveData();
+            } else {
+                const targetDocRef = doc(db, "takip_verileri", targetDocId);
+                const targetSnap = await getDoc(targetDocRef);
+                let targetData = targetSnap.exists() ? targetSnap.data() : { waterIntake: 0, waterLogs: [], medsData: {} };
+                if (!targetData.medsData) targetData.medsData = {};
+                if (!targetData.medsData[medConfig.id]) targetData.medsData[medConfig.id] = [];
+
+                targetData.medsData[medConfig.id].push({ time: recordTime, dose: doseAmount });
+                await setDoc(targetDocRef, targetData, { merge: true });
+                alert(`✅ Kayıt ${formatDateDMY(targetDocId)} tarihine eklendi.`);
+            }
+
+            if (medConfig.id === 'toujeo') fetchGlobalInsulinLogs(); 
         }
 
         async function handleResetMed(medId) {
@@ -1664,6 +1910,88 @@
         }
 
         window.changeInsulinPage = function(dir) { currentInsulinPage += dir; renderGlobalInsulinLogs(); };
+
+        // --- İNSÜLİN DÜZENLEME VE SİLME FONKSİYONLARI ---
+        window.editGlobalInsulinDose = async function(docId, index) {
+            const targetDocRef = doc(db, "takip_verileri", docId);
+            const docSnap = await getDoc(targetDocRef);
+            
+            if (docSnap.exists()) {
+                let data = docSnap.data();
+                if (data.medsData && data.medsData['toujeo'] && data.medsData['toujeo'][index]) {
+                    const currentDose = data.medsData['toujeo'][index].dose || 16;
+                    const currentTime = data.medsData['toujeo'][index].time || formatDateTime(new Date());
+
+                    const newDose = prompt("Yeni insülin dozunu giriniz (Ünite):", currentDose);
+                    if (newDose === null) return;
+
+                    const newTime = prompt("Tarih ve saati düzenleyiniz (GG-AA-YYYY SS:DK):", currentTime);
+                    if (newTime === null) return;
+
+                    const updatedDose = (newDose.trim() !== "" && !isNaN(newDose)) ? newDose.trim() : currentDose;
+                    const updatedTime = newTime.trim() !== "" ? newTime.trim() : currentTime;
+
+                    const newDocId = extractDocIdFromCustomDate(updatedTime);
+
+                    if (newDocId && newDocId !== docId) {
+                        const newDocRef = doc(db, "takip_verileri", newDocId);
+                        const newDocSnap = await getDoc(newDocRef);
+                        let newData = newDocSnap.exists() ? newDocSnap.data() : { waterIntake: 0, waterLogs: [], medsData: {} };
+                        if (!newData.medsData) newData.medsData = {};
+                        if (!newData.medsData['toujeo']) newData.medsData['toujeo'] = [];
+
+                        newData.medsData['toujeo'].push({ time: updatedTime, dose: updatedDose });
+
+                        data.medsData['toujeo'].splice(index, 1);
+                        if (data.medsData['toujeo'].length === 0) {
+                            delete data.medsData['toujeo'];
+                        }
+
+                        await setDoc(targetDocRef, { medsData: data.medsData }, { merge: true });
+                        await setDoc(newDocRef, { medsData: newData.medsData }, { merge: true });
+                    } else {
+                        data.medsData['toujeo'][index].dose = updatedDose;
+                        data.medsData['toujeo'][index].time = updatedTime;
+                        await setDoc(targetDocRef, { medsData: data.medsData }, { merge: true });
+                    }
+
+                    alert("✅ İnsülin dozu ve zamanı başarıyla güncellendi!");
+                    fetchGlobalInsulinLogs();
+                    if (currentDateStr === docId || currentDateStr === newDocId) {
+                        loadDateData(currentDateStr);
+                    }
+                }
+            }
+        };
+
+        window.deleteGlobalInsulinDose = async function(docId, index) {
+            if (!confirm("Bu insülin kaydını silmek istediğinize emin misiniz?")) return;
+            
+            const targetDocRef = doc(db, "takip_verileri", docId);
+            const docSnap = await getDoc(targetDocRef);
+            
+            if (docSnap.exists()) {
+                let data = docSnap.data();
+                if (data.medsData && data.medsData['toujeo']) {
+                    data.medsData['toujeo'].splice(index, 1);
+                    if (data.medsData['toujeo'].length === 0) {
+                        delete data.medsData['toujeo'];
+                    }
+                    await setDoc(targetDocRef, { medsData: data.medsData }, { merge: true });
+                    alert("🗑️ İnsülin kaydı silindi.");
+                    fetchGlobalInsulinLogs();
+                }
+            }
+        };
+
+        document.getElementById('btn-edit-minus').onclick = () => {
+            const newVal = prompt("Yeni eksiltme miktarını giriniz (ml):", waterMinusVal);
+            if (newVal !== null && !isNaN(newVal) && parseInt(newVal) > 0) {
+                waterMinusVal = parseInt(newVal);
+                localStorage.setItem('water_minus_val', waterMinusVal);
+                updateMinusBtnText();
+            }
+        };
 
         function updateUI() {
             const currentWater = appState.waterIntake || 0;

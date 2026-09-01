@@ -216,7 +216,7 @@
         .status-paid { background: #c6f6d5; color: #22543d; }
         .status-unpaid { background: #feebc8; color: #744210; }
 
-        .btn-pay-now, .btn-view-photo, .btn-add-photo, .btn-del, .btn-whatsapp {
+        .btn-pay-now, .btn-view-photo, .btn-add-photo, .btn-del, .btn-whatsapp, .btn-edit {
             border: none; padding: 0.35rem 0.65rem; border-radius: 0.4rem; cursor: pointer; font-size: 0.75rem; font-weight: bold;
         }
         .btn-pay-now { background: #38a169; color: white; }
@@ -224,6 +224,7 @@
         .btn-view-photo { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
         .btn-add-photo { background: #feebc8; color: #744210; border: 1px solid #fbd38d; }
         .btn-del { background: #fed7d7; color: #9b2c2c; }
+        .btn-edit { background: #edf2f7; color: #4a5568; border: 1px solid #e2e8f0; } /* Yeni Düzenle Butonu Stili */
 
         .modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -370,11 +371,19 @@
             "Emre": ""      
         };
 
+        // Mevcut Ödeme onayı için Admin yetkisi
         function checkAdminAuth() {
             if (activeUser === 'murat' || activeUser === 'admin') {
                 return true;
             }
             alert("❌ Bu işlemi sadece yöneticiler (Murat veya Admin) gerçekleştirebilir!");
+            return false;
+        }
+
+        // YENİ: Silme ve Düzenleme için Yetki Kontrolü (Adminler + İşlemi Giren Kişi)
+        function canModify(tx) {
+            if (activeUser === 'murat' || activeUser === 'admin') return true;
+            if (tx.person && activeUser === tx.person.toLowerCase()) return true;
             return false;
         }
 
@@ -626,9 +635,54 @@
             }
         };
 
+        // YENİ: Düzenleme Fonksiyonu
+        window.editTx = async (id) => {
+            const tx = allTransactions.find(t => t.id === id);
+            if (!tx) return;
+
+            if (!canModify(tx)) {
+                alert("❌ Bu kaydı düzenleme yetkiniz yok! Yalnızca Murat, Admin veya işlemi ekleyen kişi düzenleyebilir.");
+                return;
+            }
+
+            const newTitle = prompt("Yeni açıklama (İptal etmek için boş bırakın):", tx.title);
+            if (newTitle === null) return; // İptal edildi
+
+            const newAmountStr = prompt("Yeni tutar (₺):", tx.amount);
+            if (newAmountStr === null) return; // İptal edildi
+
+            const newAmount = parseFloat(newAmountStr);
+            if (isNaN(newAmount) || newAmount <= 0) {
+                alert("⚠️ Lütfen geçerli bir tutar giriniz!");
+                return;
+            }
+
+            if (newTitle.trim().length < 3) {
+                alert("⚠️ Lütfen en az 3 harften oluşan bir açıklama giriniz!");
+                return;
+            }
+
+            await updateDoc(doc(db, "transactions", id), { 
+                title: newTitle.trim(),
+                amount: newAmount
+            });
+            
+            alert("✅ Kayıt başarıyla güncellendi!");
+        };
+
+        // GÜNCELLENDİ: Silme Fonksiyonu
         window.deleteTx = async (id) => {
-            if (!checkAdminAuth()) return;
-            if (confirm("Bu kaydı silmek istediğinizden emin misiniz?")) await deleteDoc(doc(db, "transactions", id));
+            const tx = allTransactions.find(t => t.id === id);
+            if (!tx) return;
+            
+            if (!canModify(tx)) {
+                alert("❌ Bu kaydı silme yetkiniz yok! Yalnızca Murat, Admin veya işlemi ekleyen kişi silebilir.");
+                return;
+            }
+
+            if (confirm("Bu kaydı silmek istediğinizden emin misiniz?")) {
+                await deleteDoc(doc(db, "transactions", id));
+            }
         };
 
         function updateUI() {
@@ -637,12 +691,12 @@
 
             document.getElementById('history-title').innerText = showAllTime 
                 ? "📋 Genel Harcama ve Ödeme Geçmişi (Tüm Zamanlar)" 
-                : `📋 Harcama Geçmişi (${currentMonth})`;
+                : `📋 Harcama Geçmişi (${currentMonth}) ve Bekleyen Borçlar`;
 
             allTransactions.forEach(tx => {
                 const txMonth = getTxMonth(tx);
 
-                if (!showAllTime && txMonth !== currentMonth) return;
+                if (!showAllTime && txMonth !== currentMonth && tx.status !== 'unpaid') return;
 
                 const amt = parseFloat(tx.amount) || 0;
 
@@ -696,7 +750,7 @@
             allTransactions.forEach(tx => {
                 const txMonth = getTxMonth(tx);
 
-                if (!showAllTime && txMonth !== currentMonth) return;
+                if (!showAllTime && txMonth !== currentMonth && tx.status !== 'unpaid') return;
 
                 const isExpenseLike = (tx.type === 'expense' || tx.type === 'personal_self' || tx.type === 'personal_expense');
                 
@@ -731,6 +785,9 @@
                     ? `<button class="btn-whatsapp" onclick="sendNotification('${tx.id}')">💬 WhatsApp</button>` 
                     : ``;
 
+                // Yetki kontrolü (Düzenle ve Sil butonlarını göstermek için)
+                const hasModAccess = canModify(tx);
+
                 const li = document.createElement('li');
                 li.className = `list-item ${!isPaid ? 'unpaid-item' : ''} ${isExpenseLike ? 'expense' : (tx.type === 'settlement' ? 'settlement' : 'other')}`;
                 li.innerHTML = `
@@ -751,7 +808,8 @@
                         <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
                             ${whatsappBtnHTML}
                             ${photoButtonHTML}
-                            <button class="btn-del" onclick="deleteTx('${tx.id}')">Sil</button>
+                            ${hasModAccess ? `<button class="btn-edit" onclick="editTx('${tx.id}')">✏️ Düzenle</button>` : ''}
+                            ${hasModAccess ? `<button class="btn-del" onclick="deleteTx('${tx.id}')">🗑️ Sil</button>` : ''}
                         </div>
                     </div>
                 `;

@@ -225,7 +225,6 @@
         .btn-action { border: none; padding: 0.5rem 0.5rem; border-radius: 0.4rem; font-weight: bold; cursor: pointer; font-size: 0.75rem; width: 100%; touch-action: manipulation; }
         .btn-take-dose { background: var(--water-color); color: white; }
         .btn-reset-dose { background: #e2e8f0; color: var(--text-main); }
-        .btn-toggle-completed { width: 100%; margin-top: 0.5rem; padding: 0.5rem; border: none; border-radius: 0.6rem; font-weight: bold; cursor: pointer; background: #e2e8f0; color: #4a5568; font-size: 0.8rem; display: none; touch-action: manipulation; }
 
         .table-responsive {
             width: 100%;
@@ -500,8 +499,19 @@
                     </div>
                 </details>
 
+                <!-- AKTİF İLAÇLAR LİSTESİ -->
                 <ul class="med-list" id="med-list"></ul>
-                <button id="btn-toggle-completed" class="btn-toggle-completed">Tamamlananları Göster</button>
+
+                <!-- İÇİLEN / TAMAMLANAN İLAÇLARIN AŞAĞIDA AÇILIR LİSTESİ -->
+                <details class="report-section accordion-section" id="completed-meds-details" style="margin-top: 0.8rem; background: #f0fff4; border: 1px solid #c6f6d5; display: none;">
+                    <summary>
+                        <h3 style="color: #22543d; font-size: 0.85rem; margin: 0;">
+                            <span id="completed-meds-title">✅ Tamamlanan / İçilen İlaçlar (0)</span>
+                            <span class="accordion-arrow">▼</span>
+                        </h3>
+                    </summary>
+                    <ul class="med-list" id="completed-med-list" style="margin-top: 0.6rem;"></ul>
+                </details>
             </div>
 
             <!-- 3. SÜTUN: İNSÜLİN KALEMİ & SAĞLIK RAPORLARI TAKİBİ -->
@@ -690,7 +700,6 @@
         const waterPerPage = 5;
         
         let waterMinusVal = parseInt(localStorage.getItem('water_minus_val')) || 500;
-        let showCompletedMeds = false;
 
         const datePicker = document.getElementById('selected-date');
         datePicker.value = todayStr;
@@ -2010,20 +2019,23 @@
             renderWaterLogs();
 
             const listEl = document.getElementById('med-list'); 
+            const completedListEl = document.getElementById('completed-med-list');
+            const completedDetails = document.getElementById('completed-meds-details');
+            const completedTitle = document.getElementById('completed-meds-title');
+
             listEl.innerHTML = "";
+            if (completedListEl) completedListEl.innerHTML = "";
+
             let completedCount = 0;
             const currentDayIndex = (new Date(currentDateStr + "T00:00:00")).getDay();
 
             masterMeds.forEach(med => {
                 let history = appState.medsData[med.id] || [];
                 if(typeof history === 'number') history = Array(history).fill({ time: "Bilinmiyor" });
-                if (med.allowedDays && !med.allowedDays.includes(currentDayIndex)) {
-                    if (history.length === 0) return;
-                }
-
+                
+                const isNotAllowedToday = med.allowedDays && !med.allowedDays.includes(currentDayIndex);
                 const currentDose = history.length;
-                const isCompleted = currentDose >= med.maxDaily;
-                if (isCompleted) completedCount++;
+                const isCompleted = (currentDose >= med.maxDaily) || isNotAllowedToday;
 
                 let logsHTML = history.map((l,i) => `<div>✔️ ${i+1}. Doz: ${l.time} ${l.dose ? '('+l.dose+' Ünite)' : ''}</div>`).join('');
                 const daysLeft = getRemainingDays(med);
@@ -2041,42 +2053,79 @@
                     }
                 }
 
+                let statusBadgeText = `${currentDose}/${med.maxDaily} İçildi`;
+                if (isNotAllowedToday && currentDose === 0) {
+                    statusBadgeText = `📅 Bugün Günün Değil`;
+                }
+
                 const li = document.createElement('li');
                 li.className = `med-item ${currentDose > 0 ? 'taken' : ''} ${isWarning ? 'warning-item' : ''}`;
-                if (isCompleted && !showCompletedMeds) li.style.display = 'none';
+
+                const isTakeBtnDisabled = isNotAllowedToday || (currentDose >= med.maxDaily);
 
                 li.innerHTML = `
                     <div class="med-info">
                         <div class="med-title">${med.name}</div>
                         <div class="med-rule">${med.ruleText || 'Özel kural belirtilmedi.'}</div>
-                        <span class="med-badge ${currentDose > 0 ? 'badge-success' : 'badge-info'}">${currentDose}/${med.maxDaily} İçildi</span>
+                        <span class="med-badge ${currentDose > 0 ? 'badge-success' : 'badge-info'}">${statusBadgeText}</span>
                         ${expiryBadgeHTML}
                         ${currentDose > 0 ? `<div class="time-logs">${logsHTML}</div>` : ''}
                     </div>
                     <div class="med-actions">
-                        ${currentDose < med.maxDaily ? `<button class="btn-action btn-take-dose" id="t-${med.id}">+1 İçtim</button>` : ''}
+                        <button class="btn-action btn-take-dose" id="t-${med.id}" ${isTakeBtnDisabled ? 'disabled style="opacity:0.5; cursor:not-allowed; background:#cbd5e0;"' : ''}>+1 İçtim</button>
                         ${currentDose > 0 ? `<button class="btn-action btn-reset-dose" id="r-${med.id}">Sıfırla</button>` : ''}
                         <button class="btn-action" style="background:#edf2f7; color:#4a5568;" onclick="editMasterMed('${med.id}')">✏️ Düzenle</button>
                     </div>`;
                 
-                listEl.appendChild(li);
-                if(currentDose < med.maxDaily) document.getElementById(`t-${med.id}`).onclick = () => handleTakeMed(med);
-                if(currentDose > 0) document.getElementById(`r-${med.id}`).onclick = () => handleResetMed(med.id);
+                if (isCompleted) {
+                    completedCount++;
+                    if (completedListEl) completedListEl.appendChild(li);
+                } else {
+                    listEl.appendChild(li);
+                }
+
+                if (!isTakeBtnDisabled) {
+                    const btnTake = document.getElementById(`t-${med.id}`);
+                    if (btnTake) btnTake.onclick = () => handleTakeMed(med);
+                }
+                if (currentDose > 0) {
+                    const btnReset = document.getElementById(`r-${med.id}`);
+                    if (btnReset) btnReset.onclick = () => handleResetMed(med.id);
+                }
             });
+
+            if (completedDetails) {
+                if (completedCount > 0) {
+                    completedDetails.style.display = 'block';
+                    if (completedTitle) completedTitle.innerText = `✅ Tamamlanan / İçilen İlaçlar (${completedCount})`;
+                } else {
+                    completedDetails.style.display = 'none';
+                }
+            }
         }
 
-        document.getElementById('btn-water-plus').onclick = () => addWaterLog(500);
-        document.getElementById('btn-water-minus').onclick = () => addWaterLog(-waterMinusVal);
+        // HIZLI BUTON ETKİNLİKLERİ
         document.getElementById('btn-water-4oz').onclick = () => addWaterLog(90);
         document.getElementById('btn-water-7oz').onclick = () => addWaterLog(180);
         document.getElementById('btn-water-8oz').onclick = () => addWaterLog(210);
         document.getElementById('btn-water-12oz').onclick = () => addWaterLog(325);
         document.getElementById('btn-water-16oz').onclick = () => addWaterLog(450);
-        document.getElementById('btn-water-manual').onclick = () => { 
-            const v = parseInt(document.getElementById('manual-water-input').value); 
-            if(v > 0) { addWaterLog(v); document.getElementById('manual-water-input').value = ""; }
+
+        document.getElementById('btn-water-plus').onclick = () => addWaterLog(500);
+        document.getElementById('btn-water-minus').onclick = () => addWaterLog(-waterMinusVal);
+
+        document.getElementById('btn-water-manual').onclick = () => {
+            const input = document.getElementById('manual-water-input');
+            const val = parseInt(input.value);
+            if (!isNaN(val) && val > 0) {
+                addWaterLog(val);
+                input.value = '';
+            } else {
+                alert("Lütfen geçerli bir su miktarı giriniz!");
+            }
         };
-        
+
+        // İLK YÜKLEME
         loadDateData(todayStr);
         fetchGlobalInsulinLogs();
     </script>

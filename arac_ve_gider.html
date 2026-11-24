@@ -3,26 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Araç & Fatura Yönetimi</title>
-    
+    <title>Araç, Vergi & Fatura Yönetimi</title>
+
+    <!-- ANA SAYFA TEMA SENKRONİZASYONU (Ayrı dark mod butonu yok, ana sayfayı takip eder) -->
+    <script>
+        (function syncThemeFromMainPage() {
+            const possibleKeys = [
+                'theme', 'darkMode', 'dark-mode', 'dark_mode',
+                'appTheme', 'portalTheme', 'siteTheme', 'mode',
+                'color-theme', 'colorTheme', 'isDark', 'tema'
+            ];
+            let detectedTheme = 'light';
+
+            for (const key of possibleKeys) {
+                const val = localStorage.getItem(key);
+                if (val !== null) {
+                    const normalized = String(val).trim().toLowerCase();
+                    if (['dark', 'true', '1', 'gece', 'on', 'yes', 'karanlik'].includes(normalized)) {
+                        detectedTheme = 'dark';
+                        break;
+                    }
+                    if (['light', 'false', '0', 'gunduz', 'off', 'no', 'aydinlik'].includes(normalized)) {
+                        detectedTheme = 'light';
+                        break;
+                    }
+                }
+            }
+
+            document.documentElement.setAttribute('data-theme', detectedTheme);
+            window.applySyncedTheme = syncThemeFromMainPage;
+        })();
+
+        window.addEventListener('storage', function () {
+            if (typeof window.applySyncedTheme === 'function') {
+                window.applySyncedTheme();
+            }
+        });
+    </script>
+
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    <!-- CryptoJS (Şifreleme Kütüphanesi) -->
+    <!-- CryptoJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
-    <!-- GÜVENLİK VE DİNAMİK YETKİ KONTROLÜ -->
+    <!-- FIREBASE BAŞLATMA VE YETKİ KONTROLÜ -->
     <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
+            authDomain: "karaaslanhomebutcetakip.firebaseapp.com",
+            databaseURL: "https://karaaslanhomebutcetakip-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "karaaslanhomebutcetakip",
+            storageBucket: "karaaslanhomebutcetakip.firebasestorage.app",
+            messagingSenderId: "566343253682",
+            appId: "1:566343253682:web:3ab14198fca800d69813ab"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         const activeUser = (localStorage.getItem('currentUser') || '').toLowerCase();
-        
+
         if (!activeUser) {
             window.location.replace('giris.html');
         } else if (activeUser !== 'murat' && activeUser !== 'admin') {
-            firebase.database().ref('usersDB/' + activeUser + '/yetki_aracGider').once('value')
+            db.ref('usersDB/' + activeUser + '/yetki_aracGider').once('value')
             .then(snapshot => {
-                const yetkisiVarMi = snapshot.val();
-                if (yetkisiVarMi !== true) {
+                if (snapshot.val() !== true) {
                     alert("⛔ Bu sayfaya erişim yetkiniz bulunmamaktadır! Yöneticinizden onay isteyin.");
                     window.location.replace('index.html');
                 }
@@ -34,197 +81,690 @@
     </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
         :root {
-            --bg-color: #f4f6f9;
+            --bg-color: #f1f5f9;
             --card-bg: #ffffff;
-            --text-main: #2d3748;
-            --text-muted: #718096;
-            --primary-orange: #ed8936;
-            --primary-hover: #dd6b20;
+            --card-subtle: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #ea580c;
+            --primary-hover: #c2410c;
+            --primary-soft: #fff7ed;
+            --info: #2563eb;
+            --info-soft: #eff6ff;
+            --info-border: #bfdbfe;
             --border-color: #e2e8f0;
-            --input-border: #cbd5e0;
+            --input-bg: #ffffff;
+            --input-border: #cbd5e1;
+            --tab-bg: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+            --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+
+            --danger-bg: #fee2e2;
+            --danger-text: #b91c1c;
+            --danger-border: #fecaca;
+            --warning-bg: #fef3c7;
+            --warning-text: #b45309;
+            --warning-border: #fde68a;
+            --success-bg: #dcfce7;
+            --success-text: #15803d;
+            --success-border: #bbf7d0;
+            --back-bg: #e2e8f0;
+            --back-text: #1e3a8a;
+            --back-hover: #cbd5e1;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; }
-        
-        body { 
-            background-color: var(--bg-color); 
-            color: var(--text-main); 
-            padding: 1.5rem 1rem; 
-            padding-bottom: 80px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            min-height: 100vh; 
+        [data-theme="dark"] {
+            --bg-color: #0b1120;
+            --card-bg: #111827;
+            --card-subtle: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --primary: #f97316;
+            --primary-hover: #ea580c;
+            --primary-soft: rgba(249, 115, 22, 0.14);
+            --info: #60a5fa;
+            --info-soft: rgba(59, 130, 246, 0.14);
+            --info-border: rgba(96, 165, 250, 0.35);
+            --border-color: #1f2937;
+            --input-bg: #0f172a;
+            --input-border: #334155;
+            --tab-bg: #1e293b;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+            --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
+
+            --danger-bg: rgba(239, 68, 68, 0.18);
+            --danger-text: #fca5a5;
+            --danger-border: rgba(239, 68, 68, 0.35);
+            --warning-bg: rgba(245, 158, 11, 0.18);
+            --warning-text: #fcd34d;
+            --warning-border: rgba(245, 158, 11, 0.35);
+            --success-bg: rgba(34, 197, 94, 0.18);
+            --success-text: #86efac;
+            --success-border: rgba(34, 197, 94, 0.35);
+            --back-bg: #1e293b;
+            --back-text: #93c5fd;
+            --back-hover: #334155;
         }
 
-        .container { width: 100%; max-width: 600px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
 
-        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
-        
-        /* Yenilenen Ana Portal Buton Stili */
-        .back-btn { 
-            background: #e2e8f0; 
-            color: #1e3a8a; 
-            border: 1px solid #cbd5e1; 
-            padding: 8px 14px; 
-            border-radius: 12px; 
-            text-decoration: none; 
-            font-weight: 700; 
-            font-size: 0.95rem; 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 6px; 
-            transition: all 0.2s ease; 
-        }
-        .back-btn:hover { 
-            background: #cbd5e1; 
-            color: #0f172a; 
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 1.25rem 1rem 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.25s ease, color 0.25s ease;
         }
 
-        .title h1 { font-size: 1.4rem; color: var(--text-main); margin-bottom: 4px; line-height: 1.2; }
-        .title p { color: var(--text-muted); font-size: 0.85rem; }
+        .container { width: 100%; max-width: 960px; }
 
-        /* DB Durum Kartı */
-        .db-status-card {
+        /* Üst Başlık */
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+        .back-btn {
+            background: var(--back-bg);
+            color: var(--back-text);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.88rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+        .back-btn:hover { background: var(--back-hover); }
+
+        .title h1 { font-size: 1.32rem; font-weight: 800; color: var(--text-main); line-height: 1.2; }
+        .title p { color: var(--text-muted); font-size: 0.8rem; margin-top: 2px; }
+
+        .db-badge {
+            padding: 5px 11px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.74rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid transparent;
+        }
+        .db-online { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+        .db-offline { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-border); }
+
+        .export-btn {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 9px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .export-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* YAKLAŞAN UYARILAR ŞERİDİ */
+        .alert-banner {
+            display: none;
+            background: var(--danger-bg);
+            border: 1px solid var(--danger-border);
+            color: var(--danger-text);
+            border-radius: 12px;
+            padding: 12px 15px;
+            margin-bottom: 16px;
+        }
+        .alert-banner.show { display: block; }
+        .alert-banner-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 800;
+            font-size: 0.88rem;
+            margin-bottom: 6px;
+        }
+        .alert-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.81rem;
+        }
+
+        /* KPI Özet Paneli */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        .kpi-card {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 12px 15px;
-            margin-bottom: 20px;
-            font-size: 0.85rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            border-radius: 12px;
+            padding: 13px 14px;
+            box-shadow: var(--shadow-sm);
         }
-        .db-status-header { display: flex; justify-content: space-between; align-items: center; }
-        .db-badge { padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 5px; }
-        .db-online { background: #c6f6d5; color: #22543d; }
-        .db-offline { background: #fed7d7; color: #9b2c2c; }
+        .kpi-label { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+        .kpi-value { font-size: 1.25rem; font-weight: 800; margin-top: 4px; color: var(--text-main); }
+        .kpi-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
+        .kpi-danger .kpi-value { color: var(--danger-text); }
+        .kpi-primary .kpi-value { color: var(--primary); }
 
-        /* Sekmeler (Tabs) */
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; background: #e2e8f0; padding: 5px; border-radius: 10px; }
-        .tab-btn { flex: 1; padding: 10px 6px; background: transparent; border: none; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        .tab-btn.active { background: var(--card-bg); color: var(--primary-orange); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        /* Sekmeler */
+        .tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 18px;
+            background: var(--tab-bg);
+            padding: 5px;
+            border-radius: 12px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.84rem;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .tab-btn.active {
+            background: var(--card-bg);
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
 
-        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content { display: none; animation: fadeIn 0.25s ease; }
         .tab-content.active { display: block; }
 
-        /* Form Elemanları */
-        .form-card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .form-card h3 { margin-bottom: 15px; font-size: 1.1rem; border-bottom: 2px solid var(--primary-orange); padding-bottom: 8px; display: inline-block; color: var(--text-main); }
-        
-        .quick-fill-box { background: #ebf8ff; border: 1px dashed #3182ce; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
-        .quick-fill-box label { color: #2b6cb0; font-weight: bold; font-size: 0.85rem; display: block; margin-bottom: 4px; }
+        /* Form Kartları */
+        .form-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-md);
+        }
+        .form-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .form-card-header h3 { font-size: 1.04rem; font-weight: 700; color: var(--text-main); }
+
+        .quick-fill-box {
+            background: var(--info-soft);
+            border: 1px dashed var(--info-border);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .quick-fill-box label { color: var(--info); font-weight: 700; font-size: 0.82rem; display: block; margin-bottom: 5px; }
 
         .input-group { margin-bottom: 12px; }
-        .input-group label { display: block; margin-bottom: 4px; font-size: 0.85rem; font-weight: bold; color: var(--text-muted); }
-        .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 9px; background: #fff; border: 1px solid var(--input-border); border-radius: 6px; color: var(--text-main); font-size: 0.95rem; }
-        .input-group input:focus, .input-group select:focus, .input-group textarea:focus { outline: none; border-color: var(--primary-orange); }
-        
-        .row-2 { display: flex; gap: 10px; }
-        .row-2 .input-group { flex: 1; }
+        .input-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 9px 11px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
 
-        .sub-form { display: none; background: #fdfdfd; padding: 12px; border-radius: 8px; border: 1px dashed var(--border-color); margin-bottom: 15px; }
+        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+        .sub-form {
+            display: none;
+            background: var(--card-subtle);
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px dashed var(--border-color);
+            margin-bottom: 14px;
+        }
         .sub-form.active { display: block; }
-        .sub-form-title { font-size: 0.85rem; font-weight: bold; color: #dd6b20; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sub-form-title {
+            font-size: 0.78rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
 
-        .link-btn { display: inline-block; width: 100%; text-align: center; padding: 8px; background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; border-radius: 6px; font-weight: bold; font-size: 0.85rem; text-decoration: none; margin-bottom: 10px; transition: 0.2s; }
-        .link-btn:hover { background: #bbe0ff; }
+        .chip-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .chip-btn {
+            background: var(--card-bg);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            padding: 4px 9px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .chip-btn:hover { border-color: var(--primary); color: var(--primary); }
 
-        .btn-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-        button.submit-btn { width: 100%; padding: 12px; background: var(--primary-orange); color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        .calc-box {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+            border: 1px solid var(--warning-border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 0.82rem;
+            margin-bottom: 10px;
+            display: none;
+            line-height: 1.45;
+        }
+
+        .link-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-bottom: 12px; }
+        .link-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            text-align: center;
+            padding: 8px 10px;
+            background: var(--info-soft);
+            color: var(--info);
+            border: 1px solid var(--info-border);
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+        .link-btn:hover { opacity: 0.88; }
+
+        /* RESMİ PORTAL KARTLARI */
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .portal-card {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 13px;
+            background: var(--card-subtle);
+            border: 1px solid var(--border-color);
+            border-radius: 11px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.2s ease;
+        }
+        .portal-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+        .portal-card-title { font-weight: 800; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+        .portal-card-desc { font-size: 0.76rem; color: var(--text-muted); line-height: 1.35; }
+
+        /* CSV SÜRÜKLE BIRAK ALANI */
+        .drop-zone {
+            border: 2px dashed var(--info-border);
+            background: var(--info-soft);
+            border-radius: 12px;
+            padding: 26px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-bottom: 14px;
+        }
+        .drop-zone.dragover { border-color: var(--primary); background: var(--primary-soft); }
+        .drop-zone p { font-size: 0.88rem; font-weight: 700; color: var(--text-main); }
+        .drop-zone span { font-size: 0.76rem; color: var(--text-muted); display: block; margin-top: 4px; }
+
+        .csv-preview-wrap {
+            display: none;
+            margin-top: 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .csv-table-scroll { max-height: 280px; overflow: auto; }
+        .csv-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+        .csv-table th, .csv-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+            white-space: nowrap;
+        }
+        .csv-table th {
+            background: var(--card-subtle);
+            color: var(--text-muted);
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+        }
+
+        .btn-group { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        button.submit-btn {
+            flex: 1;
+            min-width: 180px;
+            padding: 12px;
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 0.94rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
         button.submit-btn:hover { background: var(--primary-hover); }
-        
-        button.cancel-btn { width: 100%; padding: 10px; background: #e2e8f0; color: #4a5568; border: none; border-radius: 6px; font-weight: bold; font-size: 0.9rem; cursor: pointer; display: none; transition: 0.2s; }
-        button.cancel-btn:hover { background: #cbd5e0; }
 
-        /* Listeler ve Kartlar */
-        .item-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-        .item-info h3 { font-size: 1.05rem; color: var(--text-main); }
-        .item-info p { font-size: 0.85rem; color: var(--text-muted); }
-        
-        .action-btns { display: flex; align-items: center; gap: 6px; }
-        .edit-btn { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; padding: 5px 9px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: 0.2s; }
-        .edit-btn:hover { background: #bee3f8; }
-        .delete-btn { background: #fed7d7; color: #e53e3e; border: 1px solid #feb2b2; padding: 5px 9px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
-        .delete-btn:hover { background: #feb2b2; }
+        button.cancel-btn {
+            padding: 12px 16px;
+            background: var(--tab-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 0.86rem;
+            cursor: pointer;
+            display: none;
+            transition: 0.2s;
+        }
 
-        .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; background: #f7fafc; padding: 10px; border-radius: 8px; font-size: 0.8rem; border: 1px solid #edf2f7; }
-        .details-grid div b { color: #4a5568; display: block; font-size: 0.72rem; text-transform: uppercase; }
+        /* Filtre Çubuğu */
+        .filter-bar {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 14px;
+            background: var(--card-bg);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .filter-bar input, .filter-bar select {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.83rem;
+        }
 
-        .item-desc { font-size: 0.8rem; color: #4a5568; background: #fffaf0; padding: 6px 10px; border-radius: 4px; margin-top: 8px; border-left: 3px solid var(--primary-orange); }
+        /* Liste Kartları */
+        .item-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 13px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+        .item-card.card-overdue { border-left: 4px solid #ef4444; }
+        .item-card.card-soon { border-left: 4px solid #f59e0b; }
+        .item-card.card-paid { opacity: 0.82; border-left: 4px solid #22c55e; }
 
-        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-align: center; }
-        .badge-danger { background: #fed7d7; color: #9b2c2c; }
-        .badge-warning { background: #feebc8; color: #c05621; }
-        .badge-success { background: #c6f6d5; color: #22543d; }
+        .item-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+        .item-info h3 { font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .item-info p { font-size: 0.82rem; color: var(--text-muted); margin-top: 3px; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .plaka-pill {
+            background: var(--primary-soft);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+        }
+
+        .action-btns { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .icon-btn {
+            padding: 5px 9px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 0.78rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+            transition: 0.15s;
+        }
+        .edit-btn { background: var(--info-soft); color: var(--info); border-color: var(--info-border); }
+        .delete-btn { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-border); }
+        .copy-btn { background: var(--card-subtle); color: var(--text-main); border-color: var(--border-color); }
+        .pay-btn { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+            background: var(--card-subtle);
+            padding: 10px 12px;
+            border-radius: 9px;
+            font-size: 0.8rem;
+            border: 1px solid var(--border-color);
+        }
+        .details-grid div b {
+            color: var(--text-muted);
+            display: block;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .item-desc {
+            font-size: 0.8rem;
+            color: var(--text-main);
+            background: var(--primary-soft);
+            padding: 7px 11px;
+            border-radius: 6px;
+            margin-top: 8px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .status-badge {
+            padding: 4px 9px;
+            border-radius: 7px;
+            font-size: 0.73rem;
+            font-weight: 800;
+            border: 1px solid transparent;
+        }
+        .badge-danger { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-border); }
+        .badge-warning { background: var(--warning-bg); color: var(--warning-text); border-color: var(--warning-border); }
+        .badge-success { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+        .badge-info { background: var(--info-soft); color: var(--info); border-color: var(--info-border); }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--text-muted);
+            background: var(--card-bg);
+            border: 1px dashed var(--border-color);
+            border-radius: 12px;
+            font-size: 0.88rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 22px;
+            right: 22px;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 11px 18px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            z-index: 9999;
+            opacity: 0;
+            transform: translateY(15px);
+            pointer-events: none;
+            transition: all 0.25s ease;
+        }
+        [data-theme="dark"] .toast { background: #f8fafc; color: #0f172a; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 720px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .row-2, .row-3, .filter-bar { grid-template-columns: 1fr; }
+            .title h1 { font-size: 1.15rem; }
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
+        <!-- ÜST BAŞLIK -->
         <div class="header">
-            <a href="index.html" class="back-btn">⬅️ Ana Portal</a>
-            <div class="title">
-                <h1>Araç & Fatura Yönetimi</h1>
-                <p>Abonelik ve Muayene Takibi <span style="font-size: 0.7rem; color: #38a169;">(🔒 Kriptolu)</span></p>
+            <div class="header-left">
+                <a href="index.html" class="back-btn">⬅️ Ana Portal</a>
+                <div class="title">
+                    <h1>Araç, Vergi & Fatura Yönetimi</h1>
+                    <p>Bakım, Sigorta, MTV, HGS CSV & Akıllı Uyarı Sistemi • 🔒 Kriptolu</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="export-btn" onclick="csvDisaAktar()">📥 Excel (CSV) İndir</button>
+                <span id="dbStatusBadge" class="db-badge db-offline">● Bağlanıyor...</span>
             </div>
         </div>
 
-        <div class="db-status-card">
-            <div class="db-status-header">
-                <span>⚡ <b>Veritabanı Durumu:</b></span>
-                <span id="dbStatusBadge" class="db-badge db-offline">● Kontrol Ediliyor...</span>
+        <!-- YAKLAŞAN / GECİKEN UYARI ŞERİDİ -->
+        <div id="alertBanner" class="alert-banner">
+            <div class="alert-banner-head">
+                <span id="alertBannerTitle">🔔 Acil ve Yaklaşan İşlemler</span>
+                <span style="font-size:0.74rem; opacity:0.85;">Ana sayfa rozetiyle senkron</span>
+            </div>
+            <ul id="alertBannerList" class="alert-list"></ul>
+        </div>
+
+        <!-- AKILLI ÖZET PANELİ (KPI) -->
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-danger">
+                <div class="kpi-label">Aktif Uyarılar</div>
+                <div class="kpi-value" id="kpiKritik">0</div>
+                <div class="kpi-sub">Muayene, Sigorta & Fatura</div>
+            </div>
+            <div class="kpi-card kpi-primary">
+                <div class="kpi-label">Yıllık Araç Gideri</div>
+                <div class="kpi-value" id="kpiYillikArac">0 ₺</div>
+                <div class="kpi-sub" id="kpiYillikAracSub">Bu yılki kayıtlar</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Aylık Sabit Fatura</div>
+                <div class="kpi-value" id="kpiAylikFatura">0 ₺</div>
+                <div class="kpi-sub" id="kpiYillikFaturaSub">Yıllık: 0 ₺</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Kayıtlı Araç</div>
+                <div class="kpi-value" id="kpiGarajSayisi">0</div>
+                <div class="kpi-sub">Garajda tanımlı</div>
             </div>
         </div>
 
+        <!-- SEKMELER -->
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('arac')">🚗 Araç Takibi</button>
-            <button class="tab-btn" onclick="switchTab('garaj')">🚘 Araç Garajım</button>
-            <button class="tab-btn" onclick="switchTab('gider')">🧾 Faturalar</button>
+            <button class="tab-btn active" data-tab="arac" onclick="switchTab('arac', this)">🚗 Araç & Vergi</button>
+            <button class="tab-btn" data-tab="garaj" onclick="switchTab('garaj', this)">🚘 Garajım</button>
+            <button class="tab-btn" data-tab="gider" onclick="switchTab('gider', this)">🧾 Faturalar</button>
+            <button class="tab-btn" data-tab="portal" onclick="switchTab('portal', this)">🔗 Portallar & CSV Yükle</button>
         </div>
 
-        <!-- ARAÇ TAKİBİ SEKMESİ -->
+        <!-- ==================== 1. ARAÇ & VERGİ TAKİBİ SEKMESİ ==================== -->
         <div id="arac-tab" class="tab-content active">
             <div class="form-card">
-                <h3 id="aracFormBaslik">Yeni Araç Kaydı / Hatırlatıcı</h3>
-                
-                <!-- Hızlı Otomatik Doldurma Kutusu -->
+                <div class="form-card-header">
+                    <h3 id="aracFormBaslik">Yeni Araç / Vergi / Bakım Kaydı</h3>
+                </div>
+
                 <div class="quick-fill-box">
-                    <label>⚡ Garajdan Otomatik Doldur</label>
+                    <label>⚡ Garajdan Hızlı Araç Seç (Plaka, Ruhsat, T.C., KM Otomatik Doldurur)</label>
                     <select id="garajSecim" onchange="garajVerisiAktar(this.value)">
                         <option value="">-- Kayıtlı Araç Seçin --</option>
                     </select>
                 </div>
 
-                <div class="input-group">
-                    <label>Kayıt Türü</label>
-                    <select id="aracTuru" onchange="aracFormGuncelle()">
-                        <option value="Trafik Sigortası">Trafik Sigortası (Teklif / Poliçe)</option>
-                        <option value="Kasko">Kasko (Teklif / Poliçe)</option>
-                        <option value="Muayene">Araç Muayenesi</option>
-                        <option value="Yağ/Periyodik Bakım">Yağ / Periyodik Bakım</option>
-                        <option value="MTV">Motorlu Taşıtlar Vergisi (MTV)</option>
-                        <option value="Diğer">Diğer Araç Gideri</option>
-                    </select>
-                </div>
-
-                <div class="row-2">
+                <div class="row-3">
+                    <div class="input-group">
+                        <label>Kayıt Türü</label>
+                        <select id="aracTuru" onchange="aracFormGuncelle()">
+                            <optgroup label="Sigorta & Resmi Yükümlülük">
+                                <option value="Trafik Sigortası">Trafik Sigortası</option>
+                                <option value="Kasko">Kasko Poliçesi</option>
+                                <option value="Muayene">Araç Muayenesi (TÜVTÜRK)</option>
+                                <option value="Egzoz Emisyon">Egzoz Emisyon Muayenesi</option>
+                                <option value="MTV">Motorlu Taşıtlar Vergisi (MTV)</option>
+                                <option value="Trafik Cezası / HGS">Trafik Cezası / HGS-OGS</option>
+                            </optgroup>
+                            <optgroup label="Servis, Bakım & Hasar">
+                                <option value="Yağ/Periyodik Bakım">Yağ / Periyodik Bakım</option>
+                                <option value="Lastik & Akü / Ağır Bakım">Lastik, Akü & Ağır Bakım</option>
+                                <option value="Kaza / Tramer Kaydı">Kaza / Tramer / Onarım</option>
+                                <option value="Diğer">Diğer Araç Gideri</option>
+                            </optgroup>
+                        </select>
+                    </div>
                     <div class="input-group">
                         <label>Plaka</label>
                         <input type="text" id="aracPlaka" placeholder="Örn: 34 ABC 123" autocomplete="off">
                     </div>
                     <div class="input-group">
-                        <label id="aracTarihLabel">Poliçe / Vade Tarihi</label>
+                        <label id="aracTarihLabel">Poliçe Bitiş Tarihi</label>
                         <input type="date" id="aracTarih">
                     </div>
                 </div>
 
-                <!-- DİNAMİK FORM 1: SİGORTA & KASKO -->
+                <!-- SİGORTA & KASKO -->
                 <div id="form-sigorta" class="sub-form active">
                     <div class="sub-form-title">📋 Sigortacıya Lazım Olan Bilgiler (Kriptolu)</div>
                     <div class="row-2">
@@ -248,12 +788,13 @@
                                 <option value="Hususi Otomobil">Hususi Otomobil</option>
                                 <option value="Ticari / Kamyonet">Ticari / Kamyonet</option>
                                 <option value="Motosiklet">Motosiklet</option>
+                                <option value="Traktör / Tarım">Traktör / Tarım Aracı</option>
                             </select>
                         </div>
                     </div>
-                    
-                    <div class="sub-form-title" style="margin-top:8px;">💳 Son Satınalma / Poliçe Detayı</div>
-                    <div class="row-2">
+
+                    <div class="sub-form-title" style="margin-top:8px;">💳 Poliçe, Hasarsızlık & Asistans Detayı</div>
+                    <div class="row-3">
                         <div class="input-group">
                             <label>Acente / Sigorta Şirketi</label>
                             <input type="text" id="sigortaAcente" placeholder="Örn: Anadolu Sigorta" autocomplete="off">
@@ -262,38 +803,76 @@
                             <label>Poliçe No</label>
                             <input type="text" id="sigortaPoliceNo" placeholder="Örn: 98410293" autocomplete="off">
                         </div>
+                        <div class="input-group">
+                            <label>Ödenen / Teklif (TL)</label>
+                            <input type="number" id="sigortaTutar" placeholder="Örn: 8500">
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <label>Ödenen / Teklif Tutarı (TL)</label>
-                        <input type="number" id="sigortaTutar" placeholder="Örn: 4500">
+                    <div class="row-3">
+                        <div class="input-group">
+                            <label>Hasarsızlık Kademesi</label>
+                            <select id="sigortaKademe">
+                                <option value="">Belirtilmedi</option>
+                                <option value="8. Basamak (%50 İndirim)">8. Basamak (En İyi)</option>
+                                <option value="7. Basamak (%40 İndirim)">7. Basamak</option>
+                                <option value="6. Basamak (%20 İndirim)">6. Basamak</option>
+                                <option value="5. Basamak (%5 İndirim)">5. Basamak</option>
+                                <option value="4. Basamak (Standart)">4. Basamak (Başlangıç)</option>
+                                <option value="1-3. Basamak (Sürprimli)">1-3. Basamak</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>İMM Limiti / Teminat</label>
+                            <input type="text" id="sigortaImm" placeholder="Örn: 5 Milyon TL / Sınırsız" autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label>Yol Yardım / Çekici Tel</label>
+                            <input type="text" id="sigortaAsistans" placeholder="Örn: 0850 724 0850" autocomplete="off">
+                        </div>
                     </div>
                 </div>
 
-                <!-- DİNAMİK FORM 2: MUAYENE -->
+                <!-- MUAYENE & EGZOZ -->
                 <div id="form-muayene" class="sub-form">
-                    <a href="https://e-randevu.tuvturk.com.tr/" target="_blank" class="link-btn">🔗 TÜVTÜRK Hızlı Randevu Al (e-Devlet)</a>
-                    <div class="row-2">
+                    <div class="link-row">
+                        <a href="https://reservation.tuvturk.com.tr/Web.UI/" target="_blank" class="link-btn">🔗 TÜVTÜRK Randevu Al</a>
+                        <a href="https://www.turkiye.gov.tr/uab-arac-muayene-raporu-sorgulama" target="_blank" class="link-btn">🏛️ e-Devlet Muayene Sorgu</a>
+                    </div>
+                    <div class="row-3">
                         <div class="input-group">
-                            <label>Muayene İstasyonu / Randevu Saati</label>
-                            <input type="text" id="muayeneIstasyon" placeholder="Örn: Samandıra İstasyonu - 14:30" autocomplete="off">
+                            <label>İstasyon / Randevu Saati</label>
+                            <input type="text" id="muayeneIstasyon" placeholder="Örn: Samandıra - 14:30" autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label>Muayene KM</label>
+                            <input type="number" id="muayeneKm" placeholder="Örn: 124500">
                         </div>
                         <div class="input-group">
                             <label>Muayene Ücreti (TL)</label>
-                            <input type="number" id="muayeneTutar" placeholder="Örn: 1820">
+                            <input type="number" id="muayeneTutar" placeholder="Örn: 2620">
                         </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Hafif / Ağır Kusur Notları</label>
+                        <input type="text" id="muayeneKusur" placeholder="Örn: Far ayarı hafif kusurlu" autocomplete="off">
                     </div>
                 </div>
 
-                <!-- DİNAMİK FORM 3: PERİYODİK BAKIM -->
+                <!-- PERİYODİK BAKIM -->
                 <div id="form-bakim" class="sub-form">
-                    <div class="row-2">
+                    <div class="sub-form-title">🔧 Servis & Periyodik Bakım Karnesi</div>
+                    <div class="row-3">
                         <div class="input-group">
                             <label>Mevcut KM</label>
-                            <input type="number" id="bakimMevcutKm" placeholder="Örn: 120000">
+                            <input type="number" id="bakimMevcutKm" placeholder="Örn: 120000" oninput="gelecekBakimKmOner()">
                         </div>
                         <div class="input-group">
-                            <label>Gelecek Bakım KM'si</label>
-                            <input type="number" id="bakimGelecekKm" placeholder="Örn: 135000">
+                            <label>Gelecek Bakım KM</label>
+                            <input type="number" id="bakimGelecekKm" placeholder="Örn: 130000">
+                        </div>
+                        <div class="input-group">
+                            <label>Motor Yağı (Viskozite / Marka)</label>
+                            <input type="text" id="bakimYagTipi" placeholder="Örn: 5W-30 Castrol Edge" autocomplete="off">
                         </div>
                     </div>
                     <div class="row-2">
@@ -303,57 +882,238 @@
                         </div>
                         <div class="input-group">
                             <label>Harcanan Tutar (TL)</label>
-                            <input type="number" id="bakimTutar" placeholder="Örn: 3500">
+                            <input type="number" id="bakimTutar" placeholder="Örn: 5500">
                         </div>
                     </div>
                     <div class="input-group">
-                        <label>Yapılan İşlemler & Parçalar</label>
-                        <input type="text" id="bakimIslemler" placeholder="Örn: Yağ, Yağ Filtresi, Hava Filtresi değişti" autocomplete="off">
+                        <label>Hızlı Parça Ekle</label>
+                        <div class="chip-container">
+                            <button type="button" class="chip-btn" onclick="parcaEkle('Motor Yağı')">+ Motor Yağı</button>
+                            <button type="button" class="chip-btn" onclick="parcaEkle('Yağ Filtresi')">+ Yağ Filtresi</button>
+                            <button type="button" class="chip-btn" onclick="parcaEkle('Hava Filtresi')">+ Hava Filtresi</button>
+                            <button type="button" class="chip-btn" onclick="parcaEkle('Polen Filtresi')">+ Polen Filtresi</button>
+                            <button type="button" class="chip-btn" onclick="parcaEkle('Yakıt Filtresi')">+ Yakıt Filtresi</button>
+                            <button type="button" class="chip-btn" onclick="parcaEkle('Ön/Arka Balata')">+ Balata</button>
+                            <button type="button" class="chip-btn" onclick="parcaEkle('Buji / Kızdırma Bujisi')">+ Buji</button>
+                            <button type="button" class="chip-btn" onclick="parcaEkle('Antifriz / Fren Hidroliği')">+ Antifriz</button>
+                        </div>
+                        <input type="text" id="bakimIslemler" placeholder="Yapılan işlemler ve değişen parçalar..." autocomplete="off">
                     </div>
                 </div>
 
-                <!-- DİNAMİK FORM 4: MTV & DİĞER -->
-                <div id="form-genel" class="sub-form">
+                <!-- LASTİK, AKÜ & AĞIR BAKIM -->
+                <div id="form-agirbakim" class="sub-form">
+                    <div class="sub-form-title">🛞 Lastik, Akü & Ağır Bakım</div>
+                    <div class="row-3">
+                        <div class="input-group">
+                            <label>İşlem Alt Türü</label>
+                            <select id="agirTur">
+                                <option value="Yazlık/Kışlık Lastik">Yazlık / Kışlık Lastik</option>
+                                <option value="Akü Değişimi">Akü Değişimi</option>
+                                <option value="Triger Seti / Zincir">Triger Seti / Devirdaim</option>
+                                <option value="Debriyaj / Baskı Balata">Debriyaj / Baskı Balata</option>
+                                <option value="Şanzıman Yağı">Şanzıman Yağı</option>
+                                <option value="Ön Takım / Rot-Balans">Ön Takım / Rot-Balans</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Marka / Ebat / DOT veya Amper</label>
+                            <input type="text" id="agirDetay" placeholder="Örn: 205/55 R16 DOT 2425" autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label>Tutar (TL)</label>
+                            <input type="number" id="agirTutar" placeholder="Örn: 12000">
+                        </div>
+                    </div>
+                    <div class="row-2">
+                        <div class="input-group">
+                            <label>Yapıldığı KM</label>
+                            <input type="number" id="agirKm" placeholder="Örn: 118000">
+                        </div>
+                        <div class="input-group">
+                            <label>Garanti / Sonraki Değişim Notu</label>
+                            <input type="text" id="agirGaranti" placeholder="Örn: 2 yıl akü garantisi" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MTV -->
+                <div id="form-mtv" class="sub-form">
+                    <div class="sub-form-title">🏛️ Motorlu Taşıtlar Vergisi</div>
+                    <div class="link-row">
+                        <a href="https://dijital.gib.gov.tr/hizliOdemeler/MTVTPCOdeme" target="_blank" class="link-btn">💳 GİB MTV Öde</a>
+                        <a href="https://www.turkiye.gov.tr/gib-vergi-borcu-sorgu" target="_blank" class="link-btn">🏛️ e-Devlet Vergi Sorgu</a>
+                    </div>
+                    <div class="row-3">
+                        <div class="input-group">
+                            <label>Vergi Dönemi</label>
+                            <select id="mtvDonem">
+                                <option value="1. Taksit (Ocak)">1. Taksit (Son Gün: 31 Ocak)</option>
+                                <option value="2. Taksit (Temmuz)">2. Taksit (Son Gün: 31 Temmuz)</option>
+                                <option value="Yıllık Peşin">Yıllık Toplam (1+2. Taksit)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>MTV Tutarı (TL)</label>
+                            <input type="number" id="mtvTutar" placeholder="Örn: 2950">
+                        </div>
+                        <div class="input-group">
+                            <label>Ödeme Durumu</label>
+                            <select id="mtvDurum">
+                                <option value="Bekliyor">⏳ Ödeme Bekliyor</option>
+                                <option value="Ödendi">✅ Ödendi</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TRAFİK CEZASI & HGS -->
+                <div id="form-ceza" class="sub-form">
+                    <div class="sub-form-title">🚨 Trafik Cezası (%25 Erken Ödeme) & HGS/OGS</div>
+                    <div class="link-row">
+                        <a href="https://hgsmusteri.ptt.gov.tr/" target="_blank" class="link-btn">🛣️ PTT HGS Portalı</a>
+                        <a href="https://webihlaltakip.kgm.gov.tr/" target="_blank" class="link-btn">🚨 KGM İhlal Sorgula</a>
+                        <a href="https://dijital.gib.gov.tr/hizliOdemeler/MTVTPCOdeme" target="_blank" class="link-btn">💳 GİB Ceza Öde</a>
+                    </div>
+                    <div class="row-3">
+                        <div class="input-group">
+                            <label>Tebliğ / Geçiş Tarihi</label>
+                            <input type="date" id="cezaTebligTarih" onchange="cezaIndirimHesapla()">
+                        </div>
+                        <div class="input-group">
+                            <label>Brüt Ceza / HGS Tutarı (TL)</label>
+                            <input type="number" id="cezaTutar" placeholder="Örn: 2167" oninput="cezaIndirimHesapla()">
+                        </div>
+                        <div class="input-group">
+                            <label>Ödeme Durumu</label>
+                            <select id="cezaDurum">
+                                <option value="Bekliyor">⏳ Ödeme Bekliyor</option>
+                                <option value="Ödendi">✅ Ödendi</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="cezaHesapKutusu" class="calc-box"></div>
                     <div class="input-group">
-                        <label>Ödenecek Tutar (TL)</label>
-                        <input type="number" id="genelTutar" placeholder="Örn: 1250">
+                        <label>Ceza Maddesi / Geçiş Yeri</label>
+                        <input type="text" id="cezaYer" placeholder="Örn: Kuzey Marmara Otoyolu HGS" autocomplete="off">
                     </div>
                 </div>
 
-                <div class="input-group">
-                    <label>Açıklama / Ek Notlar</label>
-                    <input type="text" id="aracAciklama" placeholder="İsteğe bağlı not ekleyebilirsiniz..." autocomplete="off">
+                <!-- KAZA / TRAMER -->
+                <div id="form-kaza" class="sub-form">
+                    <div class="sub-form-title">🛡️ Kaza / Tramer / Kaporta Kaydı</div>
+                    <div class="row-3">
+                        <div class="input-group">
+                            <label>Hasar / Tramer Tutarı (TL)</label>
+                            <input type="number" id="kazaTutar" placeholder="Örn: 24000">
+                        </div>
+                        <div class="input-group">
+                            <label>Dosya / Eksper No</label>
+                            <input type="text" id="kazaDosyaNo" placeholder="Örn: 2026-44102" autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label>Kusur Durumu</label>
+                            <select id="kazaKusur">
+                                <option value="%0 (Karşı Taraf Kusurlu)">%0 (Karşı Taraf)</option>
+                                <option value="%50 Ortak Kusur">%50 Ortak</option>
+                                <option value="%100 Kendi Kusuru">%100 Kendi</option>
+                                <option value="Tek Taraflı / Park Hali">Tek Taraflı / Park</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Değişen / Boyanan Parçalar</label>
+                        <input type="text" id="kazaParcalar" placeholder="Örn: Sağ ön çamurluk lokal boya" autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- DİĞER -->
+                <div id="form-genel" class="sub-form">
+                    <div class="row-2">
+                        <div class="input-group">
+                            <label>Ödenecek / Ödenen Tutar (TL)</label>
+                            <input type="number" id="genelTutar" placeholder="Örn: 1250">
+                        </div>
+                        <div class="input-group">
+                            <label>Ödeme Durumu</label>
+                            <select id="genelDurum">
+                                <option value="Ödendi">✅ Ödendi</option>
+                                <option value="Bekliyor">⏳ Bekliyor</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row-2">
+                    <div class="input-group">
+                        <label>Açıklama / Ek Notlar</label>
+                        <input type="text" id="aracAciklama" placeholder="İsteğe bağlı not..." autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>Belge / Vergi Fişi Durumu</label>
+                        <select id="aracFaturaDurum">
+                            <option value="">Belirtilmedi</option>
+                            <option value="Fatura / Makbuz Alındı">🧾 Fatura / Makbuz Alındı</option>
+                            <option value="Şirket Giderine İşlenecek">🏢 Şirket Gideri (Muhasebe)</option>
+                            <option value="Fişsiz / Nakit">💵 Nakit / Belgesiz</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="btn-group">
-                    <button id="aracSubmitBtn" class="submit-btn" onclick="aracKaydet()">Güvenli Kaydet</button>
-                    <button id="aracCancelBtn" class="cancel-btn" onclick="aracFormSifirla()">❌ Düzenlemeyi İptal Et</button>
+                    <button id="aracSubmitBtn" class="submit-btn" onclick="aracKaydet()">🔒 Güvenli Kaydet</button>
+                    <button id="aracCancelBtn" class="cancel-btn" onclick="aracFormSifirla()">❌ İptal Et</button>
                 </div>
             </div>
+
+            <!-- FİLTRELEME ÇUBUĞU -->
+            <div class="filter-bar">
+                <input type="text" id="aracArama" placeholder="🔍 Plaka, servis, poliçe veya not ara..." oninput="aracListeyiCiz()">
+                <select id="aracPlakaFiltre" onchange="aracListeyiCiz()">
+                    <option value="">Tüm Plakalar</option>
+                </select>
+                <select id="aracTurFiltre" onchange="aracListeyiCiz()">
+                    <option value="">Tüm Kategoriler</option>
+                    <option value="Trafik Sigortası">Trafik Sigortası</option>
+                    <option value="Kasko">Kasko</option>
+                    <option value="Muayene">Muayene</option>
+                    <option value="Egzoz Emisyon">Egzoz Emisyon</option>
+                    <option value="MTV">MTV</option>
+                    <option value="Trafik Cezası / HGS">Trafik Cezası / HGS</option>
+                    <option value="Yağ/Periyodik Bakım">Periyodik Bakım</option>
+                    <option value="Lastik & Akü / Ağır Bakım">Lastik & Akü / Ağır Bakım</option>
+                    <option value="Kaza / Tramer Kaydı">Kaza / Tramer</option>
+                    <option value="Diğer">Diğer</option>
+                </select>
+            </div>
+
             <div id="aracListe"></div>
         </div>
 
-        <!-- ARAÇ GARAJIM (SABİT BİLGİLER) SEKMESİ -->
+        <!-- ==================== 2. ARAÇ GARAJIM SEKMESİ ==================== -->
         <div id="garaj-tab" class="tab-content">
             <div class="form-card">
-                <h3 id="garajFormBaslik">🚘 Garaja Sabit Araç Tanımla</h3>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">Buraya kaydettiğiniz araç bilgileri formlarda otomatik olarak kullanılabilir.</p>
-                
-                <div class="row-2">
+                <div class="form-card-header">
+                    <h3 id="garajFormBaslik">🚘 Garaja Sabit Araç Tanımla</h3>
+                </div>
+                <div class="row-3">
                     <div class="input-group">
-                        <label>Plaka</label>
+                        <label>Plaka *</label>
                         <input type="text" id="garajPlaka" placeholder="Örn: 34 ABC 123" autocomplete="off">
                     </div>
                     <div class="input-group">
                         <label>Ruhsat Sahibi T.C. / VKN</label>
                         <input type="text" id="garajTC" placeholder="T.C. Kimlik No" autocomplete="off">
                     </div>
-                </div>
-                
-                <div class="row-2">
                     <div class="input-group">
                         <label>Ruhsat Seri No (Belge No)</label>
                         <input type="text" id="garajRuhsatNo" placeholder="Örn: AB 123456" autocomplete="off">
+                    </div>
+                </div>
+                <div class="row-3">
+                    <div class="input-group">
+                        <label>Marka / Model / Yıl</label>
+                        <input type="text" id="garajModel" placeholder="Örn: 2020 Megane 1.5dCi" autocomplete="off">
                     </div>
                     <div class="input-group">
                         <label>Kullanım Tarzı</label>
@@ -361,121 +1121,335 @@
                             <option value="Hususi Otomobil">Hususi Otomobil</option>
                             <option value="Ticari / Kamyonet">Ticari / Kamyonet</option>
                             <option value="Motosiklet">Motosiklet</option>
+                            <option value="Traktör / Tarım">Traktör / Tarım Aracı</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Yakıt Tipi</label>
+                        <select id="garajYakit">
+                            <option value="">Belirtilmedi</option>
+                            <option value="Dizel">Dizel</option>
+                            <option value="Benzin">Benzin</option>
+                            <option value="Benzin + LPG">Benzin + LPG</option>
+                            <option value="Hibrit">Hibrit</option>
+                            <option value="Elektrikli">Elektrikli</option>
                         </select>
                     </div>
                 </div>
-
-                <div class="input-group">
-                    <label>Marka / Model / Yıl</label>
-                    <input type="text" id="garajModel" placeholder="Örn: 2020 Megane 1.5dCi" autocomplete="off">
+                <div class="row-3">
+                    <div class="input-group">
+                        <label>Şasi No (VIN)</label>
+                        <input type="text" id="garajSasiNo" placeholder="17 Hane Şasi No" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>Motor Hacmi (cc)</label>
+                        <input type="text" id="garajMotorHacmi" placeholder="Örn: 1461 cc" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>Güncel KM</label>
+                        <input type="number" id="garajKm" placeholder="Örn: 124500">
+                    </div>
                 </div>
-
+                <div class="row-2">
+                    <div class="input-group">
+                        <label>Lastik Ebadı</label>
+                        <input type="text" id="garajLastik" placeholder="Örn: 205/55 R16 91V" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>Akü / Yedek Anahtar Notu</label>
+                        <input type="text" id="garajAku" placeholder="Örn: 72Ah Varta (2025)" autocomplete="off">
+                    </div>
+                </div>
                 <div class="btn-group">
-                    <button id="garajSubmitBtn" class="submit-btn" onclick="garajKaydet()">🚘 Garaja Kaydet</button>
-                    <button id="garajCancelBtn" class="cancel-btn" onclick="garajFormSifirla()">❌ Düzenlemeyi İptal Et</button>
+                    <button id="garajSubmitBtn" class="submit-btn" onclick="garajKaydet()">🚘 Garaja Güvenli Kaydet</button>
+                    <button id="garajCancelBtn" class="cancel-btn" onclick="garajFormSifirla()">❌ İptal Et</button>
                 </div>
             </div>
             <div id="garajListe"></div>
         </div>
 
-        <!-- FATURALAR VE ABONELİKLER SEKMESİ -->
+        <!-- ==================== 3. FATURALAR SEKMESİ ==================== -->
         <div id="gider-tab" class="tab-content">
             <div class="form-card">
-                <h3 id="giderFormBaslik">Yeni Fatura / Abonelik Ekle</h3>
-                <div class="input-group">
-                    <label>Fatura / Abonelik Adı</label>
-                    <select id="giderAd">
-                        <optgroup label="Ev & Hizmet Faturaları">
-                            <option value="Elektrik Faturası">Elektrik Faturası</option>
-                            <option value="Su Faturası">Su Faturası</option>
-                            <option value="Doğalgaz Faturası">Doğalgaz Faturası</option>
-                            <option value="Ev İnterneti">Ev İnterneti</option>
-                            <option value="Cep Telefonu Faturası">Cep Telefonu Faturası</option>
-                            <option value="Apartman Aidatı">Apartman Aidatı</option>
-                            <option value="TV / Uydu Platformu">TV / Uydu Platformu (Digiturk, D-Smart vb.)</option>
-                        </optgroup>
-                        <optgroup label="Dijital Abonelikler">
-                            <option value="Netflix">Netflix</option>
-                            <option value="Spotify / Apple Music">Spotify / Apple Music</option>
-                            <option value="YouTube Premium">YouTube Premium</option>
-                            <option value="Amazon Prime">Amazon Prime</option>
-                            <option value="Disney+">Disney+</option>
-                            <option value="Exxen / Gain / BluTV">Exxen / Gain / BluTV</option>
-                            <option value="iCloud / Google Storage">iCloud / Google Storage</option>
-                            <option value="ChatGPT / AI Aboneliği">ChatGPT / AI Aboneliği</option>
-                        </optgroup>
-                        <optgroup label="Diğer">
-                            <option value="Spor Salonu Aboneliği">Spor Salonu Aboneliği</option>
-                            <option value="Kredi / Kredi Kartı Ödemesi">Kredi / Kredi Kartı Ödemesi</option>
-                            <option value="Özel Sigorta / BES">Özel Sigorta / BES</option>
-                            <option value="Diğer Sabit Ödeme">Diğer Sabit Ödeme</option>
-                        </optgroup>
-                    </select>
+                <div class="form-card-header">
+                    <h3 id="giderFormBaslik">Yeni Fatura / Sabit Abonelik Ekle</h3>
+                </div>
+                <div class="row-2">
+                    <div class="input-group">
+                        <label>Fatura / Abonelik Adı</label>
+                        <select id="giderAd">
+                            <optgroup label="Ev & Hizmet Faturaları">
+                                <option value="Elektrik Faturası">Elektrik Faturası</option>
+                                <option value="Su Faturası">Su Faturası</option>
+                                <option value="Doğalgaz Faturası">Doğalgaz Faturası</option>
+                                <option value="Ev İnterneti">Ev İnterneti</option>
+                                <option value="Cep Telefonu Faturası">Cep Telefonu Faturası</option>
+                                <option value="Apartman Aidatı">Apartman Aidatı</option>
+                                <option value="TV / Uydu Platformu">TV / Uydu Platformu</option>
+                            </optgroup>
+                            <optgroup label="Dijital Abonelikler">
+                                <option value="Netflix">Netflix</option>
+                                <option value="Spotify / Apple Music">Spotify / Apple Music</option>
+                                <option value="YouTube Premium">YouTube Premium</option>
+                                <option value="Amazon Prime">Amazon Prime</option>
+                                <option value="Disney+">Disney+</option>
+                                <option value="Exxen / Gain / BluTV">Exxen / Gain / BluTV</option>
+                                <option value="iCloud / Google Storage">iCloud / Google Storage</option>
+                                <option value="ChatGPT / AI Aboneliği">ChatGPT / AI Aboneliği</option>
+                            </optgroup>
+                            <optgroup label="Finans & Diğer">
+                                <option value="Spor Salonu Aboneliği">Spor Salonu Aboneliği</option>
+                                <option value="Kredi / Kredi Kartı Ödemesi">Kredi / Kredi Kartı Ödemesi</option>
+                                <option value="Özel Sigorta / BES">Özel Sigorta / BES</option>
+                                <option value="Emlak / Çevre Vergisi">Emlak / Çevre Vergisi</option>
+                                <option value="Diğer Sabit Ödeme">Diğer Sabit Ödeme</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Abone / Sözleşme No</label>
+                        <input type="text" id="giderAboneNo" placeholder="Örn: 1004829102" autocomplete="off">
+                    </div>
+                </div>
+                <div class="row-3">
+                    <div class="input-group">
+                        <label>Aylık Ortalama Tutar (TL) *</label>
+                        <input type="number" id="giderTutar" placeholder="Örn: 450">
+                    </div>
+                    <div class="input-group">
+                        <label>Ödeme Günü (1-31) *</label>
+                        <input type="number" id="giderGun" min="1" max="31" placeholder="Örn: 15">
+                    </div>
+                    <div class="input-group">
+                        <label>Ödeme Şekli</label>
+                        <select id="giderOdemeSekli">
+                            <option value="Manuel Ödeme">✋ Manuel Ödeme</option>
+                            <option value="Otomatik Talimat">🔄 Otomatik Ödeme Talimatı</option>
+                            <option value="Kredi Kartı Çekimi">💳 Kredi Kartı Düzenli Çekim</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="input-group">
-                    <label>Abone / Sözleşme No</label>
-                    <input type="text" id="giderAboneNo" placeholder="Örn: 1004829102" autocomplete="off">
+                    <label>Açıklama / Banka / Ek Not</label>
+                    <input type="text" id="giderAciklama" placeholder="Örn: Otomatik ödeme, taahhüt bitiş tarihi..." autocomplete="off">
                 </div>
-                <div class="input-group">
-                    <label>Aylık Tutar (TL)</label>
-                    <input type="number" id="giderTutar" placeholder="Örn: 450">
-                </div>
-                <div class="input-group">
-                    <label>Her Ayın Kaçında Ödenecek?</label>
-                    <input type="number" id="giderGun" min="1" max="31" placeholder="Örn: 15">
-                </div>
-                <div class="input-group">
-                    <label>Açıklama / Ek Not</label>
-                    <input type="text" id="giderAciklama" placeholder="Örn: Garanti bankasından otomatik ödeniyor" autocomplete="off">
-                </div>
-
                 <div class="btn-group">
-                    <button id="giderSubmitBtn" class="submit-btn" onclick="giderKaydet()">Güvenli Kaydet</button>
-                    <button id="giderCancelBtn" class="cancel-btn" onclick="giderFormSifirla()">❌ Düzenlemeyi İptal Et</button>
+                    <button id="giderSubmitBtn" class="submit-btn" onclick="giderKaydet()">🔒 Güvenli Kaydet</button>
+                    <button id="giderCancelBtn" class="cancel-btn" onclick="giderFormSifirla()">❌ İptal Et</button>
                 </div>
             </div>
             <div id="giderListe"></div>
         </div>
+
+        <!-- ==================== 4. RESMİ PORTALLAR & CSV İŞLEME SEKMESİ ==================== -->
+        <div id="portal-tab" class="tab-content">
+            <!-- Resmi Kurum Bağlantıları -->
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h3>🏛️ Resmi Araç, Otoyol & Vergi Portalları</h3>
+                </div>
+                <div class="portal-grid">
+                    <a href="https://hgsmusteri.ptt.gov.tr/" target="_blank" class="portal-card">
+                        <div class="portal-card-title">🛣️ PTT HGS Müşteri Paneli</div>
+                        <div class="portal-card-desc">Bakiye sorgula, geçiş dökümünü (CSV/Excel) indir ve aşağıdan içeri aktar.</div>
+                    </a>
+                    <a href="https://webihlaltakip.kgm.gov.tr/" target="_blank" class="portal-card">
+                        <div class="portal-card-title">🚨 KGM İhlalli Geçiş Sorgu</div>
+                        <div class="portal-card-desc">Karayolları köprü ve otoyol kaçak geçiş / ceza sorgulama.</div>
+                    </a>
+                    <a href="https://www.kuzeymarmaraotoyolu.com/ihlalli-gecis-sorgulama" target="_blank" class="portal-card">
+                        <div class="portal-card-title">🌉 Kuzey Marmara Otoyolu</div>
+                        <div class="portal-card-desc">KMO geçiş dökümü, ihlalli geçiş sorgulama ve ödeme.</div>
+                    </a>
+                    <a href="https://reservation.tuvturk.com.tr/Web.UI/" target="_blank" class="portal-card">
+                        <div class="portal-card-title">🔧 TÜVTÜRK Muayene Randevu</div>
+                        <div class="portal-card-desc">Ücretsiz randevu al, istasyon ve geçerlilik tarihini kontrol et.</div>
+                    </a>
+                    <a href="https://dijital.gib.gov.tr/hizliOdemeler/MTVTPCOdeme" target="_blank" class="portal-card">
+                        <div class="portal-card-title">💳 GİB MTV & Trafik Cezası</div>
+                        <div class="portal-card-desc">Dijital Vergi Dairesi üzerinden MTV ve %25 indirimli ceza öde.</div>
+                    </a>
+                    <a href="https://www.turkiye.gov.tr/egm-araclarim" target="_blank" class="portal-card">
+                        <div class="portal-card-title">🏛️ e-Devlet Adıma Tescilli Araçlar</div>
+                        <div class="portal-card-desc">Muayene son tarihi, hak mahrumiyeti, ceza ve ruhsat özeti.</div>
+                    </a>
+                    <a href="https://www.turkiye.gov.tr/sbm-trafik-policesi-sorgulama" target="_blank" class="portal-card">
+                        <div class="portal-card-title">🛡️ SBM Trafik & Kasko Sorgu</div>
+                        <div class="portal-card-desc">Aktif poliçeler, hasarsızlık kademesi ve bitiş tarihleri.</div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- CSV İçe Aktarım ve Firebase Kayıt Motoru -->
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h3>📂 CSV Dosyası Yükle & Firebase'e İşle</h3>
+                    <button type="button" class="export-btn" onclick="ornekCsvIndir()">📄 Örnek CSV İndir</button>
+                </div>
+                <p style="font-size:0.81rem; color:var(--text-muted); margin-bottom:14px;">
+                    HGS, TÜVTÜRK, banka veya kendi Excel tablolarınızdan aldığınız <b>.csv</b> dosyalarını yükleyin. Sistem sütunları otomatik tanır, mükerrer kayıtları atlar ve tamamını şifreli olarak Firebase'e kaydeder.
+                </p>
+
+                <div class="row-3">
+                    <div class="input-group">
+                        <label>İçe Aktarılacak Kayıt Türü</label>
+                        <select id="csvHedefTur">
+                            <option value="Trafik Cezası / HGS">🛣️ HGS / Otoyol Geçişi & Ceza</option>
+                            <option value="Muayene">🔧 TÜVTÜRK Muayene Kayıtları</option>
+                            <option value="Trafik Sigortası">🛡️ Trafik Sigortası</option>
+                            <option value="Kasko">🛡️ Kasko Poliçesi</option>
+                            <option value="MTV">🏛️ MTV Vergi Kayıtları</option>
+                            <option value="Yağ/Periyodik Bakım">🔧 Periyodik Bakım</option>
+                            <option value="Diğer">📌 Genel Araç Gideri</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Varsayılan Plaka (CSV'de yoksa kullanılır)</label>
+                        <input type="text" id="csvVarsayilanPlaka" placeholder="Örn: 34 ABC 123" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>Ödeme Durumu</label>
+                        <select id="csvOdemeDurumu">
+                            <option value="Ödendi">✅ Ödendi (Geçmiş Döküm)</option>
+                            <option value="Bekliyor">⏳ Ödeme Bekliyor (Uyarı Ver)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="csvDropZone" class="drop-zone" onclick="document.getElementById('csvFileInput').click()">
+                    <input type="file" id="csvFileInput" accept=".csv,.txt" style="display:none" onchange="csvDosyaSecildi(this.files[0])">
+                    <p>📤 CSV Dosyasını Buraya Sürükleyin veya Tıklayıp Seçin</p>
+                    <span>UTF-8 ve Türkçe Excel (Windows-1254) formatları + noktalı virgül (;) / virgül (,) otomatik algılanır.</span>
+                </div>
+
+                <!-- Sütun Eşleştirme ve Önizleme -->
+                <div id="csvMappingArea" style="display:none;">
+                    <div class="sub-form active" style="margin-bottom:12px;">
+                        <div class="sub-form-title">⚙️ Sütun Eşleştirme (Otomatik Tahmin Edildi, Gerekirse Değiştirin)</div>
+                        <div class="row-2">
+                            <div class="input-group">
+                                <label>Tarih Sütunu</label>
+                                <select id="mapTarih" onchange="csvOnizlemeGuncelle()"></select>
+                            </div>
+                            <div class="input-group">
+                                <label>Plaka Sütunu (Opsiyonel)</label>
+                                <select id="mapPlaka" onchange="csvOnizlemeGuncelle()"></select>
+                            </div>
+                        </div>
+                        <div class="row-2">
+                            <div class="input-group">
+                                <label>Tutar (TL) Sütunu</label>
+                                <select id="mapTutar" onchange="csvOnizlemeGuncelle()"></select>
+                            </div>
+                            <div class="input-group">
+                                <label>Açıklama / Güzergah / İstasyon Sütunu</label>
+                                <select id="mapAciklama" onchange="csvOnizlemeGuncelle()"></select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="csvPreviewWrap" class="csv-preview-wrap" style="display:block;">
+                        <div style="padding:9px 12px; background:var(--card-subtle); font-size:0.8rem; font-weight:700; display:flex; justify-content:space-between;">
+                            <span id="csvStatText">0 satır hazır</span>
+                            <span style="color:var(--text-muted);">İlk 25 satır önizlenir</span>
+                        </div>
+                        <div class="csv-table-scroll">
+                            <table class="csv-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Tarih</th>
+                                        <th>Plaka</th>
+                                        <th>Tutar</th>
+                                        <th>Açıklama / Yer</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="csvPreviewBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="btn-group" style="margin-top:14px;">
+                        <button type="button" class="submit-btn" onclick="csvFirebaseKaydet()">🔥 İşlenen Kayıtları Şifreli Olarak Firebase'e Kaydet</button>
+                        <button type="button" class="cancel-btn" style="display:inline-block;" onclick="csvTemizle()">🗑️ Temizle</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyD1hbPbA81qldXCsQxSM4Ozxr9L8sdRTMk",
-            authDomain: "karaaslanhomebutcetakip.firebaseapp.com",
-            databaseURL: "https://karaaslanhomebutcetakip-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "karaaslanhomebutcetakip",
-            storageBucket: "karaaslanhomebutcetakip.firebasestorage.app",
-            messagingSenderId: "566343253682",
-            appId: "1:566343253682:web:3ab14198fca800d69813ab"
-        };
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+    <div id="toast" class="toast"></div>
 
+    <script>
         let editingAracKey = null;
         let editingGiderKey = null;
         let editingGarajKey = null;
-        
+
         let cachedAraclar = {};
         let cachedGiderler = {};
         let cachedGaraj = {};
 
-        // --- VERİTABANI CANLI BAĞLANTI DİNLEYİCİSİ ---
+        // CSV geçici verileri
+        let parsedCsvHeaders = [];
+        let parsedCsvRows = [];
+
+        // --- TOAST ---
+        let toastTimer = null;
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        function esc(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatTL(val) {
+            const num = parseFloat(val);
+            if (isNaN(num)) return '0 ₺';
+            return num.toLocaleString('tr-TR', { maximumFractionDigits: 2 }) + ' ₺';
+        }
+
+        function panoyaKopyala(metin, mesaj) {
+            navigator.clipboard.writeText(metin).then(() => {
+                showToast(mesaj || '📋 Panoya kopyalandı!');
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = metin;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showToast(mesaj || '📋 Panoya kopyalandı!');
+            });
+        }
+
+        // --- CANLI BAĞLANTI ---
         const dbStatusBadge = document.getElementById('dbStatusBadge');
         db.ref('.info/connected').on('value', snap => {
             if (snap.val() === true) {
                 dbStatusBadge.className = "db-badge db-online";
-                dbStatusBadge.innerHTML = "● Bağlantı Var (Canlı)";
+                dbStatusBadge.innerHTML = "● Canlı Bağlantı";
             } else {
                 dbStatusBadge.className = "db-badge db-offline";
-                dbStatusBadge.innerHTML = "○ Bağlantı Kesildi";
+                dbStatusBadge.innerHTML = "○ Çevrimdışı";
             }
         });
 
-        // --- GÜVENLİ ŞİFRELEME (AES) ---
+        // --- AES ŞİFRELEME ---
         const GIZLI_ANAHTAR = "KaraaslanEvSistemi2026!*";
 
         function veriyiSifrele(metin) {
-            if (!metin) return "";
+            if (metin === null || metin === undefined || metin === "") return "";
             return CryptoJS.AES.encrypt(metin.toString(), GIZLI_ANAHTAR).toString();
         }
 
@@ -484,101 +1458,197 @@
             try {
                 const bytes = CryptoJS.AES.decrypt(sifreliMetin, GIZLI_ANAHTAR);
                 const cozulmus = bytes.toString(CryptoJS.enc.Utf8);
-                return cozulmus || sifreliMetin; 
+                return cozulmus || sifreliMetin;
             } catch (error) {
-                return sifreliMetin; 
+                return sifreliMetin;
             }
         }
 
-        function switchTab(tabId) {
+        function switchTab(tabId, btnEl) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            event.target.classList.add('active');
+            const targetBtn = btnEl || document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+            if (targetBtn) targetBtn.classList.add('active');
             document.getElementById(tabId + '-tab').classList.add('active');
         }
 
-        // ================= GARAJDAN OTOMATİK DOLDURMA =================
+        // --- YARDIMCI HESAPLAMALAR ---
+        function gelecekBakimKmOner() {
+            const mevcut = parseInt(document.getElementById('bakimMevcutKm').value, 10);
+            const gelecekEl = document.getElementById('bakimGelecekKm');
+            if (!isNaN(mevcut) && !gelecekEl.value) {
+                gelecekEl.value = mevcut + 10000;
+            }
+        }
+
+        function parcaEkle(parca) {
+            const input = document.getElementById('bakimIslemler');
+            const mevcut = input.value.trim();
+            if (!mevcut) input.value = parca;
+            else if (!mevcut.toLowerCase().includes(parca.toLowerCase())) input.value = mevcut + ', ' + parca;
+        }
+
+        function cezaIndirimHesapla() {
+            const teblig = document.getElementById('cezaTebligTarih').value;
+            const tutar = parseFloat(document.getElementById('cezaTutar').value);
+            const box = document.getElementById('cezaHesapKutusu');
+            if (!teblig && isNaN(tutar)) { box.style.display = 'none'; return; }
+
+            let html = '<b>💡 %25 Erken Ödeme İndirimi:</b><br>';
+            if (!isNaN(tutar) && tutar > 0) {
+                const indirimli = tutar * 0.75;
+                html += `İndirimli Tutar: <b>${formatTL(indirimli)}</b> (${formatTL(tutar - indirimli)} tasarruf)<br>`;
+            }
+            if (teblig) {
+                const d = new Date(teblig);
+                d.setDate(d.getDate() + 15);
+                const sonGunStr = d.toISOString().split('T')[0];
+                html += `15 Günlük İndirimli Son Ödeme: <b>${sonGunStr}</b>`;
+                if (!document.getElementById('aracTarih').value) document.getElementById('aracTarih').value = sonGunStr;
+            }
+            box.innerHTML = html;
+            box.style.display = 'block';
+        }
+
         function garajVerisiAktar(key) {
             if (!key || !cachedGaraj[key]) return;
             const item = cachedGaraj[key];
-            
             document.getElementById('aracPlaka').value = sifreyiCoz(item.plaka) || '';
             document.getElementById('sigortaTC').value = sifreyiCoz(item.tc) || '';
             document.getElementById('sigortaRuhsatNo').value = sifreyiCoz(item.ruhsatNo) || '';
             document.getElementById('sigortaAracModel').value = sifreyiCoz(item.model) || '';
             if (item.kullanim) document.getElementById('sigortaKullanim').value = item.kullanim;
+            const km = sifreyiCoz(item.guncelKm);
+            if (km) {
+                document.getElementById('bakimMevcutKm').value = km;
+                document.getElementById('muayeneKm').value = km;
+                document.getElementById('agirKm').value = km;
+                gelecekBakimKmOner();
+            }
+            showToast('⚡ Araç bilgileri garajdan aktarıldı.');
         }
 
-        // ================= ARAÇ DİNAMİK FORM YÖNETİMİ =================
         function aracFormGuncelle() {
             const tur = document.getElementById('aracTuru').value;
-            
-            document.getElementById('form-sigorta').classList.remove('active');
-            document.getElementById('form-muayene').classList.remove('active');
-            document.getElementById('form-bakim').classList.remove('active');
-            document.getElementById('form-genel').classList.remove('active');
-
+            document.querySelectorAll('.sub-form').forEach(el => el.classList.remove('active'));
             const tarihLabel = document.getElementById('aracTarihLabel');
 
             if (tur === 'Trafik Sigortası' || tur === 'Kasko') {
                 document.getElementById('form-sigorta').classList.add('active');
                 tarihLabel.innerText = "Poliçe Bitiş Tarihi";
-            } else if (tur === 'Muayene') {
+            } else if (tur === 'Muayene' || tur === 'Egzoz Emisyon') {
                 document.getElementById('form-muayene').classList.add('active');
-                tarihLabel.innerText = "Muayene Son Geçerlilik Tarihi";
+                tarihLabel.innerText = tur === 'Muayene' ? "Muayene Son Geçerlilik Tarihi" : "Egzoz Emisyon Son Tarihi";
             } else if (tur === 'Yağ/Periyodik Bakım') {
                 document.getElementById('form-bakim').classList.add('active');
-                tarihLabel.innerText = "Bakım Tarihi";
+                tarihLabel.innerText = "Sonraki Bakım / İşlem Tarihi";
+            } else if (tur === 'Lastik & Akü / Ağır Bakım') {
+                document.getElementById('form-agirbakim').classList.add('active');
+                tarihLabel.innerText = "İşlem / Garanti Bitiş Tarihi";
+            } else if (tur === 'MTV') {
+                document.getElementById('form-mtv').classList.add('active');
+                tarihLabel.innerText = "MTV Son Ödeme Tarihi";
+            } else if (tur === 'Trafik Cezası / HGS') {
+                document.getElementById('form-ceza').classList.add('active');
+                tarihLabel.innerText = "Son Ödeme / Geçiş Tarihi";
+            } else if (tur === 'Kaza / Tramer Kaydı') {
+                document.getElementById('form-kaza').classList.add('active');
+                tarihLabel.innerText = "Kaza / İşlem Tarihi";
             } else {
                 document.getElementById('form-genel').classList.add('active');
-                tarihLabel.innerText = "Son Ödeme / Vade Tarihi";
+                tarihLabel.innerText = "Son Ödeme / İşlem Tarihi";
             }
         }
 
         function aracKaydet() {
             const tur = document.getElementById('aracTuru').value;
-            const plaka = document.getElementById('aracPlaka').value;
+            const plaka = document.getElementById('aracPlaka').value.trim().toUpperCase();
             const tarih = document.getElementById('aracTarih').value;
-            const aciklama = document.getElementById('aracAciklama').value;
+            const aciklama = document.getElementById('aracAciklama').value.trim();
+            const faturaDurum = document.getElementById('aracFaturaDurum').value;
 
-            if (!tarih) return alert("Lütfen tarih seçin!");
+            if (!tarih) return showToast("⚠️ Lütfen tarih seçin!");
 
-            let detayObj = {};
+            let detayObj = { faturaDurum };
+            let odendiFlag = false;
 
             if (tur === 'Trafik Sigortası' || tur === 'Kasko') {
                 detayObj = {
-                    tc: document.getElementById('sigortaTC').value,
-                    ruhsatNo: document.getElementById('sigortaRuhsatNo').value,
-                    aracModel: document.getElementById('sigortaAracModel').value,
+                    ...detayObj,
+                    tc: document.getElementById('sigortaTC').value.trim(),
+                    ruhsatNo: document.getElementById('sigortaRuhsatNo').value.trim(),
+                    aracModel: document.getElementById('sigortaAracModel').value.trim(),
                     kullanim: document.getElementById('sigortaKullanim').value,
-                    acente: document.getElementById('sigortaAcente').value,
-                    policeNo: document.getElementById('sigortaPoliceNo').value,
-                    tutar: document.getElementById('sigortaTutar').value
+                    acente: document.getElementById('sigortaAcente').value.trim(),
+                    policeNo: document.getElementById('sigortaPoliceNo').value.trim(),
+                    tutar: document.getElementById('sigortaTutar').value,
+                    kademe: document.getElementById('sigortaKademe').value,
+                    imm: document.getElementById('sigortaImm').value.trim(),
+                    asistans: document.getElementById('sigortaAsistans').value.trim()
                 };
-            } else if (tur === 'Muayene') {
+            } else if (tur === 'Muayene' || tur === 'Egzoz Emisyon') {
                 detayObj = {
-                    istasyon: document.getElementById('muayeneIstasyon').value,
-                    tutar: document.getElementById('muayeneTutar').value
+                    ...detayObj,
+                    istasyon: document.getElementById('muayeneIstasyon').value.trim(),
+                    km: document.getElementById('muayeneKm').value,
+                    tutar: document.getElementById('muayeneTutar').value,
+                    kusur: document.getElementById('muayeneKusur').value.trim()
                 };
             } else if (tur === 'Yağ/Periyodik Bakım') {
                 detayObj = {
+                    ...detayObj,
                     mevcutKm: document.getElementById('bakimMevcutKm').value,
                     gelecekKm: document.getElementById('bakimGelecekKm').value,
-                    servis: document.getElementById('bakimServis').value,
+                    yagTipi: document.getElementById('bakimYagTipi').value.trim(),
+                    servis: document.getElementById('bakimServis').value.trim(),
                     tutar: document.getElementById('bakimTutar').value,
-                    islemler: document.getElementById('bakimIslemler').value
+                    islemler: document.getElementById('bakimIslemler').value.trim()
+                };
+            } else if (tur === 'Lastik & Akü / Ağır Bakım') {
+                detayObj = {
+                    ...detayObj,
+                    agirTur: document.getElementById('agirTur').value,
+                    agirDetay: document.getElementById('agirDetay').value.trim(),
+                    tutar: document.getElementById('agirTutar').value,
+                    km: document.getElementById('agirKm').value,
+                    garanti: document.getElementById('agirGaranti').value.trim()
+                };
+            } else if (tur === 'MTV') {
+                const durum = document.getElementById('mtvDurum').value;
+                odendiFlag = durum === 'Ödendi';
+                detayObj = { ...detayObj, donem: document.getElementById('mtvDonem').value, tutar: document.getElementById('mtvTutar').value, odemeDurumu: durum };
+            } else if (tur === 'Trafik Cezası / HGS') {
+                const brut = parseFloat(document.getElementById('cezaTutar').value);
+                const durum = document.getElementById('cezaDurum').value;
+                odendiFlag = durum === 'Ödendi';
+                detayObj = {
+                    ...detayObj,
+                    tebligTarih: document.getElementById('cezaTebligTarih').value,
+                    tutar: document.getElementById('cezaTutar').value,
+                    indirimliTutar: !isNaN(brut) ? Math.round(brut * 0.75) : '',
+                    odemeDurumu: durum,
+                    yer: document.getElementById('cezaYer').value.trim()
+                };
+            } else if (tur === 'Kaza / Tramer Kaydı') {
+                odendiFlag = true;
+                detayObj = {
+                    ...detayObj,
+                    tutar: document.getElementById('kazaTutar').value,
+                    dosyaNo: document.getElementById('kazaDosyaNo').value.trim(),
+                    kusur: document.getElementById('kazaKusur').value,
+                    parcalar: document.getElementById('kazaParcalar').value.trim()
                 };
             } else {
-                detayObj = {
-                    tutar: document.getElementById('genelTutar').value
-                };
+                const durum = document.getElementById('genelDurum').value;
+                odendiFlag = durum === 'Ödendi';
+                detayObj = { ...detayObj, tutar: document.getElementById('genelTutar').value, odemeDurumu: durum };
             }
 
             const kayitVerisi = {
                 tur: tur,
                 plaka: veriyiSifrele(plaka),
                 tarih: tarih,
+                odendi: odendiFlag, // Ana sayfa bildirim rozetinin şifre çözmeden okuyabilmesi için
                 detay: veriyiSifrele(JSON.stringify(detayObj)),
                 aciklama: veriyiSifrele(aciklama),
                 ekleyen: activeUser,
@@ -586,18 +1656,32 @@
             };
 
             if (editingAracKey) {
-                db.ref(`yonetimDB/araclar/${editingAracKey}`).update(kayitVerisi)
-                .then(() => {
-                    alert("Kayıt başarıyla güncellendi!");
+                db.ref(`yonetimDB/araclar/${editingAracKey}`).update(kayitVerisi).then(() => {
+                    showToast("✅ Araç kaydı güncellendi!");
                     aracFormSifirla();
                 });
             } else {
-                db.ref('yonetimDB/araclar').push(kayitVerisi)
-                .then(() => {
-                    alert("Kayıt başarıyla ve şifrelenerek eklendi!");
+                db.ref('yonetimDB/araclar').push(kayitVerisi).then(() => {
+                    showToast("🔒 Kayıt şifrelenerek eklendi!");
                     aracFormSifirla();
                 });
             }
+        }
+
+        function aracOdendiToggle(key) {
+            const item = cachedAraclar[key];
+            if (!item) return;
+            let detay = {};
+            try { detay = JSON.parse(sifreyiCoz(item.detay) || '{}'); } catch (e) {}
+
+            const yeniDurum = detay.odemeDurumu === 'Ödendi' ? 'Bekliyor' : 'Ödendi';
+            detay.odemeDurumu = yeniDurum;
+            db.ref(`yonetimDB/araclar/${key}`).update({
+                odendi: yeniDurum === 'Ödendi',
+                detay: veriyiSifrele(JSON.stringify(detay))
+            }).then(() => {
+                showToast(yeniDurum === 'Ödendi' ? '✅ Ödendi olarak işaretlendi.' : '⏳ Bekliyor olarak güncellendi.');
+            });
         }
 
         function aracDuzenle(key) {
@@ -614,10 +1698,8 @@
             document.getElementById('aracAciklama').value = sifreyiCoz(item.aciklama) || '';
 
             let detay = {};
-            try {
-                const decodedJson = sifreyiCoz(item.detay);
-                if (decodedJson) detay = JSON.parse(decodedJson);
-            } catch(e){}
+            try { detay = JSON.parse(sifreyiCoz(item.detay) || '{}'); } catch (e) {}
+            document.getElementById('aracFaturaDurum').value = detay.faturaDurum || '';
 
             if (item.tur === 'Trafik Sigortası' || item.tur === 'Kasko') {
                 document.getElementById('sigortaTC').value = detay.tc || '';
@@ -627,162 +1709,268 @@
                 document.getElementById('sigortaAcente').value = detay.acente || '';
                 document.getElementById('sigortaPoliceNo').value = detay.policeNo || '';
                 document.getElementById('sigortaTutar').value = detay.tutar || '';
-            } else if (item.tur === 'Muayene') {
+                document.getElementById('sigortaKademe').value = detay.kademe || '';
+                document.getElementById('sigortaImm').value = detay.imm || '';
+                document.getElementById('sigortaAsistans').value = detay.asistans || '';
+            } else if (item.tur === 'Muayene' || item.tur === 'Egzoz Emisyon') {
                 document.getElementById('muayeneIstasyon').value = detay.istasyon || '';
+                document.getElementById('muayeneKm').value = detay.km || '';
                 document.getElementById('muayeneTutar').value = detay.tutar || '';
+                document.getElementById('muayeneKusur').value = detay.kusur || '';
             } else if (item.tur === 'Yağ/Periyodik Bakım') {
                 document.getElementById('bakimMevcutKm').value = detay.mevcutKm || '';
                 document.getElementById('bakimGelecekKm').value = detay.gelecekKm || '';
+                document.getElementById('bakimYagTipi').value = detay.yagTipi || '';
                 document.getElementById('bakimServis').value = detay.servis || '';
                 document.getElementById('bakimTutar').value = detay.tutar || '';
                 document.getElementById('bakimIslemler').value = detay.islemler || '';
+            } else if (item.tur === 'Lastik & Akü / Ağır Bakım') {
+                document.getElementById('agirTur').value = detay.agirTur || 'Yazlık/Kışlık Lastik';
+                document.getElementById('agirDetay').value = detay.agirDetay || '';
+                document.getElementById('agirTutar').value = detay.tutar || '';
+                document.getElementById('agirKm').value = detay.km || '';
+                document.getElementById('agirGaranti').value = detay.garanti || '';
+            } else if (item.tur === 'MTV') {
+                document.getElementById('mtvDonem').value = detay.donem || '1. Taksit (Ocak)';
+                document.getElementById('mtvTutar').value = detay.tutar || '';
+                document.getElementById('mtvDurum').value = detay.odemeDurumu || 'Bekliyor';
+            } else if (item.tur === 'Trafik Cezası / HGS') {
+                document.getElementById('cezaTebligTarih').value = detay.tebligTarih || '';
+                document.getElementById('cezaTutar').value = detay.tutar || '';
+                document.getElementById('cezaDurum').value = detay.odemeDurumu || 'Bekliyor';
+                document.getElementById('cezaYer').value = detay.yer || '';
+                cezaIndirimHesapla();
+            } else if (item.tur === 'Kaza / Tramer Kaydı') {
+                document.getElementById('kazaTutar').value = detay.tutar || '';
+                document.getElementById('kazaDosyaNo').value = detay.dosyaNo || '';
+                document.getElementById('kazaKusur').value = detay.kusur || '%0 (Karşı Taraf Kusurlu)';
+                document.getElementById('kazaParcalar').value = detay.parcalar || '';
             } else {
                 document.getElementById('genelTutar').value = detay.tutar || '';
+                document.getElementById('genelDurum').value = detay.odemeDurumu || 'Ödendi';
             }
 
             const btn = document.getElementById('aracSubmitBtn');
             btn.innerText = "✏️ Değişiklikleri Güncelle";
-            btn.style.background = "#3182ce";
-            document.getElementById('aracCancelBtn').style.display = "block";
-
+            btn.style.background = "var(--info)";
+            document.getElementById('aracCancelBtn').style.display = "inline-block";
+            switchTab('arac');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function aracFormSifirla() {
             editingAracKey = null;
-            document.getElementById('aracFormBaslik').innerText = "Yeni Araç Kaydı / Hatırlatıcı";
+            document.getElementById('aracFormBaslik').innerText = "Yeni Araç / Vergi / Bakım Kaydı";
             document.getElementById('garajSecim').value = '';
             document.getElementById('aracPlaka').value = '';
             document.getElementById('aracTarih').value = '';
             document.getElementById('aracAciklama').value = '';
+            document.getElementById('aracFaturaDurum').value = '';
+            document.getElementById('cezaHesapKutusu').style.display = 'none';
             document.querySelectorAll('.sub-form input').forEach(input => input.value = '');
-            
+
             const btn = document.getElementById('aracSubmitBtn');
-            btn.innerText = "Güvenli Kaydet";
-            btn.style.background = "var(--primary-orange)";
+            btn.innerText = "🔒 Güvenli Kaydet";
+            btn.style.background = "var(--primary)";
             document.getElementById('aracCancelBtn').style.display = "none";
         }
 
         db.ref('yonetimDB/araclar').on('value', snapshot => {
-            const liste = document.getElementById('aracListe');
-            liste.innerHTML = '';
             cachedAraclar = snapshot.val() || {};
-            if(!snapshot.val()) return;
+            plakaFiltreGuncelle();
+            aracListeyiCiz();
+            kpiVeBildirimGuncelle();
+        });
 
-            Object.keys(cachedAraclar).forEach(key => {
+        function plakaFiltreGuncelle() {
+            const select = document.getElementById('aracPlakaFiltre');
+            const onceki = select.value;
+            const plakalar = new Set();
+
+            Object.values(cachedAraclar).forEach(item => { const p = sifreyiCoz(item.plaka); if (p) plakalar.add(p.toUpperCase()); });
+            Object.values(cachedGaraj).forEach(item => { const p = sifreyiCoz(item.plaka); if (p) plakalar.add(p.toUpperCase()); });
+
+            select.innerHTML = '<option value="">Tüm Plakalar</option>';
+            Array.from(plakalar).sort().forEach(p => {
+                select.innerHTML += `<option value="${esc(p)}">${esc(p)}</option>`;
+            });
+            select.value = onceki;
+        }
+
+        function aracListeyiCiz() {
+            const liste = document.getElementById('aracListe');
+            const arama = (document.getElementById('aracArama').value || '').toLowerCase();
+            const plakaF = document.getElementById('aracPlakaFiltre').value;
+            const turF = document.getElementById('aracTurFiltre').value;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const items = Object.keys(cachedAraclar).map(key => {
                 const item = cachedAraclar[key];
-                
+                const plaka = (sifreyiCoz(item.plaka) || 'PLAKASIZ').toUpperCase();
+                const aciklama = sifreyiCoz(item.aciklama) || '';
+                let detay = {};
+                try { detay = JSON.parse(sifreyiCoz(item.detay) || '{}'); } catch (e) {}
+
                 const itemDate = new Date(item.tarih);
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                const diffTime = itemDate - today;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffDays = isNaN(itemDate) ? 9999 : Math.ceil((itemDate - today) / (1000 * 60 * 60 * 24));
+                return { key, item, plaka, aciklama, detay, diffDays };
+            }).filter(obj => {
+                if (plakaF && obj.plaka !== plakaF) return false;
+                if (turF && obj.item.tur !== turF) return false;
+                if (arama) {
+                    const haystack = `${obj.plaka} ${obj.item.tur} ${obj.aciklama} ${JSON.stringify(obj.detay)}`.toLowerCase();
+                    if (!haystack.includes(arama)) return false;
+                }
+                return true;
+            }).sort((a, b) => {
+                const aPaid = (a.item.odendi === true || a.detay.odemeDurumu === 'Ödendi') ? 1 : 0;
+                const bPaid = (b.item.odendi === true || b.detay.odemeDurumu === 'Ödendi') ? 1 : 0;
+                if (aPaid !== bPaid) return aPaid - bPaid;
+                return a.diffDays - b.diffDays;
+            });
+
+            if (items.length === 0) {
+                liste.innerHTML = '<div class="empty-state">📭 Gösterilecek araç veya vergi kaydı bulunamadı.</div>';
+                return;
+            }
+
+            liste.innerHTML = items.map(({ key, item, plaka, aciklama, detay, diffDays }) => {
+                const isPaid = item.odendi === true || detay.odemeDurumu === 'Ödendi';
+                const isPastEventOnly = item.tur === 'Kaza / Tramer Kaydı';
 
                 let badgeClass = 'badge-success';
                 let badgeText = `${diffDays} Gün Kaldı`;
+                let cardStatusClass = '';
 
-                if (diffDays < 0) {
+                if (isPaid) {
+                    badgeClass = 'badge-success';
+                    badgeText = '✅ Ödendi';
+                    cardStatusClass = 'card-paid';
+                } else if (isPastEventOnly) {
+                    badgeClass = 'badge-info';
+                    badgeText = 'Arşiv Kaydı';
+                } else if (diffDays < 0) {
                     badgeClass = 'badge-danger';
-                    badgeText = `Süresi Geçti!`;
+                    badgeText = `${Math.abs(diffDays)} Gün Geçti!`;
+                    cardStatusClass = 'card-overdue';
+                } else if (diffDays === 0) {
+                    badgeClass = 'badge-danger';
+                    badgeText = `BUGÜN SON GÜN!`;
+                    cardStatusClass = 'card-overdue';
                 } else if (diffDays <= 30) {
                     badgeClass = 'badge-warning';
+                    badgeText = `⚠️ ${diffDays} Gün Kaldı`;
+                    cardStatusClass = 'card-soon';
                 }
 
-                const cozulmusPlaka = sifreyiCoz(item.plaka) || 'Plakasız';
-                const cozulmusAciklama = sifreyiCoz(item.aciklama);
-                
-                let detay = {};
-                try {
-                    const decodedJson = sifreyiCoz(item.detay);
-                    if(decodedJson) detay = JSON.parse(decodedJson);
-                } catch(e){}
-
-                let detayHTML = '';
-
+                const fields = [];
                 if (item.tur === 'Trafik Sigortası' || item.tur === 'Kasko') {
-                    detayHTML = `
-                        <div class="details-grid">
-                            ${detay.tc ? `<div><b>T.C. / VKN:</b> ${detay.tc}</div>` : ''}
-                            ${detay.ruhsatNo ? `<div><b>Ruhsat Seri:</b> ${detay.ruhsatNo}</div>` : ''}
-                            ${detay.aracModel ? `<div><b>Araç:</b> ${detay.aracModel}</div>` : ''}
-                            ${detay.acente ? `<div><b>Acente:</b> ${detay.acente}</div>` : ''}
-                            ${detay.policeNo ? `<div><b>Poliçe No:</b> ${detay.policeNo}</div>` : ''}
-                            ${detay.tutar ? `<div><b>Tutar:</b> ${detay.tutar} TL</div>` : ''}
-                        </div>
-                    `;
-                } else if (item.tur === 'Muayene') {
-                    detayHTML = `
-                        <div class="details-grid">
-                            ${detay.istasyon ? `<div><b>İstasyon/Saat:</b> ${detay.istasyon}</div>` : ''}
-                            ${detay.tutar ? `<div><b>Ücret:</b> ${detay.tutar} TL</div>` : ''}
-                            <div><b>Randevu:</b> <a href="https://e-randevu.tuvturk.com.tr/" target="_blank" style="color:#2b6cb0;">TÜVTÜRK Git</a></div>
-                        </div>
-                    `;
+                    if (detay.tc) fields.push(['T.C. / VKN', detay.tc]);
+                    if (detay.ruhsatNo) fields.push(['Ruhsat Seri', detay.ruhsatNo]);
+                    if (detay.aracModel) fields.push(['Araç', detay.aracModel]);
+                    if (detay.acente) fields.push(['Acente', detay.acente]);
+                    if (detay.policeNo) fields.push(['Poliçe No', detay.policeNo]);
+                    if (detay.kademe) fields.push(['Hasarsızlık', detay.kademe]);
+                    if (detay.imm) fields.push(['İMM Limiti', detay.imm]);
+                    if (detay.asistans) fields.push(['Yol Yardım', detay.asistans]);
+                    if (detay.tutar) fields.push(['Tutar', formatTL(detay.tutar)]);
+                } else if (item.tur === 'Muayene' || item.tur === 'Egzoz Emisyon') {
+                    if (detay.istasyon) fields.push(['İstasyon / Saat', detay.istasyon]);
+                    if (detay.km) fields.push(['Muayene KM', Number(detay.km).toLocaleString('tr-TR') + ' KM']);
+                    if (detay.tutar) fields.push(['Ücret', formatTL(detay.tutar)]);
+                    if (detay.kusur) fields.push(['Kusur Notu', detay.kusur]);
                 } else if (item.tur === 'Yağ/Periyodik Bakım') {
-                    detayHTML = `
-                        <div class="details-grid">
-                            ${detay.mevcutKm ? `<div><b>Mevcut KM:</b> ${detay.mevcutKm}</div>` : ''}
-                            ${detay.gelecekKm ? `<div><b>Gelecek Bakım:</b> ${detay.gelecekKm} KM</div>` : ''}
-                            ${detay.servis ? `<div><b>Servis:</b> ${detay.servis}</div>` : ''}
-                            ${detay.tutar ? `<div><b>Maliyet:</b> ${detay.tutar} TL</div>` : ''}
-                        </div>
-                        ${detay.islemler ? `<div style="font-size:0.78rem; margin-top:5px; color:#4a5568;"><b>Yapılanlar:</b> ${detay.islemler}</div>` : ''}
-                    `;
+                    if (detay.mevcutKm) fields.push(['Yapılan KM', Number(detay.mevcutKm).toLocaleString('tr-TR') + ' KM']);
+                    if (detay.gelecekKm) fields.push(['Gelecek Bakım', Number(detay.gelecekKm).toLocaleString('tr-TR') + ' KM']);
+                    if (detay.yagTipi) fields.push(['Motor Yağı', detay.yagTipi]);
+                    if (detay.servis) fields.push(['Servis', detay.servis]);
+                    if (detay.tutar) fields.push(['Maliyet', formatTL(detay.tutar)]);
+                } else if (item.tur === 'Lastik & Akü / Ağır Bakım') {
+                    if (detay.agirTur) fields.push(['İşlem', detay.agirTur]);
+                    if (detay.agirDetay) fields.push(['Marka / Ebat', detay.agirDetay]);
+                    if (detay.km) fields.push(['KM', Number(detay.km).toLocaleString('tr-TR') + ' KM']);
+                    if (detay.garanti) fields.push(['Garanti', detay.garanti]);
+                    if (detay.tutar) fields.push(['Tutar', formatTL(detay.tutar)]);
+                } else if (item.tur === 'MTV') {
+                    if (detay.donem) fields.push(['Dönem', detay.donem]);
+                    if (detay.tutar) fields.push(['Vergi Tutarı', formatTL(detay.tutar)]);
+                } else if (item.tur === 'Trafik Cezası / HGS') {
+                    if (detay.yer) fields.push(['Geçiş / Madde', detay.yer]);
+                    if (detay.tebligTarih) fields.push(['Tebliğ', detay.tebligTarih]);
+                    if (detay.tutar) fields.push(['Tutar', formatTL(detay.tutar)]);
+                    if (detay.indirimliTutar) fields.push(['%25 İndirimli', formatTL(detay.indirimliTutar)]);
+                } else if (item.tur === 'Kaza / Tramer Kaydı') {
+                    if (detay.tutar) fields.push(['Tramer', formatTL(detay.tutar)]);
+                    if (detay.dosyaNo) fields.push(['Dosya No', detay.dosyaNo]);
+                    if (detay.kusur) fields.push(['Kusur', detay.kusur]);
+                    if (detay.parcalar) fields.push(['Parçalar', detay.parcalar]);
                 } else {
-                    if(detay.tutar) {
-                        detayHTML = `<div class="details-grid"><div><b>Ödenen / Tutar:</b> ${detay.tutar} TL</div></div>`;
-                    }
+                    if (detay.tutar) fields.push(['Tutar', formatTL(detay.tutar)]);
                 }
 
-                liste.innerHTML += `
-                    <div class="item-card">
+                if (detay.faturaDurum) fields.push(['Belge', detay.faturaDurum]);
+                if (detay.kaynak) fields.push(['Kaynak', detay.kaynak]);
+
+                let detayHTML = fields.length > 0
+                    ? `<div class="details-grid">${fields.map(([k, v]) => `<div><b>${esc(k)}</b>${esc(v)}</div>`).join('')}</div>`
+                    : '';
+                if (detay.islemler) {
+                    detayHTML += `<div style="font-size:0.79rem; margin-top:7px; color:var(--text-muted);"><b>🔧 İşlemler:</b> ${esc(detay.islemler)}</div>`;
+                }
+
+                const showPayToggle = ['MTV', 'Trafik Cezası / HGS', 'Diğer', 'Muayene', 'Egzoz Emisyon'].includes(item.tur);
+
+                return `
+                    <div class="item-card ${cardStatusClass}">
                         <div class="item-header">
                             <div class="item-info">
-                                <h3>${item.tur} - <span style="color:#ed8936;">${cozulmusPlaka}</span></h3>
-                                <p> Tarih: <b>${item.tarih}</b></p>
+                                <h3>${esc(item.tur)} <span class="plaka-pill">${esc(plaka)}</span></h3>
+                                <p>📅 Tarih: <b>${esc(item.tarih)}</b></p>
                             </div>
                             <div class="action-btns">
-                                <div class="status-badge ${badgeClass}">${badgeText}</div>
-                                <button class="edit-btn" onclick="aracDuzenle('${key}')">✏️</button>
-                                <button class="delete-btn" onclick="sil('araclar', '${key}')">🗑️</button>
+                                <span class="status-badge ${badgeClass}">${badgeText}</span>
+                                ${showPayToggle ? `<button class="icon-btn pay-btn" onclick="aracOdendiToggle('${key}')">${isPaid ? '↩️' : '✅'}</button>` : ''}
+                                <button class="icon-btn edit-btn" onclick="aracDuzenle('${key}')">✏️</button>
+                                <button class="icon-btn delete-btn" onclick="sil('araclar', '${key}')">🗑️</button>
                             </div>
                         </div>
                         ${detayHTML}
-                        ${cozulmusAciklama ? `<div class="item-desc">📝 ${cozulmusAciklama}</div>` : ''}
+                        ${aciklama ? `<div class="item-desc">📝 ${esc(aciklama)}</div>` : ''}
                     </div>
                 `;
-            });
-        });
+            }).join('');
+        }
 
-        // ================= GARAJ İŞLEMLERİ (SABİT ARAÇLAR) =================
+        // ================= GARAJ İŞLEMLERİ =================
         function garajKaydet() {
-            const plaka = document.getElementById('garajPlaka').value;
-            const tc = document.getElementById('garajTC').value;
-            const ruhsatNo = document.getElementById('garajRuhsatNo').value;
-            const kullanim = document.getElementById('garajKullanim').value;
-            const model = document.getElementById('garajModel').value;
-
-            if (!plaka) return alert("Lütfen en az plaka bilgisini girin!");
+            const plaka = document.getElementById('garajPlaka').value.trim().toUpperCase();
+            if (!plaka) return showToast("⚠️ Lütfen en az plaka bilgisini girin!");
 
             const garajVerisi = {
                 plaka: veriyiSifrele(plaka),
-                tc: veriyiSifrele(tc),
-                ruhsatNo: veriyiSifrele(ruhsatNo),
-                kullanim: kullanim,
-                model: veriyiSifrele(model),
+                tc: veriyiSifrele(document.getElementById('garajTC').value.trim()),
+                ruhsatNo: veriyiSifrele(document.getElementById('garajRuhsatNo').value.trim()),
+                kullanim: document.getElementById('garajKullanim').value,
+                model: veriyiSifrele(document.getElementById('garajModel').value.trim()),
+                yakit: document.getElementById('garajYakit').value,
+                sasiNo: veriyiSifrele(document.getElementById('garajSasiNo').value.trim().toUpperCase()),
+                motorHacmi: veriyiSifrele(document.getElementById('garajMotorHacmi').value.trim()),
+                guncelKm: veriyiSifrele(document.getElementById('garajKm').value.trim()),
+                lastikEbadi: veriyiSifrele(document.getElementById('garajLastik').value.trim()),
+                akuBilgisi: veriyiSifrele(document.getElementById('garajAku').value.trim()),
                 ekleyen: activeUser
             };
 
             if (editingGarajKey) {
-                db.ref(`yonetimDB/garaj/${editingGarajKey}`).update(garajVerisi)
-                .then(() => {
-                    alert("Garajdaki araç güncellendi!");
+                db.ref(`yonetimDB/garaj/${editingGarajKey}`).update(garajVerisi).then(() => {
+                    showToast("✅ Garajdaki araç güncellendi!");
                     garajFormSifirla();
                 });
             } else {
-                db.ref('yonetimDB/garaj').push(garajVerisi)
-                .then(() => {
-                    alert("Araç garaja başarıyla kaydedildi!");
+                db.ref('yonetimDB/garaj').push(garajVerisi).then(() => {
+                    showToast("🚘 Araç garaja kaydedildi!");
                     garajFormSifirla();
                 });
             }
@@ -799,182 +1987,592 @@
             document.getElementById('garajRuhsatNo').value = sifreyiCoz(item.ruhsatNo) || '';
             document.getElementById('garajKullanim').value = item.kullanim || 'Hususi Otomobil';
             document.getElementById('garajModel').value = sifreyiCoz(item.model) || '';
+            document.getElementById('garajYakit').value = item.yakit || '';
+            document.getElementById('garajSasiNo').value = sifreyiCoz(item.sasiNo) || '';
+            document.getElementById('garajMotorHacmi').value = sifreyiCoz(item.motorHacmi) || '';
+            document.getElementById('garajKm').value = sifreyiCoz(item.guncelKm) || '';
+            document.getElementById('garajLastik').value = sifreyiCoz(item.lastikEbadi) || '';
+            document.getElementById('garajAku').value = sifreyiCoz(item.akuBilgisi) || '';
 
             const btn = document.getElementById('garajSubmitBtn');
             btn.innerText = "✏️ Değişiklikleri Güncelle";
-            btn.style.background = "#3182ce";
-            document.getElementById('garajCancelBtn').style.display = "block";
-
+            btn.style.background = "var(--info)";
+            document.getElementById('garajCancelBtn').style.display = "inline-block";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function garajFormSifirla() {
             editingGarajKey = null;
             document.getElementById('garajFormBaslik').innerText = "🚘 Garaja Sabit Araç Tanımla";
-            document.getElementById('garajPlaka').value = '';
-            document.getElementById('garajTC').value = '';
-            document.getElementById('garajRuhsatNo').value = '';
-            document.getElementById('garajModel').value = '';
-            
+            ['garajPlaka','garajTC','garajRuhsatNo','garajModel','garajSasiNo','garajMotorHacmi','garajKm','garajLastik','garajAku']
+                .forEach(id => document.getElementById(id).value = '');
+            document.getElementById('garajYakit').value = '';
             const btn = document.getElementById('garajSubmitBtn');
-            btn.innerText = "🚘 Garaja Kaydet";
-            btn.style.background = "var(--primary-orange)";
+            btn.innerText = "🚘 Garaja Güvenli Kaydet";
+            btn.style.background = "var(--primary)";
             document.getElementById('garajCancelBtn').style.display = "none";
+        }
+
+        function garajBilgiKopyala(key) {
+            const item = cachedGaraj[key];
+            if (!item) return;
+            const satirlar = [
+                `Plaka: ${sifreyiCoz(item.plaka) || '-'}`,
+                sifreyiCoz(item.tc) ? `T.C. / VKN: ${sifreyiCoz(item.tc)}` : null,
+                sifreyiCoz(item.ruhsatNo) ? `Ruhsat Seri No: ${sifreyiCoz(item.ruhsatNo)}` : null,
+                sifreyiCoz(item.model) ? `Araç: ${sifreyiCoz(item.model)}` : null,
+                sifreyiCoz(item.sasiNo) ? `Şasi No (VIN): ${sifreyiCoz(item.sasiNo)}` : null,
+                item.kullanim ? `Kullanım: ${item.kullanim}` : null
+            ].filter(Boolean).join('\n');
+            panoyaKopyala(satirlar, '📋 Sigortacı / Usta bilgileri kopyalandı!');
         }
 
         db.ref('yonetimDB/garaj').on('value', snapshot => {
             const garajListe = document.getElementById('garajListe');
             const garajSecim = document.getElementById('garajSecim');
-            
             garajListe.innerHTML = '';
             garajSecim.innerHTML = '<option value="">-- Kayıtlı Araç Seçin (Formu Doldurur) --</option>';
-            
             cachedGaraj = snapshot.val() || {};
-            if(!snapshot.val()) return;
 
-            Object.keys(cachedGaraj).forEach(key => {
-                const item = cachedGaraj[key];
-                
-                const plaka = sifreyiCoz(item.plaka) || 'Plakasız';
-                const tc = sifreyiCoz(item.tc);
-                const ruhsatNo = sifreyiCoz(item.ruhsatNo);
-                const model = sifreyiCoz(item.model);
+            const keys = Object.keys(cachedGaraj);
+            if (keys.length === 0) {
+                garajListe.innerHTML = '<div class="empty-state">🚘 Garajınızda henüz tanımlı araç yok.</div>';
+            } else {
+                keys.forEach(key => {
+                    const item = cachedGaraj[key];
+                    const plaka = (sifreyiCoz(item.plaka) || 'PLAKASIZ').toUpperCase();
+                    const tc = sifreyiCoz(item.tc);
+                    const ruhsatNo = sifreyiCoz(item.ruhsatNo);
+                    const model = sifreyiCoz(item.model);
+                    const sasiNo = sifreyiCoz(item.sasiNo);
+                    const motorHacmi = sifreyiCoz(item.motorHacmi);
+                    const guncelKm = sifreyiCoz(item.guncelKm);
+                    const lastikEbadi = sifreyiCoz(item.lastikEbadi);
+                    const akuBilgisi = sifreyiCoz(item.akuBilgisi);
 
-                // Seçim kutusunu doldur
-                garajSecim.innerHTML += `<option value="${key}">${plaka} - ${model || 'Araç'}</option>`;
-
-                // Liste kartını doldur
-                garajListe.innerHTML += `
-                    <div class="item-card">
-                        <div class="item-header">
-                            <div class="item-info">
-                                <h3>🚗 ${plaka}</h3>
-                                <p>${model ? `<b>Model:</b> ${model}` : ''}</p>
+                    garajSecim.innerHTML += `<option value="${key}">${esc(plaka)} ${model ? '- ' + esc(model) : ''}</option>`;
+                    garajListe.innerHTML += `
+                        <div class="item-card">
+                            <div class="item-header">
+                                <div class="item-info">
+                                    <h3>🚗 <span class="plaka-pill">${esc(plaka)}</span> ${model ? esc(model) : ''}</h3>
+                                    <p>${item.kullanim ? esc(item.kullanim) : ''}${item.yakit ? ' • ' + esc(item.yakit) : ''}${guncelKm ? ' • ' + Number(guncelKm).toLocaleString('tr-TR') + ' KM' : ''}</p>
+                                </div>
+                                <div class="action-btns">
+                                    <button class="icon-btn copy-btn" onclick="garajBilgiKopyala('${key}')">📋 Kopyala</button>
+                                    <button class="icon-btn edit-btn" onclick="garajDuzenle('${key}')">✏️</button>
+                                    <button class="icon-btn delete-btn" onclick="sil('garaj', '${key}')">🗑️</button>
+                                </div>
                             </div>
-                            <div class="action-btns">
-                                <button class="edit-btn" onclick="garajDuzenle('${key}')">✏️</button>
-                                <button class="delete-btn" onclick="sil('garaj', '${key}')">🗑️</button>
+                            <div class="details-grid">
+                                ${tc ? `<div><b>T.C. / VKN</b>${esc(tc)}</div>` : ''}
+                                ${ruhsatNo ? `<div><b>Ruhsat Seri</b>${esc(ruhsatNo)}</div>` : ''}
+                                ${sasiNo ? `<div><b>Şasi No</b>${esc(sasiNo)}</div>` : ''}
+                                ${motorHacmi ? `<div><b>Motor</b>${esc(motorHacmi)}</div>` : ''}
+                                ${lastikEbadi ? `<div><b>Lastik</b>${esc(lastikEbadi)}</div>` : ''}
+                                ${akuBilgisi ? `<div><b>Akü / Not</b>${esc(akuBilgisi)}</div>` : ''}
                             </div>
                         </div>
-                        <div class="details-grid">
-                            ${tc ? `<div><b>T.C. / VKN:</b> ${tc}</div>` : ''}
-                            ${ruhsatNo ? `<div><b>Ruhsat No:</b> ${ruhsatNo}</div>` : ''}
-                            ${item.kullanim ? `<div><b>Tarz:</b> ${item.kullanim}</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
+                    `;
+                });
+            }
+            plakaFiltreGuncelle();
+            kpiVeBildirimGuncelle();
         });
 
         // ================= FATURA & ABONELİK İŞLEMLERİ =================
+        function getCurrentYearMonth() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        }
+
         function giderKaydet() {
             const ad = document.getElementById('giderAd').value;
-            const aboneNo = document.getElementById('giderAboneNo').value;
+            const aboneNo = document.getElementById('giderAboneNo').value.trim();
             const tutar = document.getElementById('giderTutar').value;
             const gun = document.getElementById('giderGun').value;
-            const aciklama = document.getElementById('giderAciklama').value;
+            const odemeSekli = document.getElementById('giderOdemeSekli').value;
+            const aciklama = document.getElementById('giderAciklama').value.trim();
 
-            if (!ad || !tutar || !gun) return alert("Lütfen gerekli alanları doldurun!");
+            if (!ad || !tutar || !gun) return showToast("⚠️ Lütfen fatura adı, tutar ve ödeme gününü girin!");
 
             const giderVerisi = {
                 ad: veriyiSifrele(ad),
                 aboneNo: veriyiSifrele(aboneNo),
                 tutar: veriyiSifrele(tutar),
                 gun: gun,
+                odemeSekli: odemeSekli,
                 aciklama: veriyiSifrele(aciklama),
                 ekleyen: activeUser
             };
 
             if (editingGiderKey) {
-                db.ref(`yonetimDB/giderler/${editingGiderKey}`).update(giderVerisi)
-                .then(() => {
-                    alert("Abonelik/Fatura kaydı güncellendi!");
+                db.ref(`yonetimDB/giderler/${editingGiderKey}`).update(giderVerisi).then(() => {
+                    showToast("✅ Fatura / Abonelik güncellendi!");
                     giderFormSifirla();
                 });
             } else {
-                db.ref('yonetimDB/giderler').push(giderVerisi)
-                .then(() => {
-                    alert("Abonelik/Fatura kaydı başarıyla eklendi!");
+                db.ref('yonetimDB/giderler').push(giderVerisi).then(() => {
+                    showToast("🔒 Fatura / Abonelik kaydedildi!");
                     giderFormSifirla();
                 });
             }
         }
 
+        function giderBuAyOdendiToggle(key) {
+            const item = cachedGiderler[key];
+            if (!item) return;
+            const buAy = getCurrentYearMonth();
+            const yeniDeger = item.sonOdenenAy === buAy ? '' : buAy;
+            db.ref(`yonetimDB/giderler/${key}`).update({ sonOdenenAy: yeniDeger }).then(() => {
+                showToast(yeniDeger ? '✅ Bu ayki ödeme tamamlandı!' : '↩️ Ödeme işareti kaldırıldı.');
+            });
+        }
+
         function giderDuzenle(key) {
             const item = cachedGiderler[key];
             if (!item) return;
-
             editingGiderKey = key;
             document.getElementById('giderFormBaslik').innerText = "✏️ Fatura / Abonelik Düzenle";
             document.getElementById('giderAd').value = sifreyiCoz(item.ad) || '';
             document.getElementById('giderAboneNo').value = sifreyiCoz(item.aboneNo) || '';
             document.getElementById('giderTutar').value = sifreyiCoz(item.tutar) || '';
             document.getElementById('giderGun').value = item.gun || '';
+            document.getElementById('giderOdemeSekli').value = item.odemeSekli || 'Manuel Ödeme';
             document.getElementById('giderAciklama').value = sifreyiCoz(item.aciklama) || '';
 
             const btn = document.getElementById('giderSubmitBtn');
             btn.innerText = "✏️ Değişiklikleri Güncelle";
-            btn.style.background = "#3182ce";
-            document.getElementById('giderCancelBtn').style.display = "block";
-
+            btn.style.background = "var(--info)";
+            document.getElementById('giderCancelBtn').style.display = "inline-block";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function giderFormSifirla() {
             editingGiderKey = null;
-            document.getElementById('giderFormBaslik').innerText = "Yeni Fatura / Abonelik Ekle";
+            document.getElementById('giderFormBaslik').innerText = "Yeni Fatura / Sabit Abonelik Ekle";
             document.getElementById('giderAboneNo').value = '';
             document.getElementById('giderTutar').value = '';
             document.getElementById('giderGun').value = '';
+            document.getElementById('giderOdemeSekli').value = 'Manuel Ödeme';
             document.getElementById('giderAciklama').value = '';
-            
             const btn = document.getElementById('giderSubmitBtn');
-            btn.innerText = "Güvenli Kaydet";
-            btn.style.background = "var(--primary-orange)";
+            btn.innerText = "🔒 Güvenli Kaydet";
+            btn.style.background = "var(--primary)";
             document.getElementById('giderCancelBtn').style.display = "none";
         }
 
         db.ref('yonetimDB/giderler').on('value', snapshot => {
             const liste = document.getElementById('giderListe');
-            liste.innerHTML = '';
             cachedGiderler = snapshot.val() || {};
-            if(!snapshot.val()) return;
+            const buAy = getCurrentYearMonth();
+            const bugunGun = new Date().getDate();
+            const keys = Object.keys(cachedGiderler);
 
-            Object.keys(cachedGiderler).forEach(key => {
+            if (keys.length === 0) {
+                liste.innerHTML = '<div class="empty-state">🧾 Henüz sabit fatura veya abonelik kaydı yok.</div>';
+                kpiVeBildirimGuncelle();
+                return;
+            }
+
+            const items = keys.map(key => {
                 const item = cachedGiderler[key];
-                
-                const cozulmusAd = sifreyiCoz(item.ad);
-                const cozulmusAboneNo = sifreyiCoz(item.aboneNo);
-                const cozulmusTutar = sifreyiCoz(item.tutar);
-                const cozulmusAciklama = sifreyiCoz(item.aciklama);
+                const gun = parseInt(item.gun, 10) || 1;
+                const buAyOdendi = item.sonOdenenAy === buAy;
+                const kalan = gun - bugunGun;
+                return { key, item, gun, buAyOdendi, kalan };
+            }).sort((a, b) => {
+                if (a.buAyOdendi !== b.buAyOdendi) return a.buAyOdendi - b.buAyOdendi;
+                return a.gun - b.gun;
+            });
 
-                liste.innerHTML += `
-                    <div class="item-card">
+            liste.innerHTML = items.map(({ key, item, gun, buAyOdendi, kalan }) => {
+                const ad = sifreyiCoz(item.ad);
+                const aboneNo = sifreyiCoz(item.aboneNo);
+                const tutar = sifreyiCoz(item.tutar);
+                const aciklama = sifreyiCoz(item.aciklama);
+                const yillik = (parseFloat(tutar) || 0) * 12;
+
+                let badgeClass = 'badge-info';
+                let badgeText = `Ayın ${gun}. Günü`;
+                let cardClass = '';
+
+                if (buAyOdendi) { badgeClass = 'badge-success'; badgeText = '✅ Bu Ay Ödendi'; cardClass = 'card-paid'; }
+                else if (kalan < 0) { badgeClass = 'badge-danger'; badgeText = `${Math.abs(kalan)} Gün Gecikti`; cardClass = 'card-overdue'; }
+                else if (kalan === 0) { badgeClass = 'badge-danger'; badgeText = 'BUGÜN ÖDEME'; cardClass = 'card-overdue'; }
+                else if (kalan <= 5) { badgeClass = 'badge-warning'; badgeText = `${kalan} Gün Kaldı`; cardClass = 'card-soon'; }
+
+                return `
+                    <div class="item-card ${cardClass}">
                         <div class="item-header">
                             <div class="item-info">
-                                <h3>${cozulmusAd}</h3>
-                                ${cozulmusAboneNo ? `<p><b>Abone/Sözleşme No:</b> ${cozulmusAboneNo}</p>` : ''}
-                                <p><b>Aylık Tutar:</b> ${cozulmusTutar} TL | Her ayın <b>${item.gun}.</b> günü</p>
+                                <h3>${esc(ad)}</h3>
+                                <p><b>${formatTL(tutar)}</b> / ay (Yıllık: ${formatTL(yillik)})${item.odemeSekli ? ' • ' + esc(item.odemeSekli) : ''}</p>
+                                ${aboneNo ? `<p>Abone No: <b>${esc(aboneNo)}</b></p>` : ''}
                             </div>
                             <div class="action-btns">
-                                <button class="edit-btn" onclick="giderDuzenle('${key}')">✏️</button>
-                                <button class="delete-btn" onclick="sil('giderler', '${key}')">🗑️</button>
+                                <span class="status-badge ${badgeClass}">${badgeText}</span>
+                                ${aboneNo ? `<button class="icon-btn copy-btn" onclick="panoyaKopyala('${esc(aboneNo)}', '📋 Abone no kopyalandı!')">📋</button>` : ''}
+                                <button class="icon-btn pay-btn" onclick="giderBuAyOdendiToggle('${key}')">${buAyOdendi ? '↩️' : '✅'}</button>
+                                <button class="icon-btn edit-btn" onclick="giderDuzenle('${key}')">✏️</button>
+                                <button class="icon-btn delete-btn" onclick="sil('giderler', '${key}')">🗑️</button>
                             </div>
                         </div>
-                        ${cozulmusAciklama ? `<div class="item-desc">📝 ${cozulmusAciklama}</div>` : ''}
+                        ${aciklama ? `<div class="item-desc">📝 ${esc(aciklama)}</div>` : ''}
                     </div>
                 `;
-            });
+            }).join('');
+
+            kpiVeBildirimGuncelle();
         });
 
-        // ================= GÜVENLİ SİLME İŞLEMİ =================
+        // ================= CSV İÇE AKTARIM MOTORU =================
+        const dropZone = document.getElementById('csvDropZone');
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) csvDosyaSecildi(e.dataTransfer.files[0]);
+        });
+
+        function csvDosyaSecildi(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                let text = e.target.result;
+                // Türkçe karakter bozulması (replacement char) varsa Windows-1254 olarak yeniden oku
+                if (text.includes('\uFFFD')) {
+                    const readerTr = new FileReader();
+                    readerTr.onload = ev => csvMetniIsle(ev.target.result);
+                    readerTr.readAsText(file, 'windows-1254');
+                } else {
+                    csvMetniIsle(text);
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function csvSatirAyir(line, sep) {
+            const result = [];
+            let cur = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"') {
+                    if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+                    else inQuotes = !inQuotes;
+                } else if (ch === sep && !inQuotes) {
+                    result.push(cur.trim());
+                    cur = '';
+                } else {
+                    cur += ch;
+                }
+            }
+            result.push(cur.trim());
+            return result;
+        }
+
+        function csvMetniIsle(rawText) {
+            const clean = rawText.replace(/^\uFEFF/, '').trim();
+            const lines = clean.split(/\r?\n/).filter(l => l.trim().length > 0);
+            if (lines.length < 2) return showToast("⚠️ CSV dosyasında yeterli veri bulunamadı.");
+
+            // Ayırıcıyı otomatik algıla (; veya , veya tab)
+            const firstLine = lines[0];
+            const semiCount = (firstLine.match(/;/g) || []).length;
+            const commaCount = (firstLine.match(/,/g) || []).length;
+            const tabCount = (firstLine.match(/\t/g) || []).length;
+            let sep = ',';
+            if (semiCount >= commaCount && semiCount >= tabCount && semiCount > 0) sep = ';';
+            else if (tabCount > commaCount) sep = '\t';
+
+            parsedCsvHeaders = csvSatirAyir(lines[0], sep);
+            parsedCsvRows = lines.slice(1).map(l => csvSatirAyir(l, sep)).filter(r => r.some(c => c !== ''));
+
+            // Sütun seçicilerini doldur
+            const selects = ['mapTarih', 'mapPlaka', 'mapTutar', 'mapAciklama'];
+            selects.forEach(id => {
+                const sel = document.getElementById(id);
+                sel.innerHTML = '<option value="-1">-- Kullanma --</option>';
+                parsedCsvHeaders.forEach((h, idx) => {
+                    sel.innerHTML += `<option value="${idx}">${esc(h || 'Sütun ' + (idx + 1))}</option>`;
+                });
+            });
+
+            // Akıllı sütun tahmini (HGS, TÜVTÜRK, banka formatlarına uygun)
+            const findCol = (keywords) => parsedCsvHeaders.findIndex(h =>
+                keywords.some(k => h.toLowerCase().includes(k))
+            );
+
+            const idxTarih = findCol(['tarih', 'date', 'giriş', 'çıkış', 'zaman', 'vade']);
+            const idxPlaka = findCol(['plaka', 'araç', 'plate']);
+            const idxTutar = findCol(['tutar', 'ücret', 'fiyat', 'bedel', 'amount', 'tl', 'bakiye']);
+            const idxAciklama = findCol(['güzergah', 'gişe', 'istasyon', 'açıklama', 'yer', 'otoyol', 'işlem', 'detay']);
+
+            document.getElementById('mapTarih').value = idxTarih >= 0 ? idxTarih : 0;
+            document.getElementById('mapPlaka').value = idxPlaka;
+            document.getElementById('mapTutar').value = idxTutar;
+            document.getElementById('mapAciklama').value = idxAciklama;
+
+            document.getElementById('csvMappingArea').style.display = 'block';
+            csvOnizlemeGuncelle();
+            showToast(`✅ ${parsedCsvRows.length} satır okundu. Kontrol edip kaydedebilirsiniz.`);
+        }
+
+        function tarihNormalizeEt(raw) {
+            if (!raw) return new Date().toISOString().split('T')[0];
+            const str = String(raw).trim().split(' ')[0];
+            // YYYY-MM-DD
+            if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+            // DD.MM.YYYY veya DD/MM/YYYY
+            const m = str.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
+            if (m) {
+                let y = m[3].length === 2 ? '20' + m[3] : m[3];
+                return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+            }
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function tutarNormalizeEt(raw) {
+            if (!raw) return '';
+            let s = String(raw).replace(/[^\d.,-]/g, '').trim();
+            if (s.includes('.') && s.includes(',')) {
+                s = s.replace(/\./g, '').replace(',', '.');
+            } else if (s.includes(',')) {
+                s = s.replace(',', '.');
+            }
+            const n = parseFloat(s);
+            return isNaN(n) ? '' : Math.abs(n).toString();
+        }
+
+        function csvSatirlariHazirla() {
+            const iTarih = parseInt(document.getElementById('mapTarih').value, 10);
+            const iPlaka = parseInt(document.getElementById('mapPlaka').value, 10);
+            const iTutar = parseInt(document.getElementById('mapTutar').value, 10);
+            const iAciklama = parseInt(document.getElementById('mapAciklama').value, 10);
+            const varsayilanPlaka = document.getElementById('csvVarsayilanPlaka').value.trim().toUpperCase();
+
+            return parsedCsvRows.map(row => ({
+                tarih: iTarih >= 0 ? tarihNormalizeEt(row[iTarih]) : new Date().toISOString().split('T')[0],
+                plaka: ((iPlaka >= 0 && row[iPlaka]) ? row[iPlaka] : varsayilanPlaka).trim().toUpperCase() || 'PLAKASIZ',
+                tutar: iTutar >= 0 ? tutarNormalizeEt(row[iTutar]) : '',
+                aciklama: iAciklama >= 0 ? (row[iAciklama] || '') : row.join(' | ')
+            }));
+        }
+
+        function csvOnizlemeGuncelle() {
+            const hazir = csvSatirlariHazirla();
+            document.getElementById('csvStatText').innerText = `📊 Toplam ${hazir.length} kayıt Firebase'e aktarılmaya hazır`;
+            const tbody = document.getElementById('csvPreviewBody');
+            tbody.innerHTML = hazir.slice(0, 25).map((r, idx) => `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${esc(r.tarih)}</td>
+                    <td><b>${esc(r.plaka)}</b></td>
+                    <td>${r.tutar ? formatTL(r.tutar) : '-'}</td>
+                    <td>${esc(r.aciklama)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function csvFirebaseKaydet() {
+            const hazir = csvSatirlariHazirla();
+            if (!hazir.length) return showToast("⚠️ Kaydedilecek veri yok.");
+
+            const hedefTur = document.getElementById('csvHedefTur').value;
+            const odemeDurumu = document.getElementById('csvOdemeDurumu').value;
+
+            // Mükerrer kayıt engelleme için mevcut kayıtların özet imzaları
+            const mevcutImzalar = new Set();
+            Object.values(cachedAraclar).forEach(item => {
+                let d = {};
+                try { d = JSON.parse(sifreyiCoz(item.detay) || '{}'); } catch (e) {}
+                const imza = `${item.tur}|${item.tarih}|${(sifreyiCoz(item.plaka) || '').toUpperCase()}|${d.tutar || ''}|${d.yer || sifreyiCoz(item.aciklama) || ''}`;
+                mevcutImzalar.add(imza);
+            });
+
+            let eklenen = 0;
+            let atlanan = 0;
+            const promises = [];
+
+            hazir.forEach(r => {
+                const imza = `${hedefTur}|${r.tarih}|${r.plaka}|${r.tutar}|${r.aciklama}`;
+                if (mevcutImzalar.has(imza)) {
+                    atlanan++;
+                    return;
+                }
+                mevcutImzalar.add(imza);
+
+                const detayObj = {
+                    tutar: r.tutar,
+                    yer: r.aciklama,
+                    istasyon: hedefTur === 'Muayene' ? r.aciklama : undefined,
+                    odemeDurumu: odemeDurumu,
+                    kaynak: 'CSV İçe Aktarım'
+                };
+
+                const kayit = {
+                    tur: hedefTur,
+                    plaka: veriyiSifrele(r.plaka),
+                    tarih: r.tarih,
+                    odendi: odemeDurumu === 'Ödendi',
+                    detay: veriyiSifrele(JSON.stringify(detayObj)),
+                    aciklama: veriyiSifrele(r.aciklama),
+                    ekleyen: activeUser,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                promises.push(db.ref('yonetimDB/araclar').push(kayit));
+                eklenen++;
+            });
+
+            Promise.all(promises).then(() => {
+                showToast(`🔥 ${eklenen} kayıt Firebase'e eklendi! (${atlanan} mükerrer atlandı)`);
+                csvTemizle();
+                switchTab('arac');
+            });
+        }
+
+        function csvTemizle() {
+            parsedCsvHeaders = [];
+            parsedCsvRows = [];
+            document.getElementById('csvFileInput').value = '';
+            document.getElementById('csvMappingArea').style.display = 'none';
+        }
+
+        function ornekCsvIndir() {
+            const ornek = '\uFEFFTarih;Plaka;Tutar;Güzergah / Açıklama\n' +
+                          '25.11.2026;34 ABC 123;185,50;Kuzey Marmara Otoyolu - Paşaköy Gişesi\n' +
+                          '15.12.2026;34 ABC 123;2620,00;TÜVTÜRK Samandıra Muayene Randevusu';
+            const blob = new Blob([ornek], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Ornek_HGS_TUVTURK_Sablon.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ================= KPI & ANA SAYFA BİLDİRİM ROZETİ SENKRONİZASYONU =================
+        function kpiVeBildirimGuncelle() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const currentYear = today.getFullYear();
+            const buAy = getCurrentYearMonth();
+            const bugunGun = today.getDate();
+
+            let kritikSayisi = 0;
+            let yillikAracToplam = 0;
+            const uyarilar = [];
+
+            // 1. Araç, Muayene, Sigorta, MTV, Ceza uyarıları (30 gün ve altı)
+            Object.values(cachedAraclar).forEach(item => {
+                let detay = {};
+                try { detay = JSON.parse(sifreyiCoz(item.detay) || '{}'); } catch (e) {}
+                const isPaid = item.odendi === true || detay.odemeDurumu === 'Ödendi';
+                const plaka = (sifreyiCoz(item.plaka) || '').toUpperCase();
+                const d = new Date(item.tarih);
+
+                if (!isNaN(d)) {
+                    const diffDays = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+                    if (!isPaid && item.tur !== 'Kaza / Tramer Kaydı' && diffDays <= 30) {
+                        kritikSayisi++;
+                        const durumText = diffDays < 0 ? `${Math.abs(diffDays)} gün geçti!` : (diffDays === 0 ? 'BUGÜN!' : `${diffDays} gün kaldı`);
+                        uyarilar.push({ gun: diffDays, metin: `🚗 ${item.tur} (${plaka || 'Araç'}): ${durumText}` });
+                    }
+                    if (d.getFullYear() === currentYear) {
+                        const t = parseFloat(detay.tutar);
+                        if (!isNaN(t)) yillikAracToplam += t;
+                    }
+                }
+            });
+
+            // 2. Yaklaşan / Geciken Faturalar (5 gün ve altı)
+            let aylikFaturaToplam = 0;
+            Object.values(cachedGiderler).forEach(item => {
+                const tutar = parseFloat(sifreyiCoz(item.tutar));
+                if (!isNaN(tutar)) aylikFaturaToplam += tutar;
+
+                const buAyOdendi = item.sonOdenenAy === buAy;
+                const gun = parseInt(item.gun, 10) || 1;
+                const kalan = gun - bugunGun;
+                if (!buAyOdendi && kalan <= 5) {
+                    kritikSayisi++;
+                    const ad = sifreyiCoz(item.ad) || 'Fatura';
+                    const durumText = kalan < 0 ? `${Math.abs(kalan)} gün gecikti!` : (kalan === 0 ? 'BUGÜN!' : `${kalan} gün kaldı`);
+                    uyarilar.push({ gun: kalan, metin: `🧾 ${ad}: ${durumText}` });
+                }
+            });
+
+            uyarilar.sort((a, b) => a.gun - b.gun);
+
+            // KPI Kartlarını güncelle
+            document.getElementById('kpiKritik').innerText = kritikSayisi;
+            document.getElementById('kpiYillikArac').innerText = formatTL(yillikAracToplam);
+            document.getElementById('kpiYillikAracSub').innerText = `${currentYear} yılı toplamı`;
+            document.getElementById('kpiAylikFatura').innerText = formatTL(aylikFaturaToplam);
+            document.getElementById('kpiYillikFaturaSub').innerText = `Yıllık: ${formatTL(aylikFaturaToplam * 12)}`;
+            document.getElementById('kpiGarajSayisi').innerText = Object.keys(cachedGaraj).length;
+
+            // Sayfa içi uyarı şeridini güncelle
+            const banner = document.getElementById('alertBanner');
+            const listEl = document.getElementById('alertBannerList');
+            if (kritikSayisi > 0) {
+                document.getElementById('alertBannerTitle').innerText = `🔔 ${kritikSayisi} Adet Yaklaşan / Acil İşleminiz Var`;
+                listEl.innerHTML = uyarilar.slice(0, 6).map(u => `<li>• ${esc(u.metin)}</li>`).join('');
+                banner.classList.add('show');
+            } else {
+                banner.classList.remove('show');
+            }
+
+            // Firebase bildirim özetini güncelle (index.html buradan da okuyabilir)
+            db.ref('yonetimDB/bildirimler/aracGider').set({
+                kritikSayi: kritikSayisi,
+                ozet: uyarilar.slice(0, 5).map(u => u.metin),
+                guncelleme: new Date().toISOString()
+            });
+            localStorage.setItem('aracGiderUyariSayisi', String(kritikSayisi));
+        }
+
+        // ================= EXCEL (CSV) DIŞA AKTARIM =================
+        function csvDisaAktar() {
+            const rows = [['Bölüm', 'Kategori / Ad', 'Plaka / Abone No', 'Tarih / Gün', 'Tutar (TL)', 'Durum / Detay', 'Açıklama']];
+
+            Object.values(cachedAraclar).forEach(item => {
+                let detay = {};
+                try { detay = JSON.parse(sifreyiCoz(item.detay) || '{}'); } catch (e) {}
+                rows.push([
+                    'Araç & Vergi', item.tur || '', sifreyiCoz(item.plaka) || '', item.tarih || '',
+                    detay.tutar || '', detay.odemeDurumu || detay.acente || detay.servis || '', sifreyiCoz(item.aciklama) || ''
+                ]);
+            });
+
+            Object.values(cachedGiderler).forEach(item => {
+                rows.push([
+                    'Fatura / Abonelik', sifreyiCoz(item.ad) || '', sifreyiCoz(item.aboneNo) || '',
+                    `Her ayın ${item.gun}. günü`, sifreyiCoz(item.tutar) || '', item.odemeSekli || '', sifreyiCoz(item.aciklama) || ''
+                ]);
+            });
+
+            const csvContent = '\uFEFF' + rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Arac_Vergi_Fatura_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('📥 Excel (CSV) yedek dosyası indirildi!');
+        }
+
         function sil(tablo, key) {
-            if(confirm("Bu kaydı kalıcı olarak silmek istediğinize emin misiniz?")) {
-                db.ref(`yonetimDB/${tablo}/${key}`).remove()
-                .then(() => {
+            if (confirm("Bu kaydı kalıcı olarak silmek istediğinize emin misiniz?")) {
+                db.ref(`yonetimDB/${tablo}/${key}`).remove().then(() => {
                     if (editingAracKey === key) aracFormSifirla();
                     if (editingGiderKey === key) giderFormSifirla();
                     if (editingGarajKey === key) garajFormSifirla();
+                    showToast('🗑️ Kayıt silindi.');
                 });
             }
         }
